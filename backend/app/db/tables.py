@@ -564,6 +564,26 @@ self_improve_agents = Table(
 )
 
 # ---------------------------------------------------------------------------
+# Agent Replays
+# ---------------------------------------------------------------------------
+
+agent_replays = Table(
+    "agent_replays",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("agent_id", Text, nullable=False),
+    Column("title", Text, nullable=False),
+    Column("duration", Float),
+    Column("event_count", Integer),
+    Column("cost", Float),
+    Column("files_changed", Integer),
+    Column("share_token", Text, unique=True),
+    Column("html_path", Text),
+    Column("replay_schema_version", Text, server_default="1"),
+    Column("created_at", Text, nullable=False),
+)
+
+# ---------------------------------------------------------------------------
 # Inbox
 # ---------------------------------------------------------------------------
 

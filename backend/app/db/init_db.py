@@ -575,6 +575,23 @@ CREATE TABLE IF NOT EXISTS verification_results (
 );
 CREATE INDEX IF NOT EXISTS idx_vr_entity ON verification_results(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_vr_node ON verification_results(node_id);
+
+-- Sprint 7: Agent Replays
+CREATE TABLE IF NOT EXISTS agent_replays (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL,
+    title TEXT NOT NULL,
+    duration REAL,
+    event_count INTEGER,
+    cost REAL,
+    files_changed INTEGER,
+    share_token TEXT UNIQUE,
+    html_path TEXT,
+    replay_schema_version TEXT DEFAULT '1',
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_agent_replays_agent ON agent_replays(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_replays_share ON agent_replays(share_token);
 """
 
 MIGRATION = """

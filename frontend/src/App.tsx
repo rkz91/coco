@@ -31,6 +31,7 @@ const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const TreePage = lazy(() => import('./pages/TreePage'));
 const JarvisPage = lazy(() => import('./pages/JarvisPage'));
 const SelfImprovePage = lazy(() => import('./pages/SelfImprovePage'));
+const ReplayPage = lazy(() => import('./pages/ReplayPage'));
 
 /** Activates desktop notification listener for agent failures. */
 function DesktopNotifications() {
@@ -89,6 +90,7 @@ export default function App() {
                   <Route path="tree" element={<ErrorBoundary><TreePage /></ErrorBoundary>} />
                   <Route path="tree/:nodeId" element={<ErrorBoundary><TreePage /></ErrorBoundary>} />
                   <Route path="self-improve" element={<ErrorBoundary><SelfImprovePage /></ErrorBoundary>} />
+                  <Route path="replays/:id" element={<ErrorBoundary><ReplayPage /></ErrorBoundary>} />
                   <Route path="settings" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
                   <Route path="jarvis" element={<ErrorBoundary><JarvisPage /></ErrorBoundary>} />
                 </Route>
