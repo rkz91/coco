@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func
 from app.db.session import get_db
 from app.db.tables import (
     hub_projects, hub_content, hub_project_content, nodes,
@@ -10,15 +10,29 @@ router = APIRouter(tags=["Teams"])
 
 def _node_map() -> dict:
     """Return a dict mapping hub_project_id -> node row for all linked nodes."""
+    children = nodes.alias("c")
+    child_count_sq = (
+        select(func.count())
+        .select_from(children)
+        .where(children.c.parent_id == nodes.c.id)
+        .correlate(nodes)
+        .scalar_subquery()
+        .label("child_count")
+    )
     with get_db() as conn:
         rows = conn.execute(
-            text(
-                "SELECT n.id AS node_id, n.hub_project_id, n.label, n.parent_id, "
-                "n.node_type, n.path, n.depth, n.icon, n.color, "
-                "(SELECT COUNT(*) FROM nodes c WHERE c.parent_id = n.id) AS child_count "
-                "FROM nodes n "
-                "WHERE n.hub_project_id IS NOT NULL"
-            )
+            select(
+                nodes.c.id.label("node_id"),
+                nodes.c.hub_project_id,
+                nodes.c.label,
+                nodes.c.parent_id,
+                nodes.c.node_type,
+                nodes.c.path,
+                nodes.c.depth,
+                nodes.c.icon,
+                nodes.c.color,
+                child_count_sq,
+            ).where(nodes.c.hub_project_id.isnot(None))
         ).fetchall()
         return {r.hub_project_id: dict(r._mapping) for r in rows}
 
@@ -90,15 +104,27 @@ def get_team(team_id: str):
         team["content_counts"] = {r.source: r.count for r in counts}
 
         # Enrich with node metadata
+        children = nodes.alias("c")
+        child_count_sq = (
+            select(func.count())
+            .select_from(children)
+            .where(children.c.parent_id == nodes.c.id)
+            .correlate(nodes)
+            .scalar_subquery()
+            .label("child_count")
+        )
         node = conn.execute(
-            text(
-                "SELECT n.id AS node_id, n.parent_id, n.label, n.node_type, "
-                "n.path, n.depth, n.icon, n.color, "
-                "(SELECT COUNT(*) FROM nodes c WHERE c.parent_id = n.id) AS child_count "
-                "FROM nodes n "
-                "WHERE n.hub_project_id = :team_id"
-            ),
-            {"team_id": team_id},
+            select(
+                nodes.c.id.label("node_id"),
+                nodes.c.parent_id,
+                nodes.c.label,
+                nodes.c.node_type,
+                nodes.c.path,
+                nodes.c.depth,
+                nodes.c.icon,
+                nodes.c.color,
+                child_count_sq,
+            ).where(nodes.c.hub_project_id == team_id)
         ).fetchone()
         if node:
             team["node_id"] = node.node_id

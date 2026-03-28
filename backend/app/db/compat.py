@@ -76,6 +76,17 @@ def date_trunc_day(col: Column):
     return func.date_trunc("day", col)
 
 
+def start_of_month():
+    """First moment of the current month.
+
+    SQLite  -> date('now', 'start of month')
+    PG      -> date_trunc('month', now())
+    """
+    if _IS_SQLITE:
+        return func.date("now", "start of month")
+    return func.date_trunc("month", func.now())
+
+
 # ---------------------------------------------------------------------------
 # Upsert helper
 # ---------------------------------------------------------------------------

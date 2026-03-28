@@ -14,8 +14,9 @@ import re
 import uuid
 from datetime import datetime, timezone
 
-from sqlalchemy import select, insert, update, text
+from sqlalchemy import select, insert, update
 
+from app.db.compat import days_ago, now
 from app.db.session import get_db
 from app.db.tables import (
     nodes, agents, project_context, handoffs, workflows,
@@ -273,7 +274,7 @@ def build_knowledge_context(
                 emails = conn.execute(
                     select(hub_content.c.title, hub_content.c.summary, hub_content.c.source, hub_content.c.created_at)
                     .where(hub_content.c.source.in_(["email", "outlook"]))
-                    .where(hub_content.c.created_at >= text("datetime('now', '-7 days')"))
+                    .where(hub_content.c.created_at >= days_ago(7))
                     .order_by(hub_content.c.created_at.desc())
                     .limit(5)
                 ).fetchall()
@@ -297,7 +298,7 @@ def build_knowledge_context(
                 jira_items = conn.execute(
                     select(hub_content.c.title, hub_content.c.summary, hub_content.c.source, hub_content.c.created_at)
                     .where(hub_content.c.source.in_(["jira", "jira_ticket"]))
-                    .where(hub_content.c.created_at >= text("datetime('now', '-7 days')"))
+                    .where(hub_content.c.created_at >= days_ago(7))
                     .order_by(hub_content.c.created_at.desc())
                     .limit(5)
                 ).fetchall()
@@ -509,18 +510,19 @@ def create_platform_todos_from_text(
                 due_hint = extract_due_date(desc)
 
                 conn.execute(
-                    text(
-                        "INSERT INTO todo_overrides "
-                        "(hub_todo_id, title, status, priority, owner, due_date, "
-                        "project_id, source_type, source_content_id, "
-                        "is_platform_native, created_at) "
-                        "VALUES (:id, :title, 'open', 'medium', :owner, :due, "
-                        ":project_id, 'extracted', :source_cid, 1, datetime('now'))"
-                    ),
-                    {
-                        "id": todo_id, "title": desc, "owner": owner, "due": due_hint,
-                        "project_id": project_id, "source_cid": source_content_id,
-                    },
+                    insert(todo_overrides).values(
+                        hub_todo_id=todo_id,
+                        title=desc,
+                        status="open",
+                        priority="medium",
+                        owner=owner,
+                        due_date=due_hint,
+                        project_id=project_id,
+                        source_type="extracted",
+                        source_content_id=source_content_id,
+                        is_platform_native=1,
+                        created_at=now(),
+                    )
                 )
                 created.append({
                     "id": todo_id,
@@ -700,7 +702,7 @@ def _advance_workflow(conn, agent_id: str, agent_role: str, node_id: str) -> Non
             .where(handoffs.c.node_id == node_id)
             .where(handoffs.c.to_role == agent_role)
             .where(handoffs.c.status == "in_progress")
-            .values(status="completed", completed_at=text("datetime('now')"))
+            .values(status="completed", completed_at=now())
         )
 
         next_step = current + 1
@@ -722,13 +724,13 @@ def _advance_workflow(conn, agent_id: str, agent_role: str, node_id: str) -> Non
             conn.execute(
                 update(workflows)
                 .where(workflows.c.id == workflow.id)
-                .values(current_step=next_step, updated_at=text("datetime('now')"))
+                .values(current_step=next_step, updated_at=now())
             )
         else:
             conn.execute(
                 update(workflows)
                 .where(workflows.c.id == workflow.id)
-                .values(status="completed", updated_at=text("datetime('now')"))
+                .values(status="completed", updated_at=now())
             )
 
         log.info("workflow_advanced", extra={

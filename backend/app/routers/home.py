@@ -7,10 +7,10 @@ from pathlib import Path
 
 import structlog
 from fastapi import APIRouter
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func
 
 from app.db.session import get_db
-from app.db.compat import today as today_sql
+from app.db.compat import today as today_sql, start_of_month
 from app.db.tables import (
     hub_content, hub_project_content, hub_drafts, hub_todos,
     hub_projects, hub_api_costs, hub_sync_state,
@@ -308,7 +308,7 @@ def get_home():
         try:
             row = conn.execute(
                 select(func.coalesce(func.sum(hub_api_costs.c.cost_usd), 0).label("total"))
-                .where(hub_api_costs.c.created_at >= text("date('now', 'start of month')"))
+                .where(hub_api_costs.c.created_at >= start_of_month())
             ).fetchone()
             result["costs"]["month_usd"] += round(row.total, 4) if row else 0.0
         except Exception:
@@ -340,7 +340,7 @@ def get_home():
         try:
             row = conn.execute(
                 select(func.coalesce(func.sum(cost_ledger.c.cost_usd), 0).label("total"))
-                .where(cost_ledger.c.created_at >= text("date('now', 'start of month')"))
+                .where(cost_ledger.c.created_at >= start_of_month())
             ).fetchone()
             result["costs"]["month_usd"] += round(row.total, 4) if row else 0.0
         except Exception:

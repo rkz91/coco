@@ -6,11 +6,12 @@ import uuid
 
 from fastapi import APIRouter, HTTPException, Query
 from sse_starlette.sse import EventSourceResponse
-from sqlalchemy import select, insert, update, delete, text
+from sqlalchemy import select, insert, update, delete, func
 
 from app.config import CHAT_TIMEOUT_MINUTES, USE_AGENT_SDK
 from app.db.session import get_db
 from app.db.tables import chat_sessions, chat_messages, hub_content
+from app.db.compat import now
 from app.services.chat_context import build_chat_context
 from app.models.chat import ChatRequest, MessageOut, SessionCreate, SessionOut
 
@@ -40,22 +41,17 @@ def _create_session(title: str | None = None, model: str | None = "sonnet") -> d
 
 def _update_session_after_message(session_id: str, title: str | None = None):
     with get_db() as conn:
+        values: dict = {
+            "message_count": chat_sessions.c.message_count + 1,
+            "updated_at": now(),
+        }
         if title:
-            conn.execute(
-                text(
-                    "UPDATE chat_sessions SET message_count = message_count + 1, "
-                    "updated_at = datetime('now'), title = :title WHERE id = :id"
-                ),
-                {"title": title, "id": session_id},
-            )
-        else:
-            conn.execute(
-                text(
-                    "UPDATE chat_sessions SET message_count = message_count + 1, "
-                    "updated_at = datetime('now') WHERE id = :id"
-                ),
-                {"id": session_id},
-            )
+            values["title"] = title
+        conn.execute(
+            update(chat_sessions)
+            .where(chat_sessions.c.id == session_id)
+            .values(**values)
+        )
 
 
 def _save_message(
@@ -94,7 +90,8 @@ def list_sessions():
             sessions = [dict(r._mapping) for r in rows]
 
             orphan_count_row = conn.execute(
-                select(text("COUNT(*) as cnt")).select_from(chat_messages)
+                select(func.count().label("cnt"))
+                .select_from(chat_messages)
                 .where(chat_messages.c.session_id.is_(None))
             ).fetchone()
             orphan_count = orphan_count_row.cnt if orphan_count_row else 0
@@ -102,9 +99,9 @@ def list_sessions():
             if orphan_count > 0:
                 ts = conn.execute(
                     select(
-                        text("MIN(created_at) as first_at"),
-                        text("MAX(created_at) as last_at"),
-                    ).select_from(chat_messages)
+                        func.min(chat_messages.c.created_at).label("first_at"),
+                        func.max(chat_messages.c.created_at).label("last_at"),
+                    )
                     .where(chat_messages.c.session_id.is_(None))
                 ).fetchone()
                 sessions.append({

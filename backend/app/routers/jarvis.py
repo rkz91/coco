@@ -12,9 +12,10 @@ from urllib.parse import urlencode
 
 import structlog
 from fastapi import APIRouter, Query
-from sqlalchemy import select, insert, delete, text, func
+from sqlalchemy import select, insert, delete, func
 
 from app.config import USE_AGENT_SDK
+from app.db.compat import today, now, upsert
 from app.db.session import get_db
 from app.db.tables import (
     hub_todos, hub_projects, hub_drafts, hub_sync_state,
@@ -243,13 +244,16 @@ async def cmd_overdue(**_) -> CommandResponse:
     try:
         with get_db() as conn:
             rows = conn.execute(
-                text(
-                    "SELECT t.id, t.title, t.status, t.priority, t.due_date, t.project_id, "
-                    "p.name as project_name "
-                    "FROM hub_todos t LEFT JOIN hub_projects p ON t.project_id = p.id "
-                    "WHERE t.status = 'open' AND t.due_date < date('now', 'localtime') "
-                    "ORDER BY t.due_date ASC LIMIT 10"
+                select(
+                    hub_todos.c.id, hub_todos.c.title, hub_todos.c.status,
+                    hub_todos.c.priority, hub_todos.c.due_date, hub_todos.c.project_id,
+                    hub_projects.c.name.label("project_name"),
                 )
+                .select_from(hub_todos.outerjoin(hub_projects, hub_todos.c.project_id == hub_projects.c.id))
+                .where(hub_todos.c.status == "open")
+                .where(hub_todos.c.due_date < today())
+                .order_by(hub_todos.c.due_date.asc())
+                .limit(10)
             ).fetchall()
             if not rows:
                 return CommandResponse(
@@ -275,12 +279,15 @@ async def cmd_decide(**_) -> CommandResponse:
     try:
         with get_db() as conn:
             rows = conn.execute(
-                text(
-                    "SELECT d.id, d.project_id, d.template, d.section, d.status, d.created_at, "
-                    "p.name as project_name "
-                    "FROM hub_drafts d LEFT JOIN hub_projects p ON d.project_id = p.id "
-                    "WHERE d.status = 'pending' ORDER BY d.created_at DESC LIMIT 10"
+                select(
+                    hub_drafts.c.id, hub_drafts.c.project_id, hub_drafts.c.template,
+                    hub_drafts.c.section, hub_drafts.c.status, hub_drafts.c.created_at,
+                    hub_projects.c.name.label("project_name"),
                 )
+                .select_from(hub_drafts.outerjoin(hub_projects, hub_drafts.c.project_id == hub_projects.c.id))
+                .where(hub_drafts.c.status == "pending")
+                .order_by(hub_drafts.c.created_at.desc())
+                .limit(10)
             ).fetchall()
             if not rows:
                 return CommandResponse(
@@ -310,13 +317,16 @@ async def cmd_todos(**_) -> CommandResponse:
     try:
         with get_db() as conn:
             rows = conn.execute(
-                text(
-                    "SELECT t.id, t.title, t.status, t.priority, t.due_date, t.project_id, "
-                    "p.name as project_name "
-                    "FROM hub_todos t LEFT JOIN hub_projects p ON t.project_id = p.id "
-                    "WHERE t.status = 'open' AND t.priority = 'high' "
-                    "ORDER BY t.due_date ASC NULLS LAST LIMIT 10"
+                select(
+                    hub_todos.c.id, hub_todos.c.title, hub_todos.c.status,
+                    hub_todos.c.priority, hub_todos.c.due_date, hub_todos.c.project_id,
+                    hub_projects.c.name.label("project_name"),
                 )
+                .select_from(hub_todos.outerjoin(hub_projects, hub_todos.c.project_id == hub_projects.c.id))
+                .where(hub_todos.c.status == "open")
+                .where(hub_todos.c.priority == "high")
+                .order_by(hub_todos.c.due_date.asc().nullslast())
+                .limit(10)
             ).fetchall()
             total_row = conn.execute(
                 select(func.count().label("cnt"))
@@ -529,7 +539,7 @@ async def cmd_next_decision(**_) -> CommandResponse:
                 todo = conn.execute(
                     select(hub_todos.c.id, hub_todos.c.title, hub_todos.c.priority, hub_todos.c.due_date)
                     .where(hub_todos.c.status == "open")
-                    .where(hub_todos.c.due_date < text("date('now')"))
+                    .where(hub_todos.c.due_date < today())
                     .where(hub_todos.c.id.notin_(overridden_ids))
                     .order_by(hub_todos.c.due_date)
                     .limit(1)
@@ -538,7 +548,7 @@ async def cmd_next_decision(**_) -> CommandResponse:
                 todo = conn.execute(
                     select(hub_todos.c.id, hub_todos.c.title, hub_todos.c.priority, hub_todos.c.due_date)
                     .where(hub_todos.c.status == "open")
-                    .where(hub_todos.c.due_date < text("date('now')"))
+                    .where(hub_todos.c.due_date < today())
                     .order_by(hub_todos.c.due_date)
                     .limit(1)
                 ).fetchone()
@@ -571,11 +581,12 @@ async def cmd_voice_approve(**_) -> CommandResponse:
     if item_type == "draft":
         with get_db() as conn:
             conn.execute(
-                text(
-                    "INSERT OR REPLACE INTO draft_decisions (id, hub_draft_id, status, decided_by) "
-                    "VALUES (:id, :draft_id, 'approved', 'voice')"
-                ),
-                {"id": uuid.uuid4().hex, "draft_id": item_id},
+                upsert(
+                    draft_decisions,
+                    values={"id": uuid.uuid4().hex, "hub_draft_id": item_id, "status": "approved", "decided_by": "voice", "decided_at": datetime.now(timezone.utc).isoformat()},
+                    conflict_columns=["id"],
+                    update_columns=["status", "decided_by", "decided_at"],
+                )
             )
         _voice_queue_state.update(current_item=None, current_type=None, current_id=None)
         return CommandResponse(reply="Approved. Say 'next' for the next item.", cards=[])
@@ -583,11 +594,12 @@ async def cmd_voice_approve(**_) -> CommandResponse:
     elif item_type == "todo":
         with get_db() as conn:
             conn.execute(
-                text(
-                    "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) "
-                    "VALUES (:id, 'done', datetime('now'))"
-                ),
-                {"id": item_id},
+                upsert(
+                    todo_overrides,
+                    values={"hub_todo_id": item_id, "status": "done", "updated_at": datetime.now(timezone.utc).isoformat()},
+                    conflict_columns=["hub_todo_id"],
+                    update_columns=["status", "updated_at"],
+                )
             )
         _voice_queue_state.update(current_item=None, current_type=None, current_id=None)
         return CommandResponse(reply="Marked done. Say 'next' for the next item.", cards=[])
@@ -605,11 +617,12 @@ async def cmd_voice_reject(**_) -> CommandResponse:
     if item_type == "draft":
         with get_db() as conn:
             conn.execute(
-                text(
-                    "INSERT OR REPLACE INTO draft_decisions (id, hub_draft_id, status, decided_by) "
-                    "VALUES (:id, :draft_id, 'rejected', 'voice')"
-                ),
-                {"id": uuid.uuid4().hex, "draft_id": item_id},
+                upsert(
+                    draft_decisions,
+                    values={"id": uuid.uuid4().hex, "hub_draft_id": item_id, "status": "rejected", "decided_by": "voice", "decided_at": datetime.now(timezone.utc).isoformat()},
+                    conflict_columns=["id"],
+                    update_columns=["status", "decided_by", "decided_at"],
+                )
             )
         _voice_queue_state.update(current_item=None, current_type=None, current_id=None)
         return CommandResponse(reply="Rejected. Say 'next' for the next item.", cards=[])
@@ -617,11 +630,12 @@ async def cmd_voice_reject(**_) -> CommandResponse:
     elif item_type == "todo":
         with get_db() as conn:
             conn.execute(
-                text(
-                    "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) "
-                    "VALUES (:id, 'archived', datetime('now'))"
-                ),
-                {"id": item_id},
+                upsert(
+                    todo_overrides,
+                    values={"hub_todo_id": item_id, "status": "archived", "updated_at": datetime.now(timezone.utc).isoformat()},
+                    conflict_columns=["hub_todo_id"],
+                    update_columns=["status", "updated_at"],
+                )
             )
         _voice_queue_state.update(current_item=None, current_type=None, current_id=None)
         return CommandResponse(reply="Skipped. Say 'next' for the next item.", cards=[])
@@ -643,11 +657,12 @@ async def cmd_voice_defer(**_) -> CommandResponse:
     elif item_type == "todo":
         with get_db() as conn:
             conn.execute(
-                text(
-                    "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) "
-                    "VALUES (:id, 'deferred', datetime('now'))"
-                ),
-                {"id": item_id},
+                upsert(
+                    todo_overrides,
+                    values={"hub_todo_id": item_id, "status": "deferred", "updated_at": datetime.now(timezone.utc).isoformat()},
+                    conflict_columns=["hub_todo_id"],
+                    update_columns=["status", "updated_at"],
+                )
             )
         _voice_queue_state.update(current_item=None, current_type=None, current_id=None)
         return CommandResponse(reply="Deferred. What's next?", cards=[])

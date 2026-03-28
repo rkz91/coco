@@ -1,9 +1,9 @@
 import logging
 
 from fastapi import APIRouter
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func
 from app.db.session import get_db
-from app.db.compat import today, days_ago, date_trunc_day
+from app.db.compat import today, days_ago, date_trunc_day, start_of_month
 from app.db.tables import (
     hub_projects, hub_content, hub_project_content, hub_drafts,
     hub_api_costs, hub_sync_state,
@@ -196,7 +196,7 @@ def get_dashboard(node_id: str | None = None, subtree: bool = True):
             row = conn.execute(stmt).fetchone()
             result["costs"]["today_usd"] = round(row.total, 4) if row else 0.0
 
-            stmt = select(func.coalesce(func.sum(cost_ledger.c.cost_usd), 0).label("total")).where(cost_ledger.c.created_at >= text("date('now', 'start of month')"))
+            stmt = select(func.coalesce(func.sum(cost_ledger.c.cost_usd), 0).label("total")).where(cost_ledger.c.created_at >= start_of_month())
             if node_ids is not None:
                 stmt = stmt.where(cost_ledger.c.node_id.in_(node_ids))
             row = conn.execute(stmt).fetchone()
@@ -214,7 +214,7 @@ def get_dashboard(node_id: str | None = None, subtree: bool = True):
 
             row = conn.execute(
                 select(func.coalesce(func.sum(hub_api_costs.c.cost_usd), 0).label("total"))
-                .where(hub_api_costs.c.created_at >= text("date('now', 'start of month')"))
+                .where(hub_api_costs.c.created_at >= start_of_month())
             ).fetchone()
             result["costs"]["month_usd"] += round(row.total, 4) if row else 0.0
         except Exception:

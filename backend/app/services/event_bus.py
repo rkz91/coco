@@ -9,28 +9,24 @@ from __future__ import annotations
 
 import asyncio
 import json
-import sqlite3
 import time
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import AsyncGenerator
 
 import structlog
+from sqlalchemy import delete, insert, select
 
-from app.config import EVENTS_JSONL_PATH, PLATFORM_DB_PATH
+from app.config import EVENTS_JSONL_PATH
+from app.db.compat import now
+from app.db.engine import engine
+from app.db.tables import events
 
 log = structlog.get_logger()
 
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _get_conn() -> sqlite3.Connection:
-    conn = sqlite3.connect(str(PLATFORM_DB_PATH), timeout=5)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=3000")
-    return conn
 
 
 def _iso_now() -> str:
@@ -52,15 +48,15 @@ class EventBus:
     def _persist(self, event_type: str, data_json: str) -> None:
         """Write event to DB. Called synchronously; errors are swallowed."""
         try:
-            conn = _get_conn()
-            try:
+            with engine.connect() as conn:
                 conn.execute(
-                    "INSERT INTO events (event_type, data_json, created_at) VALUES (?, ?, ?)",
-                    (event_type, data_json, _iso_now()),
+                    insert(events).values(
+                        event_type=event_type,
+                        data_json=data_json,
+                        created_at=now(),
+                    )
                 )
                 conn.commit()
-            finally:
-                conn.close()
         except Exception as exc:
             # Never let persistence failure break the live event path
             log.warning("event_persist_failed", event_type=event_type, error=str(exc))
@@ -136,16 +132,13 @@ class EventBus:
         Returns a list of SSE-ready dicts: ``{"event": ..., "data": ...}``.
         """
         try:
-            conn = _get_conn()
-            try:
+            with engine.connect() as conn:
                 rows = conn.execute(
-                    "SELECT event_type, data_json FROM events "
-                    "WHERE created_at > ? ORDER BY id ASC",
-                    (since,),
+                    select(events.c.event_type, events.c.data_json)
+                    .where(events.c.created_at > since)
+                    .order_by(events.c.id.asc())
                 ).fetchall()
-                return [{"event": r["event_type"], "data": r["data_json"]} for r in rows]
-            finally:
-                conn.close()
+                return [{"event": r.event_type, "data": r.data_json} for r in rows]
         except Exception as exc:
             log.warning("event_replay_failed", since=since, error=str(exc))
             return []
@@ -156,16 +149,15 @@ class EventBus:
             "%Y-%m-%dT%H:%M:%S.%fZ"
         )
         try:
-            conn = _get_conn()
-            try:
-                cur = conn.execute("DELETE FROM events WHERE created_at < ?", (cutoff,))
+            with engine.connect() as conn:
+                result = conn.execute(
+                    delete(events).where(events.c.created_at < cutoff)
+                )
                 conn.commit()
-                deleted = cur.rowcount
+                deleted = result.rowcount
                 if deleted:
                     log.info("events_cleaned_up", deleted=deleted, cutoff=cutoff)
                 return deleted
-            finally:
-                conn.close()
         except Exception as exc:
             log.warning("event_cleanup_failed", error=str(exc))
             return 0

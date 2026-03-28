@@ -1,34 +1,21 @@
 """Utilities for node-tree (materialized path) queries.
 
-Works with both sqlite3.Connection and sqlalchemy.Connection.
+Works with sqlalchemy.engine.Connection.
 """
 
 from __future__ import annotations
 
-import sqlite3
 from sqlalchemy import text
+from sqlalchemy.engine import Connection
 
 
-def get_subtree_node_ids(db, node_id: str) -> list[str]:
+def get_subtree_node_ids(db: Connection, node_id: str) -> list[str]:
     """Get all node IDs in the subtree rooted at *node_id* (inclusive).
 
     Uses the materialized ``path`` column on the ``nodes`` table.
     If the node is not found, falls back to returning ``[node_id]`` so callers
     can still filter safely.
-
-    Accepts either a sqlite3.Connection or a sqlalchemy.Connection.
     """
-    if isinstance(db, sqlite3.Connection):
-        row = db.execute("SELECT path FROM nodes WHERE id = ?", (node_id,)).fetchone()
-        if not row:
-            return [node_id]
-        path = row["path"] if isinstance(row, sqlite3.Row) else row[0]
-        rows = db.execute(
-            "SELECT id FROM nodes WHERE path LIKE ? || '%'", (path,)
-        ).fetchall()
-        return [r["id"] if isinstance(r, sqlite3.Row) else r[0] for r in rows]
-
-    # SA Connection
     row = db.execute(text("SELECT path FROM nodes WHERE id = :nid"), {"nid": node_id}).fetchone()
     if not row:
         return [node_id]
@@ -38,7 +25,7 @@ def get_subtree_node_ids(db, node_id: str) -> list[str]:
 
 
 def build_node_id_filter(
-    db,
+    db: Connection,
     node_id: str | None,
     subtree: bool,
     column: str = "node_id",

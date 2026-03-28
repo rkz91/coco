@@ -4,8 +4,11 @@ SQLite: uses FTS5 on hub_content_fts virtual table (falls back to LIKE).
 PostgreSQL: tsvector (future — falls back to LIKE for now).
 """
 
-import sqlite3
-from app.config import PLATFORM_DB_PATH
+from sqlalchemy import func, select, text
+
+from app.db.compat import _IS_SQLITE
+from app.db.engine import engine
+from app.db.tables import hub_content
 
 
 def search_content(
@@ -18,28 +21,29 @@ def search_content(
 
     Returns {"items": [dict, ...], "total": int}.
     """
-    conn = sqlite3.connect(str(PLATFORM_DB_PATH), timeout=10)
-    conn.row_factory = sqlite3.Row
-    try:
-        result = _fts5_search(conn, query, limit, offset, source_filter)
-        if result is not None:
-            return result
+    with engine.connect() as conn:
+        if _IS_SQLITE:
+            result = _fts5_search(conn, query, limit, offset, source_filter)
+            if result is not None:
+                return result
+        else:
+            result = _tsvector_search(conn, query, limit, offset, source_filter)
+            if result is not None:
+                return result
         return _like_search(conn, query, limit, offset, source_filter)
-    finally:
-        conn.close()
 
 
 def _fts5_search(
-    conn: sqlite3.Connection,
+    conn,
     query: str,
     limit: int,
     offset: int,
     source_filter: str | None,
 ) -> dict | None:
-    """Try FTS5 search. Returns None if the virtual table doesn't exist."""
+    """Try FTS5 search (SQLite only). Returns None if the virtual table doesn't exist."""
     try:
         # Verify FTS5 table exists
-        conn.execute("SELECT 1 FROM hub_content_fts LIMIT 1")
+        conn.execute(text("SELECT 1 FROM hub_content_fts LIMIT 1"))
     except Exception:
         return None
 
@@ -52,24 +56,24 @@ def _fts5_search(
             params["source"] = source_filter
 
         total = conn.execute(
-            f"""
-            SELECT COUNT(*) FROM hub_content c
-            JOIN hub_content_fts f ON c.rowid = f.rowid
-            WHERE hub_content_fts MATCH :q {source_clause}
-            """,
+            text(
+                f"SELECT COUNT(*) FROM hub_content c "
+                f"JOIN hub_content_fts f ON c.rowid = f.rowid "
+                f"WHERE hub_content_fts MATCH :q {source_clause}"
+            ),
             params,
-        ).fetchone()[0]
+        ).scalar_one()
 
         rows = conn.execute(
-            f"""
-            SELECT c.*, rank FROM hub_content c
-            JOIN hub_content_fts f ON c.rowid = f.rowid
-            WHERE hub_content_fts MATCH :q {source_clause}
-            ORDER BY rank
-            LIMIT :limit OFFSET :offset
-            """,
+            text(
+                f"SELECT c.*, rank FROM hub_content c "
+                f"JOIN hub_content_fts f ON c.rowid = f.rowid "
+                f"WHERE hub_content_fts MATCH :q {source_clause} "
+                f"ORDER BY rank "
+                f"LIMIT :limit OFFSET :offset"
+            ),
             params,
-        ).fetchall()
+        ).mappings().all()
 
         return {
             "items": [dict(r) for r in rows],
@@ -80,33 +84,51 @@ def _fts5_search(
         return None
 
 
+def _tsvector_search(
+    conn,
+    query: str,
+    limit: int,
+    offset: int,
+    source_filter: str | None,
+) -> dict | None:
+    """PostgreSQL tsvector search stub.
+
+    TODO: Implement proper tsvector search with ts_query, ts_rank, and a
+    GIN index on hub_content.  For now, returns None to fall through to
+    the LIKE fallback.
+    """
+    return None
+
+
 def _like_search(
-    conn: sqlite3.Connection,
+    conn,
     query: str,
     limit: int,
     offset: int,
     source_filter: str | None,
 ) -> dict:
-    """Fallback LIKE search on hub_content."""
+    """Fallback LIKE search on hub_content using SA Core."""
+    c = hub_content.c
     pattern = f"%{query}%"
-    params: dict = {"pattern": pattern, "limit": limit, "offset": offset}
 
-    source_clause = ""
+    # Use actual DB column names via the table object.
+    # hub_content.c.body maps to raw_text, hub_content.c.summary maps to processed_text
+    where = (c.title.like(pattern)) | (c.body.like(pattern)) | (c.summary.like(pattern))
+
     if source_filter:
-        source_clause = "AND source = :source"
-        params["source"] = source_filter
-
-    where = f"(title LIKE :pattern OR raw_text LIKE :pattern OR processed_text LIKE :pattern) {source_clause}"
+        where = where & (c.source == source_filter)
 
     total = conn.execute(
-        f"SELECT COUNT(*) FROM hub_content WHERE {where}",
-        params,
-    ).fetchone()[0]
+        select(func.count()).select_from(hub_content).where(where)
+    ).scalar_one()
 
     rows = conn.execute(
-        f"SELECT * FROM hub_content WHERE {where} ORDER BY created_at DESC LIMIT :limit OFFSET :offset",
-        params,
-    ).fetchall()
+        select(hub_content)
+        .where(where)
+        .order_by(hub_content.c.created_at.desc())
+        .limit(limit)
+        .offset(offset)
+    ).mappings().all()
 
     return {
         "items": [dict(r) for r in rows],

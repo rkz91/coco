@@ -1,9 +1,9 @@
 import uuid
 from fastapi import APIRouter, HTTPException, Query
-from sqlalchemy import select, func, text
+from sqlalchemy import select, func
 from app.db.session import get_db
 from app.db.tables import cost_ledger, budgets, hub_api_costs
-from app.db.compat import days_ago, date_trunc_day
+from app.db.compat import days_ago, date_trunc_day, upsert
 from app.db.tree_utils import build_node_id_filter
 from app.models.costs import CreateBudgetBody
 
@@ -174,14 +174,16 @@ def create_or_update_budget(body: CreateBudgetBody):
 
     with get_db() as conn:
         conn.execute(
-            text(
-                "INSERT INTO budgets (project_id, monthly_cap_usd, alert_threshold_pct) "
-                "VALUES (:pid, :cap, :thresh) "
-                "ON CONFLICT(project_id) DO UPDATE SET "
-                "monthly_cap_usd = excluded.monthly_cap_usd, "
-                "alert_threshold_pct = excluded.alert_threshold_pct"
-            ),
-            {"pid": project_id, "cap": monthly_cap, "thresh": alert_threshold},
+            upsert(
+                budgets,
+                values={
+                    "project_id": project_id,
+                    "monthly_cap_usd": monthly_cap,
+                    "alert_threshold_pct": alert_threshold,
+                },
+                conflict_columns=["project_id"],
+                update_columns=["monthly_cap_usd", "alert_threshold_pct"],
+            )
         )
         row = conn.execute(
             select(

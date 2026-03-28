@@ -170,11 +170,32 @@ CREATE TABLE podcasts (
 
 ## Risk Register
 
-| Risk | Mitigation |
-|------|------------|
-| `stream-json` format changes between Claude versions | Loose parser with graceful fallback; version-detect header |
-| TTS quality degrades on long scripts | Chunk at sentence boundaries, max 3 minutes |
-| Replay HTML file size too large | Cap at 1000 events, compress inline assets |
+### Risk 1: `stream-json` format changes across Claude versions
+
+**Mitigations:**
+- Detect CLI version at agent spawn (`claude --version`), store in `agent_runs` table
+- Versioned parser registry — each parser handles a known schema shape
+- Unknown event types stored raw (`type: "unknown"`), never dropped
+- `replay_schema_version` field on `agent_replays` for backward compat
+- Integration test with fixture file per known CLI version
+
+### Risk 2: TTS quality degrades on long scripts
+
+**Mitigations:**
+- Sentence-boundary chunking — split at `.` `!` `?`, max 200 chars per chunk
+- Silence insertion — 300ms between chunks, 600ms between sections
+- Hard cap at 3 minutes (~450 words), truncate gracefully
+- Quality gate — if audio duration off by >20% from expected, fall back to Edge TTS
+
+### Risk 3: Replay HTML file size too large
+
+**Mitigations:**
+- Event cap 1000 + diff content cap 500KB
+- Virtual scroll — only render visible timeline window
+- Diff compression — store unified format, expand client-side
+- Prism.js subset — JS/TS/Python/CSS only (~40KB vs ~200KB)
+- Auto-summarize if pre-gzip > 2MB (collapse consecutive low-signal events)
+- Share endpoint serves with `Content-Encoding: gzip`
 
 ---
 
