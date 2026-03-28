@@ -7,7 +7,7 @@ import uuid
 from fastapi import APIRouter, HTTPException, Query
 from sse_starlette.sse import EventSourceResponse
 
-from app.config import CHAT_TIMEOUT_MINUTES
+from app.config import CHAT_TIMEOUT_MINUTES, USE_AGENT_SDK
 from app.db.connections import get_platform_db
 from app.services.chat_context import build_chat_context
 from app.models.chat import ChatRequest, MessageOut, SessionCreate, SessionOut
@@ -187,8 +187,90 @@ async def _check_claude_available() -> bool:
         return False
 
 
+async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str, session_id: str | None = None):
+    """SDK-based streaming chat generator. Used when USE_AGENT_SDK is enabled."""
+    from app.services.agent_sdk_client import agent_sdk, calculate_cost
+
+    full_response = ""
+    input_tokens = 0
+    output_tokens = 0
+    response_model = model
+
+    try:
+        async for event in agent_sdk.stream_chat(
+            prompt=message,
+            model=model,
+            system=system_prompt,
+            max_tokens=8192,
+        ):
+            event_type = event.get("type")
+            if event_type == "token":
+                token = event.get("content", "")
+                full_response += token
+                yield {"event": "token", "data": json.dumps({"type": "token", "content": token})}
+            elif event_type == "usage":
+                input_tokens = event.get("input_tokens", 0)
+                output_tokens = event.get("output_tokens", 0)
+                response_model = event.get("model", model)
+            elif event_type == "done":
+                # Final content from stream (already accumulated via tokens)
+                if not full_response:
+                    full_response = event.get("content", "")
+    except Exception as e:
+        logger.exception("SDK chat stream error: %s", e)
+        yield {"event": "error", "data": json.dumps({"type": "error", "message": f"SDK stream error: {str(e)}"})}
+        if full_response:
+            _save_message("assistant", full_response, model, session_id=session_id)
+            if session_id:
+                _update_session_after_message(session_id)
+        return
+
+    # Save assistant message with real token count
+    tokens_used = input_tokens + output_tokens
+    if full_response:
+        _save_message("assistant", full_response, model, tokens_used, session_id=session_id)
+        if session_id:
+            with get_platform_db() as db:
+                row = db.execute("SELECT title FROM chat_sessions WHERE id = ?", (session_id,)).fetchone()
+                if row and row["title"] == "New Chat":
+                    # Use first 50 chars of the user message (passed in `message`) as auto-title
+                    # but message may include context prefix — extract user part
+                    auto_title = message[:50].strip()
+                    if len(message) > 50:
+                        auto_title += "..."
+                    _update_session_after_message(session_id, title=auto_title)
+                else:
+                    _update_session_after_message(session_id)
+
+    # Record real cost to cost_ledger
+    if input_tokens or output_tokens:
+        cost_usd = calculate_cost(response_model, input_tokens, output_tokens)
+        try:
+            with get_platform_db() as db:
+                db.execute(
+                    "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    (uuid.uuid4().hex, None, None, None, response_model, input_tokens, output_tokens, cost_usd, "chat"),
+                )
+                db.commit()
+        except Exception as e:
+            logger.warning("sdk_chat_cost_record_failed: %s", e)
+
+    yield {"event": "done", "data": json.dumps({"type": "done", "content": full_response, "session_id": session_id})}
+
+
 async def chat_event_generator(message: str, model: str, system_prompt: str, session_id: str | None = None):
     """Async generator yielding SSE event dicts for EventSourceResponse."""
+
+    # --- SDK path (preferred when enabled) ---
+    if USE_AGENT_SDK:
+        from app.services.agent_sdk_client import agent_sdk
+        if agent_sdk.is_available():
+            async for evt in _sdk_chat_event_generator(message, model, system_prompt, session_id):
+                yield evt
+            return
+
+    # --- Subprocess path (fallback) ---
     env = {**os.environ}
     env.pop("CLAUDE_CODE_ENTRYPOINT", None)
 
@@ -357,9 +439,13 @@ async def chat(req: ChatRequest):
     if len(req.message) > 50000:
         raise HTTPException(status_code=400, detail="Message too long (max 50,000 characters)")
 
-    # Check claude is available
-    if not await _check_claude_available():
-        raise HTTPException(status_code=503, detail="claude CLI is not installed or not on PATH")
+    # Check claude is available (SDK path doesn't need CLI)
+    sdk_available = False
+    if USE_AGENT_SDK:
+        from app.services.agent_sdk_client import agent_sdk
+        sdk_available = agent_sdk.is_available()
+    if not sdk_available and not await _check_claude_available():
+        raise HTTPException(status_code=503, detail="claude CLI is not installed or not on PATH (set USE_AGENT_SDK=true to use API instead)")
 
     model = req.model or "sonnet"
 
