@@ -29,6 +29,7 @@ import { BudgetBar } from '../components/costs/BudgetBar';
 import { CostEventsTable } from '../components/costs/CostEventsTable';
 import { PersonCard, type Person } from '../components/people/PersonCard';
 import { PersonDetail } from '../components/people/PersonDetail';
+import { AddPersonDialog } from '../components/people/AddPersonDialog';
 import { ActivityFeed } from '../components/dashboard/ActivityFeed';
 
 const TABS = [
@@ -181,6 +182,7 @@ function AgentsTab({ projectId }: { projectId: string }) {
   const queryClient = useQueryClient();
   const [recruitOpen, setRecruitOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>('');
   const { tree } = useScope();
 
   // Find the tree node_id that matches this hub project ID
@@ -227,10 +229,55 @@ function AgentsTab({ projectId }: { projectId: string }) {
     } catch { /* ignore */ }
   };
 
+  // Status counts for the summary bar
+  const runningCount = agents.filter(a => a.status === 'running').length;
+  const pausedCount = agents.filter(a => a.status === 'paused').length;
+  const idleCount = agents.filter(a => a.status === 'idle').length;
+  const doneCount = agents.filter(a => ['completed', 'failed', 'killed'].includes(a.status)).length;
+
+  // Apply status filter
+  const filteredAgents = statusFilter
+    ? agents.filter(a => a.status === statusFilter)
+    : agents;
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">{agents.length} agent{agents.length !== 1 ? 's' : ''}</span>
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">{agents.length} agent{agents.length !== 1 ? 's' : ''}</span>
+          {agents.length > 0 && (
+            <div className="flex items-center gap-2 text-[10px]">
+              {runningCount > 0 && (
+                <button onClick={() => setStatusFilter(statusFilter === 'running' ? '' : 'running')} className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded-full transition-colors', statusFilter === 'running' ? 'bg-success/20 text-success' : 'text-muted-foreground hover:text-foreground')}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" />
+                  {runningCount} running
+                </button>
+              )}
+              {pausedCount > 0 && (
+                <button onClick={() => setStatusFilter(statusFilter === 'paused' ? '' : 'paused')} className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded-full transition-colors', statusFilter === 'paused' ? 'bg-warning/20 text-warning' : 'text-muted-foreground hover:text-foreground')}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-warning" />
+                  {pausedCount} paused
+                </button>
+              )}
+              {idleCount > 0 && (
+                <button onClick={() => setStatusFilter(statusFilter === 'idle' ? '' : 'idle')} className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded-full transition-colors', statusFilter === 'idle' ? 'bg-muted text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+                  <span className="h-1.5 w-1.5 rounded-full bg-muted-foreground" />
+                  {idleCount} idle
+                </button>
+              )}
+              {doneCount > 0 && (
+                <button onClick={() => setStatusFilter(statusFilter === 'completed' ? '' : 'completed')} className={cn('flex items-center gap-1 px-1.5 py-0.5 rounded-full transition-colors', statusFilter === 'completed' ? 'bg-info/20 text-info' : 'text-muted-foreground hover:text-foreground')}>
+                  {doneCount} done
+                </button>
+              )}
+              {statusFilter && (
+                <button onClick={() => setStatusFilter('')} className="text-muted-foreground hover:text-foreground px-1">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+          )}
+        </div>
         <button
           onClick={() => setRecruitOpen(true)}
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-primary text-primary-foreground rounded-md hover:opacity-90 transition-opacity"
@@ -257,9 +304,14 @@ function AgentsTab({ projectId }: { projectId: string }) {
             Recruit Agent
           </button>
         </div>
+      ) : filteredAgents.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+          <p className="text-sm">No agents with status "{statusFilter}"</p>
+          <button onClick={() => setStatusFilter('')} className="text-xs text-accent hover:underline mt-1">Clear filter</button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {agents.map(agent => (
+          {filteredAgents.map(agent => (
             <AgentCard
               key={agent.id}
               agent={agent}
@@ -573,6 +625,8 @@ function CostsTab({ projectId }: { projectId: string }) {
 
 function PeopleTab({ projectId, projectName }: { projectId: string; projectName: string }) {
   const [selectedSlug, setSelectedSlug] = useState<string | null>(null);
+  const [showAll, setShowAll] = useState(false);
+  const [searchQ, setSearchQ] = useState('');
 
   const { data: peopleData, isLoading } = useQuery<Record<string, Person>>({
     queryKey: ['brain-people'],
@@ -589,29 +643,71 @@ function PeopleTab({ projectId, projectName }: { projectId: string; projectName:
     )
   );
 
+  const displayPeople = showAll ? allPeople : projectPeople;
+
+  // Apply search filter
+  const filteredPeople = searchQ.trim()
+    ? displayPeople.filter(([slug, person]) =>
+        person.full_name.toLowerCase().includes(searchQ.toLowerCase()) ||
+        person.role.toLowerCase().includes(searchQ.toLowerCase()) ||
+        slug.toLowerCase().includes(searchQ.toLowerCase())
+      )
+    : displayPeople;
+
   const selectedPerson = selectedSlug ? peopleData?.[selectedSlug] : null;
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-muted-foreground">
-          {projectPeople.length} {projectPeople.length === 1 ? 'person' : 'people'} associated
-        </span>
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-muted-foreground">
+            {projectPeople.length} {projectPeople.length === 1 ? 'person' : 'people'} associated
+            {showAll && ` (${allPeople.length} total)`}
+          </span>
+          <button
+            onClick={() => setShowAll(!showAll)}
+            className={cn(
+              'text-xs px-2 py-0.5 rounded-full border transition-colors',
+              showAll
+                ? 'border-accent bg-accent/10 text-accent'
+                : 'border-border text-muted-foreground hover:text-foreground hover:border-accent/50'
+            )}
+          >
+            {showAll ? 'Project Only' : 'Show All'}
+          </button>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Filter people..."
+              value={searchQ}
+              onChange={e => setSearchQ(e.target.value)}
+              className="bg-card border border-border rounded-lg pl-8 pr-3 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors w-40"
+            />
+          </div>
+          <AddPersonDialog />
+        </div>
       </div>
 
       {isLoading ? (
         <div className="grid grid-cols-2 gap-3">
           {[1, 2].map(i => <div key={i} className="h-28 bg-muted/50 rounded-xl animate-pulse" />)}
         </div>
-      ) : projectPeople.length === 0 ? (
+      ) : filteredPeople.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
           <Users size={40} className="mb-3 opacity-30" />
-          <p className="text-sm font-medium">No people linked to this project</p>
-          <p className="text-xs mt-1">People are auto-discovered from emails and meetings.</p>
+          <p className="text-sm font-medium">
+            {searchQ ? 'No matching people' : showAll ? 'No people in CoCo yet' : 'No people linked to this project'}
+          </p>
+          <p className="text-xs mt-1">
+            {searchQ ? 'Try a different search term.' : 'People are auto-discovered from emails and meetings, or add one manually.'}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          {projectPeople.map(([slug, person]) => (
+          {filteredPeople.map(([slug, person]) => (
             <PersonCard
               key={slug}
               slug={slug}
