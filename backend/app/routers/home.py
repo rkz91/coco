@@ -380,21 +380,22 @@ def _build_briefing(current: dict) -> dict:
             days = hours_ago / 24
             scenes.append({"type": "context", "text": f"It's been {days:.0f} day{'s' if days >= 2 else ''} since we last spoke."})
 
-    attention = current.get("attention", {})
-    health = current.get("health", [])
-    todos = current.get("todos", {})
-    projects = current.get("projects", [])
+    attention = current.get("attention") or {}
+    health = current.get("health") or []
+    todos = current.get("todos") or {}
+    projects = current.get("projects") or []
 
     # ── Delta-aware scenes: only mention what CHANGED ──
-    stale = [h for h in health if (h.get("stale_hours") or 0) > 24]
+    stale = [h for h in health if h and (h.get("stale_hours") or 0) > 24]
 
     if prev:
-        prev_attn = prev.get("attention", {})
-        prev_todos = prev.get("todos", {})
-        prev_stale_sources = {h["source"] for h in prev.get("health", []) if (h.get("stale_hours") or 0) > 24}
+        prev_attn = prev.get("attention") or {}
+        prev_todos = prev.get("todos") or {}
+        prev_health = prev.get("health") or []
+        prev_stale_sources = {h.get("source", "") for h in prev_health if h and (h.get("stale_hours") or 0) > 24}
 
         # Health: only alert if NEW sources went stale (not already stale last time)
-        newly_stale = [h for h in stale if h["source"] not in prev_stale_sources]
+        newly_stale = [h for h in stale if h.get("source", "") not in prev_stale_sources]
         if newly_stale:
             names = " and ".join(_display_source(h["source"]) for h in newly_stale)
             hrs = newly_stale[0].get("stale_hours")
@@ -407,24 +408,24 @@ def _build_briefing(current: dict) -> dict:
             scenes.append({"type": "action", "text": "Want me to run a process?", "action": "process"})
 
         # Overdue: only if count INCREASED
-        prev_overdue = prev_attn.get("overdue_todos", 0)
-        curr_overdue = attention.get("overdue_todos", 0)
+        prev_overdue = prev_attn.get("overdue_todos") or 0
+        curr_overdue = attention.get("overdue_todos") or 0
         if curr_overdue > prev_overdue:
             diff = curr_overdue - prev_overdue
             scenes.append({"type": "alert", "text": f"{diff} new item{'s' if diff != 1 else ''} went overdue.", "severity": "high"})
         # unchanged overdue = SKIP (don't repeat)
 
         # Drafts: only if count INCREASED
-        prev_drafts = prev_attn.get("pending_drafts", 0)
-        curr_drafts = attention.get("pending_drafts", 0)
+        prev_drafts = prev_attn.get("pending_drafts") or 0
+        curr_drafts = attention.get("pending_drafts") or 0
         if curr_drafts > prev_drafts:
             diff = curr_drafts - prev_drafts
             scenes.append({"type": "metric", "text": f"{diff} new draft{'s' if diff != 1 else ''} to review.", "value": diff, "label": "new drafts"})
         # unchanged drafts = SKIP
 
         # Todos: only if count changed
-        prev_open = prev_todos.get("total_open", 0)
-        curr_open = todos.get("total_open", 0)
+        prev_open = prev_todos.get("total_open") or 0
+        curr_open = todos.get("total_open") or 0
         if curr_open > prev_open:
             diff = curr_open - prev_open
             scenes.append({"type": "metric", "text": f"{diff} new todo{'s' if diff != 1 else ''}.", "value": diff, "label": "new todos"})
@@ -452,10 +453,10 @@ def _build_briefing(current: dict) -> dict:
             })
             scenes.append({"type": "action", "text": "I'd recommend running a process.", "action": "process"})
 
-        overdue = attention.get("overdue_todos", 0)
-        drafts = attention.get("pending_drafts", 0)
-        total_open = todos.get("total_open", 0)
-        high = len(todos.get("high_priority", []))
+        overdue = attention.get("overdue_todos") or 0
+        drafts = attention.get("pending_drafts") or 0
+        total_open = todos.get("total_open") or 0
+        high = len(todos.get("high_priority") or [])
 
         if overdue > 0:
             scenes.append({"type": "alert", "text": f"{overdue} item{'s' if overdue != 1 else ''} overdue.", "severity": "high"})
@@ -468,19 +469,22 @@ def _build_briefing(current: dict) -> dict:
             scenes.append({"type": "metric", "text": msg + ".", "value": total_open, "label": "todos"})
 
     # ── Scene: Project spotlight (only if top project CHANGED or is new) ──
-    active = [p for p in projects if p.get("active") and p.get("todo_open", 0) > 0]
+    active = [p for p in projects if p and p.get("active") and (p.get("todo_open") or 0) > 0]
     if active:
-        top = max(active, key=lambda p: p["todo_open"])
-        if top["todo_open"] >= 5:
+        top = max(active, key=lambda p: p.get("todo_open") or 0)
+        top_open = top.get("todo_open") or 0
+        top_id = top.get("id")
+        if top_open >= 5 and top_id is not None:
             # Only spotlight if this project wasn't the top last time, or its count grew
-            prev_projects = {p["id"]: p.get("todo_open", 0) for p in (prev or {}).get("projects", [])}
-            prev_top_count = prev_projects.get(top["id"], 0)
-            if top["todo_open"] > prev_top_count or top["id"] not in prev_projects:
+            prev_proj_list = (prev or {}).get("projects") or []
+            prev_projects = {p.get("id"): p.get("todo_open", 0) for p in prev_proj_list if p}
+            prev_top_count = prev_projects.get(top_id, 0)
+            if top_open > prev_top_count or top_id not in prev_projects:
                 scenes.append({
                     "type": "spotlight",
-                    "text": f"{top['name']} is picking up — now at {top['todo_open']} open items.",
-                    "project": top.get("id"),
-                    "value": top["todo_open"],
+                    "text": f"{top.get('name', 'A project')} is picking up — now at {top_open} open items.",
+                    "project": top_id,
+                    "value": top_open,
                 })
 
     # ── Closing ──

@@ -1,4 +1,3 @@
-import asyncio
 import subprocess
 import os
 import signal
@@ -20,7 +19,81 @@ class ProcessManager:
         self._readers: dict[str, threading.Thread] = {}
         self._agent_meta: dict[str, dict] = {}  # agent_id -> {node_id, role}
         self._spawn_lock = threading.Lock()
-        self._spawn_semaphore = asyncio.Semaphore(MAX_CONCURRENT_AGENTS)
+        self._concurrency_semaphore = threading.Semaphore(MAX_CONCURRENT_AGENTS)
+        self._heartbeat_stop = threading.Event()
+        self._heartbeat_thread: threading.Thread | None = None
+
+    def start_heartbeat(self):
+        """Start the background heartbeat loop that detects crashed agents."""
+        if self._heartbeat_thread is not None:
+            return
+        self._heartbeat_stop.clear()
+        self._heartbeat_thread = threading.Thread(
+            target=self._heartbeat_loop, daemon=True, name="agent-heartbeat"
+        )
+        self._heartbeat_thread.start()
+        log.info("heartbeat_started", interval_seconds=30)
+
+    def stop_heartbeat(self):
+        """Signal the heartbeat loop to stop."""
+        self._heartbeat_stop.set()
+        self._heartbeat_thread = None
+
+    def _heartbeat_loop(self):
+        """Runs every 30 seconds checking for crashed agents."""
+        while not self._heartbeat_stop.is_set():
+            try:
+                self._heartbeat_check()
+            except Exception as e:
+                log.error("heartbeat_check_error", error=str(e))
+            self._heartbeat_stop.wait(timeout=30)
+
+    def _heartbeat_check(self):
+        """Query all running agents and mark dead ones as failed."""
+        try:
+            with get_platform_db() as db:
+                rows = db.execute(
+                    "SELECT id, pid FROM agents WHERE status = 'running'"
+                ).fetchall()
+                updated = 0
+                for row in rows:
+                    agent_id = row["id"]
+                    pid = row["pid"]
+                    if pid is None:
+                        db.execute(
+                            "UPDATE agents SET status = 'failed', stopped_at = datetime('now') WHERE id = ?",
+                            (agent_id,),
+                        )
+                        updated += 1
+                        log.warning("heartbeat_no_pid", agent_id=agent_id)
+                        event_bus.emit("agent.failed", {"agent_id": agent_id, "status": "failed", "reason": "no_pid"})
+                        continue
+                    # Also check in-memory process handle first (more reliable)
+                    proc = self._processes.get(agent_id)
+                    if proc is not None:
+                        if proc.poll() is None:
+                            continue  # still alive
+                        # Process finished but reader thread hasn't cleaned up yet — skip,
+                        # the reader thread will handle status update
+                        continue
+                    # No in-memory handle — check via OS
+                    try:
+                        os.kill(pid, 0)
+                    except OSError:
+                        db.execute(
+                            "UPDATE agents SET status = 'failed', stopped_at = datetime('now') WHERE id = ?",
+                            (agent_id,),
+                        )
+                        updated += 1
+                        log.warning("heartbeat_dead_agent", agent_id=agent_id, pid=pid)
+                        event_bus.emit("agent.failed", {"agent_id": agent_id, "status": "failed", "reason": "process_dead"})
+                        # Release semaphore for the dead agent
+                        self._concurrency_semaphore.release()
+                if updated:
+                    db.commit()
+                    log.info("heartbeat_cleaned", count=updated)
+        except Exception as e:
+            log.error("heartbeat_check_failed", error=str(e))
 
     def reconcile_on_startup(self):
         """Check for orphaned agents from a previous session and mark dead ones as failed."""
@@ -57,13 +130,15 @@ class ProcessManager:
               node_id: str | None = None, role: str | None = None) -> int:
         """Spawn a claude -p process. Returns PID.
 
-        Uses a lock to make the running-count check atomic, preventing
-        race conditions where two simultaneous spawns both pass the limit.
+        Uses a threading semaphore to enforce the concurrent agent limit.
+        The semaphore is acquired before spawn and released when the agent
+        finishes (in _read_output).
         """
+        acquired = self._concurrency_semaphore.acquire(blocking=False)
+        if not acquired:
+            raise RuntimeError(f"Max {MAX_CONCURRENT_AGENTS} concurrent agents")
+
         with self._spawn_lock:
-            running = sum(1 for p in self._processes.values() if p.poll() is None)
-            if running >= MAX_CONCURRENT_AGENTS:
-                raise RuntimeError(f"Max {MAX_CONCURRENT_AGENTS} concurrent agents")
 
             # Store metadata for auto-capture on completion
             self._agent_meta[agent_id] = {"node_id": node_id, "role": role or "custom"}
@@ -200,6 +275,9 @@ class ProcessManager:
                 self._check_self_improve_agent(agent_id, status)
             except Exception as e:
                 log.warning("self_improve_check_failed", agent_id=agent_id, error=str(e))
+
+            # Release concurrency semaphore so another agent can spawn
+            self._concurrency_semaphore.release()
 
             # Clean up metadata
             self._agent_meta.pop(agent_id, None)

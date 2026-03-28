@@ -39,9 +39,12 @@ async def lifespan(app: FastAPI):
     log.info("orphan_reconciliation_done")
     deleted = event_bus.cleanup(max_age_hours=24)
     log.info("stale_events_cleaned", deleted=deleted)
+    process_manager.start_heartbeat()
+    log.info("heartbeat_loop_started")
     await trigger_engine.start()
     log.info("trigger_engine_started")
     yield
+    process_manager.stop_heartbeat()
     await trigger_engine.stop()
     log.info("platform_stopping")
 
