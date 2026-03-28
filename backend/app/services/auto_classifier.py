@@ -257,8 +257,9 @@ def _load_classification_rules() -> dict:
                 # Add project name words as keywords
                 name_words = [w.lower() for w in (p["name"] or "").split() if len(w) > 2]
                 rules[pid]["keywords"].extend(name_words)
-                if p.get("jira_key"):
-                    rules[pid]["jira_key"] = p["jira_key"]
+                jira_val = p["jira_key"]
+                if jira_val:
+                    rules[pid]["jira_key"] = jira_val
     except Exception as e:
         log.debug("hub_rules_load_failed", error=str(e))
 

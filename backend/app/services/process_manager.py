@@ -166,6 +166,25 @@ class ProcessManager:
             if yolo_ctx:
                 context_parts.append(yolo_ctx)
 
+        # Knowledge context injection (hub.db project data)
+        try:
+            kc_project_id = None
+            if node_id:
+                with get_platform_db() as db:
+                    nrow = db.execute(
+                        "SELECT hub_project_id FROM nodes WHERE id = ?", (node_id,)
+                    ).fetchone()
+                    if nrow and nrow["hub_project_id"]:
+                        kc_project_id = nrow["hub_project_id"]
+
+            knowledge_ctx = build_knowledge_context(
+                node_id=node_id, project_id=kc_project_id, token_budget=2000
+            )
+            if knowledge_ctx:
+                context_parts.append(knowledge_ctx)
+        except Exception as e:
+            log.debug("knowledge_context_injection_skipped", agent_id=agent_id, error=str(e))
+
         # Prepend context to task
         if context_parts:
             context_block = "\n\n---\n\n".join(context_parts)
@@ -201,31 +220,10 @@ class ProcessManager:
                    if k in _ALLOWED_ENV_KEYS or k.startswith("CLAUDE_")}
             env.pop("CLAUDE_CODE_ENTRYPOINT", None)
 
-            # Inject knowledge context into the task prompt
-            enriched_task = task
-            try:
-                # Resolve project_id from node_id
-                kc_project_id = None
-                if node_id:
-                    with get_platform_db() as db:
-                        nrow = db.execute(
-                            "SELECT hub_project_id FROM nodes WHERE id = ?", (node_id,)
-                        ).fetchone()
-                        if nrow and nrow["hub_project_id"]:
-                            kc_project_id = nrow["hub_project_id"]
-
-                knowledge_ctx = build_knowledge_context(
-                    node_id=node_id, project_id=kc_project_id, token_budget=2000
-                )
-                if knowledge_ctx:
-                    enriched_task = f"{knowledge_ctx}\n\n---\n\n{task}"
-            except Exception as e:
-                log.debug("knowledge_context_injection_skipped", agent_id=agent_id, error=str(e))
-
             cmd = ["claude", "-p", "--output-format", "stream-json"]
             if model:
                 cmd.extend(["--model", model])
-            cmd.append(enriched_task)
+            cmd.append(task)
 
             proc = subprocess.Popen(
                 cmd,
