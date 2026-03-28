@@ -15,6 +15,7 @@ from app.services.id_generator import resolve_display_id as _resolve_display_id
 from app.services.self_improve import self_improve_service
 from app.services.hub_sync import hub_sync
 from app.services.event_bus import event_bus as _event_bus
+from app.services.feature_gate import is_studio, COCO_EDITION, STUDIO_FEATURES
 from app.routers import (
     health, projects, teams, brain, content, agents, tasks,
     costs, todos, drafts, sessions, activity, events,
@@ -125,7 +126,7 @@ async def add_response_time(request, call_next):
         log.warning("slow_request", path=str(request.url.path), duration_ms=round(duration))
     return response
 
-# Register routers
+# Core routers (always loaded)
 app.include_router(health.router)
 app.include_router(projects.router)
 app.include_router(teams.router)
@@ -146,19 +147,30 @@ app.include_router(goals.router)
 app.include_router(tree.router)
 app.include_router(home.router)
 app.include_router(collaboration.router)
-app.include_router(tts.router)
-app.include_router(jarvis.router)
 app.include_router(comments.router)
 app.include_router(templates.router)
-app.include_router(analysis.router)
-app.include_router(stt.router)
 app.include_router(triggers.router)
 app.include_router(triggers.webhook_router)
-app.include_router(self_improve.router)
 app.include_router(inbox.router)
 app.include_router(search.router)
 app.include_router(insights.router)
 app.include_router(actions.router)
+
+# Studio routers (only when COCO_EDITION=studio)
+if is_studio():
+    app.include_router(jarvis.router)
+    app.include_router(tts.router)
+    app.include_router(stt.router)
+    app.include_router(self_improve.router)
+    app.include_router(analysis.router)
+
+@app.get("/api/edition", tags=["System"])
+def get_edition():
+    """Return current edition and available Studio features."""
+    return {
+        "edition": COCO_EDITION,
+        "features": STUDIO_FEATURES if is_studio() else [],
+    }
 
 # --- Cross-cutting resolve endpoint ---
 
