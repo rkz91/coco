@@ -6,9 +6,9 @@ cd "$(dirname "$0")/.."
 
 echo "Starting CoCo Platform (dev mode)..."
 
-# Start backend
+# Start backend (Studio edition — enables Jarvis, TTS, STT, self-improve)
 cd backend
-uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload &
+COCO_EDITION=studio uv run uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload &
 BACKEND_PID=$!
 cd ..
 
