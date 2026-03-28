@@ -253,12 +253,19 @@ class JarvisAudioEngine {
     this.setSpeaking(false);
   }
 
-  /** Clean up all audio resources */
+  /** Clean up all audio resources (non-blocking) */
   destroy() {
-    this.cancelSpeak();
-    // Force-stop ambient oscillators immediately (don't wait for 2.2s fade)
+    // Cancel any playing speech immediately
+    if (this.currentAudio) {
+      this.currentAudio.pause();
+      this.currentAudio.src = '';
+      this.currentAudio = null;
+    }
+    if ('speechSynthesis' in window) speechSynthesis.cancel();
+    this.setSpeaking(false);
+
+    // Force-stop ambient oscillators immediately
     if (this.ambientStop) {
-      // Cancel the graceful fade — just kill everything now
       this.ambientStop = null;
     }
     // Revoke any prefetched blob URLs
@@ -267,11 +274,15 @@ class JarvisAudioEngine {
       this.prefetchedUrl = null;
       this.prefetchedAudio = null;
     }
-    // Close audio context (stops all connected oscillators immediately)
+    // Close audio context asynchronously — don't block navigation
     if (this.ctx && this.ctx.state !== 'closed') {
-      this.ctx.close().catch(() => {});
+      const ctx = this.ctx;
+      this.ctx = null;
+      // Fire and forget — closing is async and should never block
+      ctx.close().catch(() => {});
+    } else {
+      this.ctx = null;
     }
-    this.ctx = null;
   }
 }
 
