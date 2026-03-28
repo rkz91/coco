@@ -16,7 +16,7 @@ from urllib.parse import urlencode
 import structlog
 from fastapi import APIRouter
 
-from app.db.connections import get_hub_db
+from app.db.connections import get_hub_db, get_platform_db
 from app.models.jarvis import (
     CardActionModel,
     CardDataModel,
@@ -130,10 +130,16 @@ def _card_id() -> str:
 # ─── Command Patterns ─────────────────────────────────────────────────────────
 
 COMMAND_PATTERNS = [
+    # Voice decision queue commands (checked first — short voice utterances)
+    (["next decision", "next item", "what's next in queue", "whats next"], "cmd_next_decision"),
+    (["approve it", "approve", "yes", "looks good", "lgtm"], "cmd_voice_approve"),
+    (["reject it", "reject", "no", "pass on this"], "cmd_voice_reject"),
+    (["defer", "later", "snooze", "come back to this"], "cmd_voice_defer"),
+    # General commands
     (["process", "sync", "ingest", "refresh"], "cmd_process"),
     (["briefing", "catch me up", "what's new", "whats new", "update me"], "cmd_briefing"),
     (["overdue", "late", "behind"], "cmd_overdue"),
-    (["decide", "decision", "attention", "needs my", "inbox", "drafts", "approve"], "cmd_decide"),
+    (["decide", "decision", "attention", "needs my", "inbox", "drafts"], "cmd_decide"),
     (["todo", "todos", "task", "tasks", "my list"], "cmd_todos"),
     (["health", "system status", "systems", "adapters"], "cmd_health"),
     (["cost", "costs", "spending", "how much", "budget"], "cmd_costs"),
@@ -426,6 +432,199 @@ async def cmd_dismiss(**_) -> CommandResponse:
     return CommandResponse(reply="Dismissed.", cards=[])
 
 
+# ─── Voice Decision Queue State ─────────────────────────────────────────────
+
+_voice_queue_state: dict = {"current_item": None, "current_type": None, "current_id": None}
+
+
+async def cmd_next_decision(**_) -> CommandResponse:
+    """Fetch the next pending decision item for voice-driven queue processing."""
+    # Try pending drafts first (excluding already-decided ones in platform.db)
+    try:
+        decided_ids: list[str] = []
+        with get_platform_db() as pdb:
+            rows = pdb.execute("SELECT hub_draft_id FROM draft_decisions").fetchall()
+            decided_ids = [r["hub_draft_id"] for r in rows]
+
+        with get_hub_db() as db:
+            if decided_ids:
+                placeholders = ",".join("?" for _ in decided_ids)
+                draft = db.execute(
+                    f"SELECT id, template, section, project_id, created_at FROM drafts "
+                    f"WHERE status = 'pending' AND id NOT IN ({placeholders}) "
+                    f"ORDER BY created_at LIMIT 1",
+                    decided_ids,
+                ).fetchone()
+            else:
+                draft = db.execute(
+                    "SELECT id, template, section, project_id, created_at FROM drafts "
+                    "WHERE status = 'pending' ORDER BY created_at LIMIT 1"
+                ).fetchone()
+
+            if draft:
+                _voice_queue_state["current_item"] = dict(draft)
+                _voice_queue_state["current_type"] = "draft"
+                _voice_queue_state["current_id"] = draft["id"]
+                project = draft["project_id"] or "unknown project"
+                reply = f"Pending draft: {draft['template']} for {project}. Approve, reject, or defer?"
+                return CommandResponse(
+                    reply=reply,
+                    cards=[CardDataModel(
+                        id=_card_id(), type="approval_batch",
+                        data={"drafts": [dict(draft)]},
+                    )],
+                )
+    except Exception as e:
+        log.warning("cmd_next_decision_drafts_error", error=str(e))
+
+    # Try overdue todos (excluding already-overridden ones in platform.db)
+    try:
+        overridden_ids: list[str] = []
+        with get_platform_db() as pdb:
+            rows = pdb.execute(
+                "SELECT hub_todo_id FROM todo_overrides WHERE status IN ('done', 'archived', 'deferred')"
+            ).fetchall()
+            overridden_ids = [r["hub_todo_id"] for r in rows]
+
+        with get_hub_db() as db:
+            if overridden_ids:
+                placeholders = ",".join("?" for _ in overridden_ids)
+                todo = db.execute(
+                    f"SELECT id, title, priority, due_date FROM todos "
+                    f"WHERE status = 'open' AND due_date < date('now') AND id NOT IN ({placeholders}) "
+                    f"ORDER BY due_date LIMIT 1",
+                    overridden_ids,
+                ).fetchone()
+            else:
+                todo = db.execute(
+                    "SELECT id, title, priority, due_date FROM todos "
+                    "WHERE status = 'open' AND due_date < date('now') ORDER BY due_date LIMIT 1"
+                ).fetchone()
+
+            if todo:
+                _voice_queue_state["current_item"] = dict(todo)
+                _voice_queue_state["current_type"] = "todo"
+                _voice_queue_state["current_id"] = todo["id"]
+                reply = f"Overdue: {todo['title']}. Due {todo['due_date']}. Mark done, defer, or skip?"
+                return CommandResponse(
+                    reply=reply,
+                    cards=[CardDataModel(
+                        id=_card_id(), type="todo_list",
+                        data={"title": "Overdue", "todos": [dict(todo)]},
+                    )],
+                )
+    except Exception as e:
+        log.warning("cmd_next_decision_todos_error", error=str(e))
+
+    _voice_queue_state["current_item"] = None
+    _voice_queue_state["current_type"] = None
+    _voice_queue_state["current_id"] = None
+    return CommandResponse(reply="Queue is clear. Nothing pending.", cards=[])
+
+
+async def cmd_voice_approve(**_) -> CommandResponse:
+    """Approve the most recently shown decision queue item."""
+    if not _voice_queue_state["current_id"]:
+        return CommandResponse(reply="Nothing to approve. Say 'next' first.", cards=[])
+
+    item_id = _voice_queue_state["current_id"]
+    item_type = _voice_queue_state["current_type"]
+
+    if item_type == "draft":
+        with get_platform_db() as pdb:
+            pdb.execute(
+                "INSERT OR REPLACE INTO draft_decisions (id, hub_draft_id, status, decided_by) VALUES (?, ?, 'approved', 'voice')",
+                (uuid.uuid4().hex, item_id),
+            )
+            pdb.commit()
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Approved. Say 'next' for the next item.", cards=[])
+
+    elif item_type == "todo":
+        with get_platform_db() as pdb:
+            pdb.execute(
+                "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) VALUES (?, 'done', datetime('now'))",
+                (item_id,),
+            )
+            pdb.commit()
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Marked done. Say 'next' for the next item.", cards=[])
+
+    return CommandResponse(reply="Done.", cards=[])
+
+
+async def cmd_voice_reject(**_) -> CommandResponse:
+    """Reject the most recently shown decision queue item."""
+    if not _voice_queue_state["current_id"]:
+        return CommandResponse(reply="Nothing to reject. Say 'next' first.", cards=[])
+
+    item_id = _voice_queue_state["current_id"]
+    item_type = _voice_queue_state["current_type"]
+
+    if item_type == "draft":
+        with get_platform_db() as pdb:
+            pdb.execute(
+                "INSERT OR REPLACE INTO draft_decisions (id, hub_draft_id, status, decided_by) VALUES (?, ?, 'rejected', 'voice')",
+                (uuid.uuid4().hex, item_id),
+            )
+            pdb.commit()
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Rejected. Say 'next' for the next item.", cards=[])
+
+    elif item_type == "todo":
+        with get_platform_db() as pdb:
+            pdb.execute(
+                "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) VALUES (?, 'archived', datetime('now'))",
+                (item_id,),
+            )
+            pdb.commit()
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Skipped. Say 'next' for the next item.", cards=[])
+
+    return CommandResponse(reply="Done.", cards=[])
+
+
+async def cmd_voice_defer(**_) -> CommandResponse:
+    """Defer the most recently shown decision queue item."""
+    if not _voice_queue_state["current_id"]:
+        return CommandResponse(reply="Nothing to defer. Say 'next' first.", cards=[])
+
+    item_id = _voice_queue_state["current_id"]
+    item_type = _voice_queue_state["current_type"]
+
+    if item_type == "draft":
+        # For drafts, we just clear state — no overlay record, so it will reappear next time
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Deferred. What's next?", cards=[])
+
+    elif item_type == "todo":
+        with get_platform_db() as pdb:
+            pdb.execute(
+                "INSERT OR REPLACE INTO todo_overrides (hub_todo_id, status, updated_at) VALUES (?, 'deferred', datetime('now'))",
+                (item_id,),
+            )
+            pdb.commit()
+        _voice_queue_state["current_item"] = None
+        _voice_queue_state["current_type"] = None
+        _voice_queue_state["current_id"] = None
+        return CommandResponse(reply="Deferred. What's next?", cards=[])
+
+    _voice_queue_state["current_item"] = None
+    _voice_queue_state["current_type"] = None
+    _voice_queue_state["current_id"] = None
+    return CommandResponse(reply="Deferred. What's next?", cards=[])
+
+
 HANDLERS = {
     "cmd_process": cmd_process,
     "cmd_briefing": cmd_briefing,
@@ -438,6 +637,10 @@ HANDLERS = {
     "cmd_chat": cmd_chat,
     "cmd_projects": cmd_projects,
     "cmd_dismiss": cmd_dismiss,
+    "cmd_next_decision": cmd_next_decision,
+    "cmd_voice_approve": cmd_voice_approve,
+    "cmd_voice_reject": cmd_voice_reject,
+    "cmd_voice_defer": cmd_voice_defer,
 }
 
 
