@@ -48,3 +48,14 @@ class RecruitAgentBody(BaseModel):
     name: Optional[str] = None
     model: Optional[str] = None
     system_prompt: Optional[str] = None
+
+
+class ResumeFromCheckpointBody(BaseModel):
+    task: Optional[str] = None
+    checkpoint_data: Optional[dict] = None
+
+
+class SpawnSubagentBody(BaseModel):
+    task: str
+    model: str = "sonnet"
+    role: Optional[str] = None

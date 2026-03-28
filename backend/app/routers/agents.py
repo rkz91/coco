@@ -12,7 +12,19 @@ from app.models.agents import (
     CreateRoleBody,
     PatchAgentBody,
     RecruitAgentBody,
+    ResumeFromCheckpointBody,
     SpawnAgentBody,
+    SpawnSubagentBody,
+)
+from app.services.agent_session_store import (
+    get_session as get_agent_session,
+    save_session,
+    update_checkpoint,
+)
+from app.services.subagent_manager import (
+    spawn_subagent,
+    list_subagents,
+    kill_subagent,
 )
 
 router = APIRouter(tags=["Agents"])
@@ -416,3 +428,148 @@ def get_agent_logs(agent_id: str, limit: int = 100, after_id: int = 0):
             (agent_id, after_id, limit),
         ).fetchall()
         return [dict(r._mapping) for r in rows]
+
+
+# ---------------------------------------------------------------------------
+# Session endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/agents/{agent_id}/session")
+def get_session(agent_id: str):
+    """Return SDK session metadata for an agent."""
+    with get_db() as conn:
+        row = conn.exec_driver_sql(
+            "SELECT id FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Agent not found")
+
+    session = get_agent_session(agent_id)
+    if not session:
+        raise HTTPException(404, "No active session for this agent")
+    return session
+
+
+@router.post("/api/agents/{agent_id}/resume-checkpoint")
+def resume_from_checkpoint(agent_id: str, body: ResumeFromCheckpointBody | None = None):
+    """Resume an agent from its last checkpoint.
+
+    Optionally provide new checkpoint_data or a follow-up task.
+    """
+    with get_db() as conn:
+        row = conn.exec_driver_sql(
+            f"SELECT {_AGENT_COLS} FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Agent not found")
+        agent = _agent_row_to_dict(row)
+
+    # Get existing session
+    session = get_agent_session(agent_id)
+    if not session:
+        raise HTTPException(404, "No session to resume from")
+
+    # Update checkpoint if provided
+    if body and body.checkpoint_data:
+        update_checkpoint(agent_id, body.checkpoint_data)
+        session = get_agent_session(agent_id)
+
+    # Build resume task from checkpoint context
+    checkpoint = session.get("checkpoint_data", {})
+    original_task = agent.get("task_description", "")
+    resume_task = body.task if (body and body.task) else None
+
+    if not resume_task:
+        resume_task = (
+            f"Resume from checkpoint. Original task: {original_task}\n"
+            f"Messages so far: {session.get('message_count', 0)}\n"
+            f"Checkpoint context: {checkpoint}"
+        )
+
+    # Spawn the agent with the resume task
+    from app.services.process_manager import process_manager
+    node_id = agent.get("node_id")
+    role = agent.get("role", "custom")
+    model = agent.get("model", "sonnet")
+    cwd = agent.get("working_directory")
+
+    try:
+        pid = process_manager.spawn(
+            agent_id, resume_task, cwd=cwd, model=model,
+            node_id=node_id, role=role,
+        )
+    except RuntimeError as e:
+        raise HTTPException(429, str(e))
+
+    with get_db() as conn:
+        conn.exec_driver_sql(
+            "UPDATE agents SET status = 'running', pid = ?, started_at = datetime('now'), "
+            "stopped_at = NULL, exit_code = NULL, last_heartbeat = datetime('now'), "
+            "updated_at = datetime('now') WHERE id = ?",
+            (pid, agent_id),
+        )
+        row = conn.exec_driver_sql(
+            f"SELECT {_AGENT_COLS} FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        result = _agent_row_to_dict(row)
+
+    event_bus.emit("agent.resumed", {"agent_id": agent_id, "name": result.get("name"), "pid": pid})
+    return {"agent": result, "session": get_agent_session(agent_id)}
+
+
+# ---------------------------------------------------------------------------
+# Subagent endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.get("/api/agents/{agent_id}/subagents")
+def get_subagents(agent_id: str):
+    """List all child agents of a parent."""
+    with get_db() as conn:
+        row = conn.exec_driver_sql(
+            "SELECT id FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        if not row:
+            raise HTTPException(404, "Agent not found")
+    return list_subagents(agent_id)
+
+
+@router.post("/api/agents/{agent_id}/subagents", status_code=201)
+def create_subagent(agent_id: str, body: SpawnSubagentBody):
+    """Spawn a child agent under a parent. Max 3 active subagents."""
+    try:
+        child = spawn_subagent(
+            parent_id=agent_id,
+            task=body.task,
+            model=body.model,
+            role=body.role,
+        )
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    event_bus.emit("agent.subagent_spawned", {
+        "parent_id": agent_id,
+        "child_id": child["id"],
+        "child_name": child.get("name"),
+    })
+    return child
+
+
+@router.delete("/api/agents/{agent_id}/subagents/{subagent_id}")
+def delete_subagent(agent_id: str, subagent_id: str):
+    """Kill a specific subagent."""
+    try:
+        result = kill_subagent(subagent_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+    # Verify it belongs to the specified parent
+    if result.get("reports_to") != agent_id:
+        raise HTTPException(400, f"Subagent {subagent_id} does not belong to agent {agent_id}")
+
+    event_bus.emit("agent.subagent_killed", {
+        "parent_id": agent_id,
+        "child_id": subagent_id,
+    })
+    return result

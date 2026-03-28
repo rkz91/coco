@@ -486,6 +486,23 @@ CREATE TABLE IF NOT EXISTS verification_gates (
 );
 CREATE INDEX IF NOT EXISTS idx_vg_entity ON verification_gates(entity_type, entity_id);
 CREATE INDEX IF NOT EXISTS idx_vg_node ON verification_gates(node_id);
+
+CREATE TABLE IF NOT EXISTS agent_sessions (
+    id TEXT PRIMARY KEY,
+    agent_id TEXT NOT NULL REFERENCES agents(id),
+    conversation_id TEXT,
+    model TEXT,
+    status TEXT NOT NULL DEFAULT 'active' CHECK(status IN ('active','paused','completed','failed')),
+    message_count INTEGER NOT NULL DEFAULT 0,
+    total_input_tokens INTEGER NOT NULL DEFAULT 0,
+    total_output_tokens INTEGER NOT NULL DEFAULT 0,
+    checkpoint_data TEXT DEFAULT '{}',
+    messages_json TEXT DEFAULT '[]',
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_agent_sessions_agent ON agent_sessions(agent_id);
+CREATE INDEX IF NOT EXISTS idx_agent_sessions_status ON agent_sessions(status);
 """
 
 MIGRATION = """
