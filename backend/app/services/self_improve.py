@@ -13,7 +13,7 @@ from pathlib import Path
 
 import structlog
 
-from app.db.connections import get_platform_db
+from app.db.session import get_db
 from app.services.event_bus import event_bus
 from app.services.process_manager import process_manager
 from app.services.verification import verification_service
@@ -188,15 +188,15 @@ class SelfImproveService:
             if self._active_cycle_id is not None:
                 # Check if it's actually still active in DB
                 existing = self.get_cycle(self._active_cycle_id)
-                if existing and existing["status"] not in ("completed", "rejected", "failed"):
+                if existing and existing._mapping["status"] not in ("completed", "rejected", "failed"):
                     raise RuntimeError("A self-improvement cycle is already active")
                 self._active_cycle_id = None
 
             cycle_id = str(uuid.uuid4())
             now = datetime.now(timezone.utc).isoformat()
 
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     """INSERT INTO self_improve_cycles
                        (id, status, budget_usd, spent_usd, max_improvements, focus_areas, started_at, created_at)
                        VALUES (?, ?, ?, 0.0, ?, ?, ?, ?)""",
@@ -206,7 +206,7 @@ class SelfImproveService:
                         now, now,
                     ),
                 )
-                db.commit()
+                pass  # auto-commit
 
             self._active_cycle_id = cycle_id
 
@@ -233,19 +233,19 @@ class SelfImproveService:
 
     def get_cycle(self, cycle_id: str) -> dict | None:
         """Get cycle data with improvements."""
-        with get_platform_db() as db:
-            row = db.execute(
+        with get_db() as db:
+            row = db.exec_driver_sql(
                 "SELECT id, status, budget_usd, spent_usd, max_improvements, focus_areas, "
                 "started_at, completed_at, error, created_at FROM self_improve_cycles WHERE id = ?",
                 (cycle_id,),
             ).fetchone()
             if not row:
                 return None
-            cycle = dict(row)
+            cycle = dict(row._mapping)
             cycle["focus_areas"] = json.loads(cycle["focus_areas"]) if cycle["focus_areas"] else None
 
             # Get improvements
-            imp_rows = db.execute(
+            imp_rows = db.exec_driver_sql(
                 "SELECT id, cycle_id, title, description, priority, category, status, "
                 "worktree_path, branch_name, diff_summary, diff_stat, test_results, "
                 "review_notes, security_scan, pr_description, agent_id, human_comment, "
@@ -255,14 +255,14 @@ class SelfImproveService:
             ).fetchall()
             improvements = []
             for imp_row in imp_rows:
-                imp = dict(imp_row)
+                imp = dict(imp_row._mapping)
                 imp["test_results"] = json.loads(imp["test_results"]) if imp["test_results"] else None
                 imp["security_scan"] = json.loads(imp["security_scan"]) if imp["security_scan"] else None
                 improvements.append(imp)
             cycle["improvements"] = improvements
 
             # Count spawned agents
-            agent_count = db.execute(
+            agent_count = db.exec_driver_sql(
                 "SELECT COUNT(*) FROM self_improve_agents WHERE cycle_id = ?",
                 (cycle_id,),
             ).fetchone()[0]
@@ -272,8 +272,8 @@ class SelfImproveService:
 
     def list_cycles(self, limit: int = 10) -> list[dict]:
         """List recent cycles."""
-        with get_platform_db() as db:
-            rows = db.execute(
+        with get_db() as db:
+            rows = db.exec_driver_sql(
                 "SELECT id, status, budget_usd, spent_usd, max_improvements, focus_areas, "
                 "started_at, completed_at, error, created_at "
                 "FROM self_improve_cycles ORDER BY created_at DESC LIMIT ?",
@@ -281,15 +281,15 @@ class SelfImproveService:
             ).fetchall()
             cycles = []
             for row in rows:
-                cycle = dict(row)
+                cycle = dict(row._mapping)
                 cycle["focus_areas"] = json.loads(cycle["focus_areas"]) if cycle["focus_areas"] else None
                 # Count improvements
-                imp_count = db.execute(
+                imp_count = db.exec_driver_sql(
                     "SELECT COUNT(*) FROM self_improve_improvements WHERE cycle_id = ?",
                     (cycle["id"],),
                 ).fetchone()[0]
                 cycle["improvement_count"] = imp_count
-                agent_count = db.execute(
+                agent_count = db.exec_driver_sql(
                     "SELECT COUNT(*) FROM self_improve_agents WHERE cycle_id = ?",
                     (cycle["id"],),
                 ).fetchone()[0]
@@ -299,14 +299,14 @@ class SelfImproveService:
 
     def get_active_cycle(self) -> dict | None:
         """Get currently running cycle, if any."""
-        with get_platform_db() as db:
-            row = db.execute(
+        with get_db() as db:
+            row = db.exec_driver_sql(
                 "SELECT id FROM self_improve_cycles WHERE status NOT IN ('completed', 'rejected', 'failed') "
                 "ORDER BY created_at DESC LIMIT 1",
             ).fetchone()
             if not row:
                 return None
-            return self.get_cycle(row["id"])
+            return self.get_cycle(row._mapping["id"])
 
     def cancel_cycle(self, cycle_id: str) -> dict:
         """Cancel a running cycle, cleanup all worktrees."""
@@ -320,35 +320,36 @@ class SelfImproveService:
         now = datetime.now(timezone.utc).isoformat()
 
         # Kill all running agents for this cycle
-        with get_platform_db() as db:
-            agent_rows = db.execute(
+        with get_db() as db:
+            agent_rows = db.exec_driver_sql(
                 "SELECT agent_id FROM self_improve_agents WHERE cycle_id = ? AND status = 'running'",
                 (cycle_id,),
             ).fetchall()
             for arow in agent_rows:
+                aid = arow._mapping["agent_id"]
                 try:
-                    process_manager.kill(arow["agent_id"])
+                    process_manager.kill(aid)
                 except Exception as e:
-                    log.warning("kill_squad_agent_failed", agent_id=arow["agent_id"], error=str(e))
+                    log.warning("kill_squad_agent_failed", agent_id=aid, error=str(e))
 
-                db.execute(
+                db.exec_driver_sql(
                     "UPDATE self_improve_agents SET status = 'cancelled', completed_at = ? WHERE agent_id = ?",
-                    (now, arow["agent_id"]),
+                    (now, aid),
                 )
 
             # Cleanup all worktrees for improvements
-            imp_rows = db.execute(
+            imp_rows = db.exec_driver_sql(
                 "SELECT branch_name FROM self_improve_improvements WHERE cycle_id = ? AND branch_name IS NOT NULL",
                 (cycle_id,),
             ).fetchall()
             for imp_row in imp_rows:
                 try:
-                    self.worktree_mgr.cleanup(imp_row["branch_name"])
+                    self.worktree_mgr.cleanup(imp_row._mapping["branch_name"])
                 except Exception as e:
-                    log.warning("cleanup_worktree_failed", branch=imp_row["branch_name"], error=str(e))
+                    log.warning("cleanup_worktree_failed", branch=imp_row._mapping["branch_name"], error=str(e))
 
             # Update cycle status
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET status = 'failed', error = 'Cancelled by user', completed_at = ? WHERE id = ?",
                 (now, cycle_id),
             )
@@ -367,8 +368,8 @@ class SelfImproveService:
 
     def get_improvement(self, improvement_id: str) -> dict | None:
         """Get a single improvement by ID."""
-        with get_platform_db() as db:
-            row = db.execute(
+        with get_db() as db:
+            row = db.exec_driver_sql(
                 "SELECT id, cycle_id, title, description, priority, category, status, "
                 "worktree_path, branch_name, diff_summary, diff_stat, test_results, "
                 "review_notes, security_scan, pr_description, agent_id, human_comment, "
@@ -378,7 +379,7 @@ class SelfImproveService:
             ).fetchone()
             if not row:
                 return None
-            imp = dict(row)
+            imp = dict(row._mapping)
             imp["test_results"] = json.loads(imp["test_results"]) if imp["test_results"] else None
             imp["security_scan"] = json.loads(imp["security_scan"]) if imp["security_scan"] else None
             return imp
@@ -404,30 +405,30 @@ class SelfImproveService:
         # Check denylist one more time
         violations = self.worktree_mgr.check_denylist(branch)
         if violations:
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "reject_reason = ?, updated_at = ? WHERE id = ?",
                     (f"Denylist violations: {'; '.join(violations)}", now, improvement_id),
                 )
-                db.commit()
+                pass  # auto-commit
             raise RuntimeError(f"Denylist violations found: {violations}")
 
         # Merge
         success = self.worktree_mgr.merge(branch)
         if not success:
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "reject_reason = 'Merge conflict', updated_at = ? WHERE id = ?",
                     (now, improvement_id),
                 )
-                db.commit()
+                pass  # auto-commit
             raise RuntimeError("Merge failed — likely a conflict")
 
         # Update improvement
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'merged', human_comment = ?, updated_at = ? WHERE id = ?",
                 (comment, now, improvement_id),
             )
@@ -460,8 +461,8 @@ class SelfImproveService:
 
         now = datetime.now(timezone.utc).isoformat()
 
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'rejected_by_human', "
                 "reject_reason = ?, updated_at = ? WHERE id = ?",
                 (reason, now, improvement_id),
@@ -492,34 +493,34 @@ class SelfImproveService:
 
     def on_agent_completed(self, agent_id: str, status: str):
         """Called when a squad agent finishes. Advances the state machine."""
-        with get_platform_db() as db:
-            sa_row = db.execute(
+        with get_db() as db:
+            sa_row = db.exec_driver_sql(
                 "SELECT id, cycle_id, improvement_id, role FROM self_improve_agents WHERE agent_id = ?",
                 (agent_id,),
             ).fetchone()
             if not sa_row:
                 return  # Not a self-improve agent
 
-            cycle_id = sa_row["cycle_id"]
-            improvement_id = sa_row["improvement_id"]
-            role = sa_row["role"]
+            cycle_id = sa_row._mapping["cycle_id"]
+            improvement_id = sa_row._mapping["improvement_id"]
+            role = sa_row._mapping["role"]
             now = datetime.now(timezone.utc).isoformat()
 
             # Update squad agent record
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_agents SET status = ?, completed_at = ? WHERE agent_id = ?",
                 (status, now, agent_id),
             )
 
             # Get agent output (last 200 lines)
-            output_rows = db.execute(
+            output_rows = db.exec_driver_sql(
                 "SELECT chunk FROM agent_output WHERE agent_id = ? ORDER BY id DESC LIMIT 200",
                 (agent_id,),
             ).fetchall()
-            raw_output = "\n".join(r["chunk"] for r in reversed(output_rows))
+            raw_output = "\n".join(r._mapping["chunk"] for r in reversed(output_rows))
 
             # Store summary
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_agents SET output_summary = ? WHERE agent_id = ?",
                 (raw_output[:5000], agent_id),
             )
@@ -559,10 +560,10 @@ class SelfImproveService:
             return
 
         now = datetime.now(timezone.utc).isoformat()
-        with get_platform_db() as db:
+        with get_db() as db:
             for imp in improvements:
                 imp_id = str(uuid.uuid4())
-                db.execute(
+                db.exec_driver_sql(
                     """INSERT INTO self_improve_improvements
                        (id, cycle_id, title, description, priority, category, status, created_at, updated_at)
                        VALUES (?, ?, ?, ?, ?, ?, 'proposed', ?, ?)""",
@@ -578,10 +579,10 @@ class SelfImproveService:
 
                 # Run G1 ideation gate on each proposed improvement
                 try:
-                    cycle_row = db.execute(
+                    cycle_row = db.exec_driver_sql(
                         "SELECT focus_areas FROM self_improve_cycles WHERE id = ?", (cycle_id,)
                     ).fetchone()
-                    focus_areas = json.loads(cycle_row["focus_areas"]) if cycle_row and cycle_row["focus_areas"] else []
+                    focus_areas = json.loads(cycle_row._mapping["focus_areas"]) if cycle_row and cycle_row._mapping["focus_areas"] else []
                     g1_result = verification_service.run_gate(
                         gate_name="G1_ideation",
                         input_data={"requirements": focus_areas},
@@ -599,7 +600,7 @@ class SelfImproveService:
                 except Exception as e:
                     log.debug("g1_gate_skipped", error=str(e))
 
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET status = 'architecting' WHERE id = ?",
                 (cycle_id,),
             )
@@ -626,39 +627,39 @@ class SelfImproveService:
             return
 
         now = datetime.now(timezone.utc).isoformat()
-        with get_platform_db() as db:
+        with get_db() as db:
             # Update improvements with architect's ordering
-            imp_rows = db.execute(
+            imp_rows = db.exec_driver_sql(
                 "SELECT id, title FROM self_improve_improvements WHERE cycle_id = ? ORDER BY priority",
                 (cycle_id,),
             ).fetchall()
 
             # Match by title
-            title_to_id = {r["title"]: r["id"] for r in imp_rows}
+            title_to_id = {r._mapping["title"]: r._mapping["id"] for r in imp_rows}
 
             for item in ordered:
                 imp_id = title_to_id.get(item.get("title"))
                 if imp_id:
                     new_priority = item.get("build_order", item.get("priority", 99))
-                    db.execute(
+                    db.exec_driver_sql(
                         "UPDATE self_improve_improvements SET priority = ?, status = 'approved', updated_at = ? WHERE id = ?",
                         (new_priority, now, imp_id),
                     )
 
             # Get approved improvements (up to max)
-            cycle_row = db.execute(
+            cycle_row = db.exec_driver_sql(
                 "SELECT max_improvements FROM self_improve_cycles WHERE id = ?",
                 (cycle_id,),
             ).fetchone()
-            max_imp = cycle_row["max_improvements"] if cycle_row else 5
+            max_imp = cycle_row._mapping["max_improvements"] if cycle_row else 5
 
-            approved = db.execute(
+            approved = db.exec_driver_sql(
                 "SELECT id, title, description, category FROM self_improve_improvements "
                 "WHERE cycle_id = ? AND status = 'approved' ORDER BY priority LIMIT ?",
                 (cycle_id, max_imp),
             ).fetchall()
 
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET status = 'developing' WHERE id = ?",
                 (cycle_id,),
             )
@@ -668,7 +669,7 @@ class SelfImproveService:
         try:
             g2_result = verification_service.run_gate(
                 gate_name="G2_plan",
-                input_data={"improvements": [dict(r) for r in approved]},
+                input_data={"improvements": [dict(r._mapping) for r in approved]},
                 output_data={
                     "steps": ordered,
                     "files": [f for item in ordered for f in item.get("estimated_files", [])],
@@ -686,30 +687,30 @@ class SelfImproveService:
         # Spawn a Dev agent per improvement in its own worktree
         denylist_str = ", ".join(DENYLIST_PATTERNS)
         for imp_row in approved:
-            imp_id = imp_row["id"]
-            title = imp_row["title"]
-            description = imp_row["description"]
+            imp_id = imp_row._mapping["id"]
+            title = imp_row._mapping["title"]
+            description = imp_row._mapping["description"]
             branch_name = f"self-improve/{cycle_id[:8]}/{imp_id[:8]}"
 
             try:
                 wt = self.worktree_mgr.create(branch_name)
             except Exception as e:
                 log.error("worktree_create_failed", improvement_id=imp_id, error=str(e))
-                with get_platform_db() as db:
-                    db.execute(
+                with get_db() as db:
+                    db.exec_driver_sql(
                         "UPDATE self_improve_improvements SET status = 'failed', updated_at = ? WHERE id = ?",
                         (datetime.now(timezone.utc).isoformat(), imp_id),
                     )
-                    db.commit()
+                    pass  # auto-commit
                 continue
 
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'in_progress', "
                     "worktree_path = ?, branch_name = ?, updated_at = ? WHERE id = ?",
                     (str(wt.path), branch_name, datetime.now(timezone.utc).isoformat(), imp_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
             prompt = SQUAD_ROLES["developer"]["prompt_template"].format(
                 worktree_path=wt.path,
@@ -742,13 +743,13 @@ class SelfImproveService:
         violations = self.worktree_mgr.check_denylist(branch)
         if violations:
             log.error("denylist_violation", improvement_id=improvement_id, violations=violations)
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "reject_reason = ?, updated_at = ? WHERE id = ?",
                     (f"Denylist violations: {'; '.join(violations)}", now, improvement_id),
                 )
-                db.commit()
+                pass  # auto-commit
             # Cleanup worktree
             try:
                 self.worktree_mgr.cleanup(branch)
@@ -758,9 +759,9 @@ class SelfImproveService:
             return
 
         # Update status
-        with get_platform_db() as db:
+        with get_db() as db:
             diff_stat = self.worktree_mgr.get_diff_stat(branch)
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'testing', diff_stat = ?, updated_at = ? WHERE id = ?",
                 (diff_stat, now, improvement_id),
             )
@@ -792,8 +793,8 @@ class SelfImproveService:
             test_results = {"passed": 0, "failed": 0, "errors": 1, "output": output[:2000]}
 
         now = datetime.now(timezone.utc).isoformat()
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET test_results = ?, updated_at = ? WHERE id = ?",
                 (json.dumps(test_results), now, improvement_id),
             )
@@ -811,8 +812,8 @@ class SelfImproveService:
             security_scan = {"passed": False, "issues": ["Failed to parse security scan output"]}
 
         now = datetime.now(timezone.utc).isoformat()
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET security_scan = ?, updated_at = ? WHERE id = ?",
                 (json.dumps(security_scan), now, improvement_id),
             )
@@ -845,13 +846,13 @@ class SelfImproveService:
             if not security_passed:
                 reasons.append(f"Security: {', '.join(security_scan.get('issues', []))}")
 
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "reject_reason = ?, updated_at = ? WHERE id = ?",
                     ("; ".join(reasons), now, improvement_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
             # Cleanup worktree
             if imp["branch_name"]:
@@ -884,8 +885,8 @@ class SelfImproveService:
             log.debug("g3_gate_skipped", error=str(e))
 
         # Both passed — spawn Reviewer
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'review', updated_at = ? WHERE id = ?",
                 (now, improvement_id),
             )
@@ -900,16 +901,16 @@ class SelfImproveService:
         self._spawn_squad_agent(cycle_id, "reviewer", reviewer_prompt, improvement_id=improvement_id)
 
         # Update cycle status if first to reach review
-        with get_platform_db() as db:
-            cycle = db.execute(
+        with get_db() as db:
+            cycle = db.exec_driver_sql(
                 "SELECT status FROM self_improve_cycles WHERE id = ?", (cycle_id,)
             ).fetchone()
-            if cycle and cycle["status"] in ("developing", "testing"):
-                db.execute(
+            if cycle and cycle._mapping["status"] in ("developing", "testing"):
+                db.exec_driver_sql(
                     "UPDATE self_improve_cycles SET status = 'reviewing' WHERE id = ?",
                     (cycle_id,),
                 )
-                db.commit()
+                pass  # auto-commit
 
     def _handle_reviewer_completed(self, cycle_id: str, improvement_id: str, output: str):
         """Reviewer completed — if approved, spawn Doc Writer."""
@@ -925,8 +926,8 @@ class SelfImproveService:
 
         if not review.get("approved", False):
             # Review failed
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "review_notes = ?, reject_reason = ?, updated_at = ? WHERE id = ?",
                     (
@@ -935,7 +936,7 @@ class SelfImproveService:
                         now, improvement_id,
                     ),
                 )
-                db.commit()
+                pass  # auto-commit
 
             imp = self.get_improvement(improvement_id)
             if imp and imp["branch_name"]:
@@ -948,8 +949,8 @@ class SelfImproveService:
             return
 
         # Approved — spawn Doc Writer
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'documenting', review_notes = ?, updated_at = ? WHERE id = ?",
                 (review_notes, now, improvement_id),
             )
@@ -969,8 +970,8 @@ class SelfImproveService:
         self._spawn_squad_agent(cycle_id, "doc-writer", doc_prompt, improvement_id=improvement_id)
 
         # Update cycle status
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET status = 'documenting' WHERE id = ?",
                 (cycle_id,),
             )
@@ -1000,8 +1001,8 @@ class SelfImproveService:
             if len(diff_summary) > 10000:
                 diff_summary = diff_summary[:10000] + "\n... (truncated)"
 
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_improvements SET status = 'awaiting_approval', "
                 "pr_description = ?, diff_summary = ?, updated_at = ? WHERE id = ?",
                 (pr_description, diff_summary, now, improvement_id),
@@ -1016,20 +1017,20 @@ class SelfImproveService:
         })
 
         # Update cycle status
-        with get_platform_db() as db:
+        with get_db() as db:
             # Check if all active improvements are in awaiting_approval or terminal
-            all_imp = db.execute(
+            all_imp = db.exec_driver_sql(
                 "SELECT status FROM self_improve_improvements WHERE cycle_id = ?",
                 (cycle_id,),
             ).fetchall()
-            non_terminal = [r["status"] for r in all_imp if r["status"] not in
+            non_terminal = [r._mapping["status"] for r in all_imp if r._mapping["status"] not in
                            ("awaiting_approval", "approved_by_human", "rejected_by_human", "merged", "failed")]
             if not non_terminal:
-                db.execute(
+                db.exec_driver_sql(
                     "UPDATE self_improve_cycles SET status = 'awaiting_approval' WHERE id = ?",
                     (cycle_id,),
                 )
-                db.commit()
+                pass  # auto-commit
                 event_bus.emit("self_improve.stage_changed", {
                     "cycle_id": cycle_id, "stage": "awaiting_approval",
                 })
@@ -1062,12 +1063,12 @@ class SelfImproveService:
             log.debug("g4_gate_skipped", error=str(e))
 
         if qa_results.get("all_passed", False):
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_cycles SET status = 'completed', completed_at = ? WHERE id = ?",
                     (now, cycle_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
             with self._lock:
                 if self._active_cycle_id == cycle_id:
@@ -1085,8 +1086,8 @@ class SelfImproveService:
 
     def _check_developing_complete(self, cycle_id: str):
         """Check if all improvements are done developing/testing/reviewing."""
-        with get_platform_db() as db:
-            active = db.execute(
+        with get_db() as db:
+            active = db.exec_driver_sql(
                 "SELECT COUNT(*) FROM self_improve_improvements WHERE cycle_id = ? AND status IN "
                 "('approved', 'in_progress', 'testing', 'review', 'documenting')",
                 (cycle_id,),
@@ -1094,16 +1095,16 @@ class SelfImproveService:
 
             if active == 0:
                 # All improvements are in terminal states or awaiting_approval
-                non_terminal = db.execute(
+                non_terminal = db.exec_driver_sql(
                     "SELECT COUNT(*) FROM self_improve_improvements WHERE cycle_id = ? AND status = 'awaiting_approval'",
                     (cycle_id,),
                 ).fetchone()[0]
                 if non_terminal > 0:
-                    db.execute(
+                    db.exec_driver_sql(
                         "UPDATE self_improve_cycles SET status = 'awaiting_approval' WHERE id = ?",
                         (cycle_id,),
                     )
-                    db.commit()
+                    pass  # auto-commit
                     event_bus.emit("self_improve.stage_changed", {
                         "cycle_id": cycle_id, "stage": "awaiting_approval",
                     })
@@ -1113,8 +1114,8 @@ class SelfImproveService:
 
     def _check_all_improvements_resolved(self, cycle_id: str):
         """Check if all improvements are in terminal state. If so, advance cycle."""
-        with get_platform_db() as db:
-            pending = db.execute(
+        with get_db() as db:
+            pending = db.exec_driver_sql(
                 "SELECT COUNT(*) FROM self_improve_improvements WHERE cycle_id = ? AND status NOT IN "
                 "('merged', 'failed', 'rejected_by_human', 'approved_by_human')",
                 (cycle_id,),
@@ -1124,17 +1125,17 @@ class SelfImproveService:
                 return
 
             # Check if any were merged — if so, run QA Lead
-            merged_count = db.execute(
+            merged_count = db.exec_driver_sql(
                 "SELECT COUNT(*) FROM self_improve_improvements WHERE cycle_id = ? AND status = 'merged'",
                 (cycle_id,),
             ).fetchone()[0]
 
             if merged_count > 0:
-                db.execute(
+                db.exec_driver_sql(
                     "UPDATE self_improve_cycles SET status = 'integrating' WHERE id = ?",
                     (cycle_id,),
                 )
-                db.commit()
+                pass  # auto-commit
 
                 # Spawn QA Lead
                 prompt = SQUAD_ROLES["qa-lead"]["prompt_template"].format(repo_root=REPO_ROOT)
@@ -1146,11 +1147,11 @@ class SelfImproveService:
             else:
                 # All rejected or failed — cycle is done with no merges
                 now = datetime.now(timezone.utc).isoformat()
-                db.execute(
+                db.exec_driver_sql(
                     "UPDATE self_improve_cycles SET status = 'rejected', completed_at = ? WHERE id = ?",
                     (now, cycle_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
                 with self._lock:
                     if self._active_cycle_id == cycle_id:
@@ -1165,13 +1166,13 @@ class SelfImproveService:
         now = datetime.now(timezone.utc).isoformat()
 
         if improvement_id:
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE self_improve_improvements SET status = 'failed', "
                     "reject_reason = ?, updated_at = ? WHERE id = ?",
                     (f"{role} agent failed: {output[:500]}", now, improvement_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
             # Cleanup worktree if it exists
             imp = self.get_improvement(improvement_id)
@@ -1192,8 +1193,8 @@ class SelfImproveService:
     def _fail_cycle(self, cycle_id: str, error: str):
         """Mark a cycle as failed and cleanup."""
         now = datetime.now(timezone.utc).isoformat()
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET status = 'failed', error = ?, completed_at = ? WHERE id = ?",
                 (error[:2000], now, cycle_id),
             )
@@ -1221,8 +1222,8 @@ class SelfImproveService:
         agent_name = role_def.get("name", f"Self-Improve {role}")
 
         # Create agent record
-        with get_platform_db() as db:
-            db.execute(
+        with get_db() as db:
+            db.exec_driver_sql(
                 "INSERT INTO agents (id, name, model, role, status, task_description, "
                 "working_directory, started_at, created_at, updated_at) "
                 "VALUES (?, ?, ?, ?, 'running', ?, ?, ?, ?, ?)",
@@ -1235,7 +1236,7 @@ class SelfImproveService:
             )
 
             # Link to cycle
-            db.execute(
+            db.exec_driver_sql(
                 "INSERT INTO self_improve_agents (id, cycle_id, improvement_id, agent_id, role, status, started_at, created_at) "
                 "VALUES (?, ?, ?, ?, ?, 'running', ?, ?)",
                 (str(uuid.uuid4()), cycle_id, improvement_id, agent_id, role, now, now),
@@ -1253,34 +1254,34 @@ class SelfImproveService:
             cwd = worktree_path or str(REPO_ROOT)
             pid = process_manager.spawn(agent_id, task, cwd=cwd, model=model, role=f"self-improve-{role}")
 
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE agents SET pid = ? WHERE id = ?",
                     (pid, agent_id),
                 )
-                db.commit()
+                pass  # auto-commit
 
             log.info("squad_agent_spawned", agent_id=agent_id, role=role, cycle_id=cycle_id, pid=pid)
         except Exception as e:
             log.error("squad_agent_spawn_failed", role=role, error=str(e))
-            with get_platform_db() as db:
-                db.execute(
+            with get_db() as db:
+                db.exec_driver_sql(
                     "UPDATE agents SET status = 'failed', stopped_at = ? WHERE id = ?",
                     (now, agent_id),
                 )
-                db.execute(
+                db.exec_driver_sql(
                     "UPDATE self_improve_agents SET status = 'failed', completed_at = ? WHERE agent_id = ?",
                     (now, agent_id),
                 )
-                db.commit()
+                pass  # auto-commit
             raise
 
         return agent_id
 
     def _check_budget(self, cycle_id: str) -> bool:
         """Check if budget is exceeded. Returns True if within budget."""
-        with get_platform_db() as db:
-            cycle = db.execute(
+        with get_db() as db:
+            cycle = db.exec_driver_sql(
                 "SELECT budget_usd FROM self_improve_cycles WHERE id = ?",
                 (cycle_id,),
             ).fetchone()
@@ -1288,30 +1289,30 @@ class SelfImproveService:
                 return False
 
             # Sum costs from all agents in this cycle
-            agent_ids_rows = db.execute(
+            agent_ids_rows = db.exec_driver_sql(
                 "SELECT agent_id FROM self_improve_agents WHERE cycle_id = ?",
                 (cycle_id,),
             ).fetchall()
-            agent_ids = [r["agent_id"] for r in agent_ids_rows]
+            agent_ids = [r._mapping["agent_id"] for r in agent_ids_rows]
 
             if not agent_ids:
                 return True
 
             placeholders = ",".join("?" for _ in agent_ids)
-            cost_row = db.execute(
+            cost_row = db.exec_driver_sql(
                 f"SELECT COALESCE(SUM(cost_usd), 0.0) as total FROM cost_ledger WHERE agent_id IN ({placeholders})",
                 agent_ids,
             ).fetchone()
-            total_spent = cost_row["total"] if cost_row else 0.0
+            total_spent = cost_row._mapping["total"] if cost_row else 0.0
 
             # Update spent_usd
-            db.execute(
+            db.exec_driver_sql(
                 "UPDATE self_improve_cycles SET spent_usd = ? WHERE id = ?",
                 (total_spent, cycle_id),
             )
             db.commit()
 
-            return total_spent < cycle["budget_usd"]
+            return total_spent < cycle._mapping["budget_usd"]
 
     def _parse_json_from_output(self, output: str) -> dict | list | None:
         """Extract JSON from agent output, handling stream-json wrapper."""
@@ -1380,8 +1381,8 @@ class SelfImproveService:
 
     def get_cycle_agents(self, cycle_id: str) -> list[dict]:
         """List all agents spawned for a cycle."""
-        with get_platform_db() as db:
-            rows = db.execute(
+        with get_db() as db:
+            rows = db.exec_driver_sql(
                 "SELECT sa.id, sa.cycle_id, sa.improvement_id, sa.agent_id, sa.role, "
                 "sa.status, sa.started_at, sa.completed_at, sa.output_summary, sa.created_at, "
                 "a.name, a.pid, a.model "
@@ -1390,7 +1391,7 @@ class SelfImproveService:
                 "WHERE sa.cycle_id = ? ORDER BY sa.created_at",
                 (cycle_id,),
             ).fetchall()
-            return [dict(r) for r in rows]
+            return [dict(r._mapping) for r in rows]
 
 
 # Module-level singleton

@@ -169,22 +169,28 @@ def record_sdk_cost(
     node_id: str | None = None,
     project_id: str | None = None,
 ) -> None:
-    """Write a row to cost_ledger with real token counts from the SDK.
-
-    If cost_usd is not provided, it will be calculated from the model pricing.
-    """
-    from app.db.connections import get_platform_db
+    """Write a row to cost_ledger with real token counts from the SDK."""
+    from sqlalchemy import insert
+    from app.db.session import get_db
+    from app.db.tables import cost_ledger
 
     if cost_usd is None:
         cost_usd = calculate_cost(model, input_tokens, output_tokens)
     try:
-        with get_platform_db() as db:
-            db.execute(
-                "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (uuid.uuid4().hex, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source),
+        with get_db() as conn:
+            conn.execute(
+                insert(cost_ledger).values(
+                    id=uuid.uuid4().hex,
+                    agent_id=agent_id,
+                    node_id=node_id,
+                    project_id=project_id,
+                    model=model,
+                    input_tokens=input_tokens,
+                    output_tokens=output_tokens,
+                    cost_usd=cost_usd,
+                    source=source,
+                )
             )
-            db.commit()
     except Exception as e:
         log.warning("record_sdk_cost_failed", error=str(e))
 
