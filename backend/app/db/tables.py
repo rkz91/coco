@@ -85,6 +85,23 @@ agent_roles = Table(
     Column("sort_order", Integer, server_default="0"),
 )
 
+agent_sessions = Table(
+    "agent_sessions",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("agent_id", Text, nullable=False),
+    Column("conversation_id", Text),
+    Column("model", Text),
+    Column("status", Text, nullable=False, server_default="active"),
+    Column("message_count", Integer, nullable=False, server_default="0"),
+    Column("total_input_tokens", Integer, nullable=False, server_default="0"),
+    Column("total_output_tokens", Integer, nullable=False, server_default="0"),
+    Column("checkpoint_data", Text, server_default="{}"),
+    Column("messages_json", Text, server_default="[]"),
+    Column("created_at", Text, nullable=False),
+    Column("updated_at", Text, nullable=False),
+)
+
 agent_output = Table(
     "agent_output",
     metadata,
