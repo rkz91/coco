@@ -4,8 +4,9 @@ import { useScope } from '../context/ScopeContext';
 import { apiPost, apiFetch, apiPatch } from '../lib/api';
 import {
   Inbox, AlertTriangle, FileCheck, FolderOpen, Activity, Check, X, Eye, EyeOff, ChevronRight, Clock, Mic,
-  CheckSquare, Square, MinusSquare, Bot, ChevronDown as ChevronDownIcon, Lightbulb, Sparkles,
+  CheckSquare, Square, MinusSquare, Bot, ChevronDown as ChevronDownIcon, Lightbulb, Sparkles, Zap,
 } from 'lucide-react';
+import { ActionReviewPanel } from '../components/knowledge/ActionReviewPanel';
 import { cn } from '../lib/utils';
 import { useInViewport } from '../hooks/useInViewport';
 import { useToast } from '../components/shared/Toast';
@@ -13,7 +14,7 @@ import { useListNavigation } from '../hooks/useListNavigation';
 import { VoiceDecisionCard, type VoiceDecisionItem } from '../components/inbox/VoiceDecisionCard';
 
 type ReadState = 'unread' | 'seen' | 'dismissed';
-type InboxTab = 'all' | 'urgent' | 'drafts' | 'classify' | 'suggestions' | 'health' | 'auto_handled';
+type InboxTab = 'all' | 'urgent' | 'drafts' | 'classify' | 'suggestions' | 'health' | 'auto_handled' | 'actions';
 
 interface SuggestionItem {
   id: string;
@@ -62,6 +63,7 @@ const TAB_CONFIG: { key: InboxTab; label: string; icon: React.ElementType }[] = 
   { key: 'suggestions', label: 'Suggestions', icon: Lightbulb },
   { key: 'health', label: 'Health', icon: Activity },
   { key: 'auto_handled', label: 'Auto-handled', icon: Bot },
+  { key: 'actions', label: 'Actions', icon: Zap },
 ];
 
 function typeIcon(type: InboxItem['type']) {
@@ -396,6 +398,12 @@ export default function InboxPage() {
     onError: () => toast('Failed to batch accept', 'error'),
   });
 
+  const { data: actionStats } = useQuery({
+    queryKey: ['action-stats'],
+    queryFn: () => apiFetch<{ staged: number; approved: number; rejected: number; total: number }>('/actions/stats'),
+    staleTime: 15_000,
+  });
+
   const { data: todosData } = useQuery({
     queryKey: ['todos-overdue'],
     queryFn: async () => {
@@ -603,6 +611,7 @@ export default function InboxPage() {
     suggestions: suggestions.length,
     health: activeDedupedItems.filter(i => i.type === 'health').length,
     auto_handled: autoHandledItems.length,
+    actions: actionStats?.staged ?? 0,
   };
 
   // ─── Multi-select helpers ─────────────────────────────────────────
@@ -956,6 +965,9 @@ export default function InboxPage() {
             </div>
           </div>
         )
+      ) : activeTab === 'actions' ? (
+        /* Actions tab: staged action items for review */
+        <ActionReviewPanel />
       ) : activeTab === 'auto_handled' ? (
         /* Auto-handled tab: separate display */
         autoHandledItems.length === 0 ? (

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import DOMPurify from 'dompurify';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Mail, Mic, Bug, FileText, FileQuestion, ChevronDown } from 'lucide-react';
+import { Mail, Mic, Bug, FileText, FileQuestion, ChevronDown, Zap, Loader2 } from 'lucide-react';
 import { apiFetch, apiPost } from '../../lib/api';
 import { cn, timeAgo } from '../../lib/utils';
 import { PropertiesPanel } from '../shared/PropertiesPanel';
@@ -59,6 +59,17 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
       onClose();
     },
   });
+
+  const extractActionsMutation = useMutation({
+    mutationFn: () => apiPost<{ count: number }>(`/actions/process`, { content_id: item.id, mode: 'regex' }),
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['actions-staged'] });
+      queryClient.invalidateQueries({ queryKey: ['action-stats'] });
+      setExtractedCount(data?.count ?? 0);
+    },
+  });
+
+  const [extractedCount, setExtractedCount] = useState<number | null>(null);
 
   const bodyText = item.processed_text || item.raw_text || '';
   const isHtml = item.source === 'email' && bodyText.includes('<');
@@ -156,6 +167,28 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
           )}
         >
           Dismiss
+        </button>
+
+        <button
+          onClick={() => extractActionsMutation.mutate()}
+          disabled={extractActionsMutation.isPending}
+          className={cn(
+            'flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-lg',
+            'bg-warning/20 text-warning hover:bg-warning/30 shadow-sm transition-all',
+            extractActionsMutation.isPending && 'opacity-50',
+          )}
+        >
+          {extractActionsMutation.isPending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Zap className="h-3.5 w-3.5" />
+          )}
+          Extract Actions
+          {extractedCount !== null && (
+            <span className="ml-1 text-[10px] bg-warning/20 px-1.5 py-0.5 rounded-full">
+              {extractedCount}
+            </span>
+          )}
         </button>
       </div>
 
