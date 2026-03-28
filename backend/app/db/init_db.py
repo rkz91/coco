@@ -385,7 +385,7 @@ CREATE TABLE IF NOT EXISTS triggers (
     trigger_type TEXT NOT NULL CHECK(trigger_type IN ('cron', 'webhook', 'file_watch')),
     enabled INTEGER NOT NULL DEFAULT 1,
     config TEXT NOT NULL DEFAULT '{}',
-    action_type TEXT NOT NULL CHECK(action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify')),
+    action_type TEXT NOT NULL CHECK(action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify', 'podcast_generate')),
     action_config TEXT NOT NULL DEFAULT '{}',
     node_id TEXT,
     last_fired_at TEXT,
@@ -456,6 +456,18 @@ CREATE TABLE IF NOT EXISTS self_improve_agents (
 );
 CREATE INDEX IF NOT EXISTS idx_si_agents_cycle ON self_improve_agents(cycle_id);
 CREATE INDEX IF NOT EXISTS idx_si_agents_agent ON self_improve_agents(agent_id);
+
+CREATE TABLE IF NOT EXISTS podcasts (
+    id TEXT PRIMARY KEY,
+    title TEXT NOT NULL,
+    script TEXT,
+    audio_path TEXT,
+    duration REAL,
+    voice TEXT DEFAULT 'af_heart',
+    status TEXT DEFAULT 'pending' CHECK(status IN ('pending','generating','ready','failed')),
+    created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_podcasts_created ON podcasts(created_at);
 
 CREATE TABLE IF NOT EXISTS inbox_read_state (
     item_key TEXT PRIMARY KEY,

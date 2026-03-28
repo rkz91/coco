@@ -162,6 +162,15 @@ async def _execute_trigger_action(trigger: dict, context: dict | None = None) ->
         except Exception as e:
             return {"status": "failed", "error": str(e)}
 
+    elif action_type == "podcast_generate":
+        from app.services.podcast import generate_podcast as _gen_podcast
+        voice = action_config.get("voice", "af_heart")
+        try:
+            result = await _gen_podcast(voice=voice)
+            return {"status": "success", "result": f"Podcast generated: {result.get('id')}", "podcast_id": result.get("id")}
+        except Exception as e:
+            return {"status": "failed", "error": str(e)}
+
     return {"status": "skipped", "result": "Unknown action type"}
 
 
