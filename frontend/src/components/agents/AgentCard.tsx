@@ -42,13 +42,27 @@ export const ROLE_META: Record<string, { label: string; abbr: string; color: str
 };
 
 const statusColors: Record<string, string> = {
-  running: 'bg-success',
-  paused: 'bg-warning',
-  idle: 'bg-muted-foreground',
-  completed: 'bg-info',
+  running: 'bg-emerald-500',
+  paused: 'bg-amber-500',
+  idle: 'bg-muted-foreground/40',
+  completed: 'bg-blue-500',
   failed: 'bg-destructive',
-  killed: 'bg-destructive',
+  killed: 'bg-muted-foreground/40',
 };
+
+export function StatusDot({ status }: { status: string }) {
+  const isActive = status === 'running';
+  const color = statusColors[status] ?? 'bg-muted-foreground/40';
+
+  return (
+    <span className="relative flex h-2.5 w-2.5">
+      {isActive && (
+        <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${color} opacity-75`} />
+      )}
+      <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${color}`} />
+    </span>
+  );
+}
 
 const modelBadgeColors: Record<string, string> = {
   opus: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -78,7 +92,7 @@ export const AgentCard = React.memo(function AgentCard({ agent, onClick, onSpawn
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
-          <span className={cn('inline-block w-2.5 h-2.5 rounded-full', statusColors[agent.status] || 'bg-muted-foreground', agent.status === 'running' && 'animate-pulse-dot')} />
+          <StatusDot status={agent.status} />
           {agent.role && ROLE_META[agent.role] && (
             <span className={cn('inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded', ROLE_META[agent.role].color)}>
               {(() => { const Icon = ROLE_META[agent.role!].icon; return <Icon size={10} />; })()}
