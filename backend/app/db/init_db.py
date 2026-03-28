@@ -608,6 +608,10 @@ def init_platform_db():
 
     conn.executescript(SCHEMA)
 
+    # Create hub mirror tables (used by hub_sync service)
+    from app.services.hub_sync import _MIRROR_DDL
+    conn.executescript(_MIRROR_DDL)
+
     # Add new columns to existing tables
     existing_tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
 
