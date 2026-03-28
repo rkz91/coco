@@ -42,7 +42,7 @@ nodes = Table(
     Column("jira_key", Text),
     Column("confluence_space", Text),
     Column("prefix", Text),
-    Column("metadata_json", Text, server_default="{}"),
+    Column("metadata", Text, key="metadata_json", server_default="{}"),
     Column("created_at", Text, nullable=False),
     Column("updated_at", Text, nullable=False),
 )
