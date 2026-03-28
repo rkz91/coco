@@ -595,6 +595,23 @@ agent_replays = Table(
 # Inbox
 # ---------------------------------------------------------------------------
 
+podcasts = Table(
+    "podcasts",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("title", Text, nullable=False),
+    Column("script", Text),
+    Column("audio_path", Text),
+    Column("duration", Float),
+    Column("voice", Text, server_default="af_heart"),
+    Column("status", Text, server_default="pending"),
+    Column("created_at", Text, nullable=False),
+)
+
+# ---------------------------------------------------------------------------
+# Inbox
+# ---------------------------------------------------------------------------
+
 inbox_read_state = Table(
     "inbox_read_state",
     metadata,

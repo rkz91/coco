@@ -26,6 +26,7 @@ from app.routers import (
     insights,
     actions,
     replay,
+    podcast,
 )
 
 structlog.configure(
@@ -40,6 +41,8 @@ log = structlog.get_logger()
 async def lifespan(app: FastAPI):
     log.info("platform_starting")
     init_platform_db()
+    # Ensure podcast directory exists
+    (Path.home() / ".coco" / "podcasts").mkdir(parents=True, exist_ok=True)
     log.info("platform_db_initialized")
     # Ensure replays directory exists
     from pathlib import Path as _Path
@@ -93,6 +96,7 @@ openapi_tags = [
     {"name": "Triggers", "description": "Cron, webhook, and file-watch triggers"},
     {"name": "Webhooks", "description": "Incoming webhook receiver"},
     {"name": "Self-Improve", "description": "Self-improvement cycle management"},
+    {"name": "Podcasts", "description": "Morning briefing podcast generation and playback"},
     {"name": "Inbox", "description": "Inbox read-state persistence and batch actions"},
     {"name": "Insights", "description": "Cross-source entity extraction and insight generation"},
     {"name": "Actions", "description": "Content-to-action extraction pipeline"},
@@ -173,6 +177,7 @@ app.include_router(search.router)
 app.include_router(insights.router)
 app.include_router(actions.router)
 app.include_router(replay.router)
+app.include_router(podcast.router)
 
 # --- Cross-cutting resolve endpoint ---
 

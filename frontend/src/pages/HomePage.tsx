@@ -5,6 +5,7 @@ import { AlertTriangle, Search, FileText, FolderOpen, HeartPulse, Sparkles } fro
 import { apiFetch, apiPatch, apiPost } from '../lib/api';
 import { cn, timeAgo } from '../lib/utils';
 import { BriefingCard, type SyncResult } from '../components/home/BriefingCard';
+import { PodcastCard } from '../components/home/PodcastCard';
 import { ProjectHealthGrid } from '../components/home/ProjectHealthGrid';
 import { FocusList } from '../components/home/FocusList';
 import { JarvisOverlay } from '../components/home/JarvisOverlay';
@@ -262,8 +263,9 @@ export default function HomePage() {
 
       {/* Main 2-column layout: Left (action) | Right (status) */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        {/* Left column: Briefing + Focus List */}
+        {/* Left column: Podcast + Briefing + Focus List */}
         <div className="lg:col-span-7 space-y-5">
+          <PodcastCard />
           <BriefingCard
             sinceLastSession={data.since_last_session}
             attention={data.attention}
