@@ -682,7 +682,7 @@ async def _claude_fallback(text: str) -> CommandResponse:
 
     # --- SDK path (preferred when enabled) ---
     if USE_AGENT_SDK:
-        from app.services.agent_sdk_client import agent_sdk, calculate_cost
+        from app.services.agent_sdk_client import agent_sdk
         if agent_sdk.is_available():
             try:
                 prompt = ""
@@ -701,12 +701,11 @@ async def _claude_fallback(text: str) -> CommandResponse:
                     reply = reply[:297] + "..."
 
                 # Record real token cost
-                cost = calculate_cost(result["model"], result["input_tokens"], result["output_tokens"])
-                _record_sdk_cost(
+                from app.services.agent_sdk_client import record_sdk_cost
+                record_sdk_cost(
                     model=result["model"],
                     input_tokens=result["input_tokens"],
                     output_tokens=result["output_tokens"],
-                    cost_usd=cost,
                     source="chat",
                 )
 
@@ -757,27 +756,6 @@ async def _claude_fallback(text: str) -> CommandResponse:
         )
 
 
-def _record_sdk_cost(
-    model: str,
-    input_tokens: int,
-    output_tokens: int,
-    cost_usd: float,
-    source: str = "chat",
-    agent_id: str | None = None,
-    node_id: str | None = None,
-    project_id: str | None = None,
-) -> None:
-    """Write a row to cost_ledger with real token counts from the SDK."""
-    try:
-        with get_platform_db() as db:
-            db.execute(
-                "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (uuid.uuid4().hex, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source),
-            )
-            db.commit()
-    except Exception as e:
-        log.warning("record_sdk_cost_failed", error=str(e))
 
 
 # ─── Endpoint ─────────────────────────────────────────────────────────────────

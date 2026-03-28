@@ -4,7 +4,6 @@ import os
 import signal
 import threading
 import time
-import uuid
 import psutil
 import structlog
 from app.db.connections import get_platform_db, _connect
@@ -204,7 +203,7 @@ class ProcessManager:
     async def _run_sdk_agent(self, agent_id: str, task: str, model: str,
                              node_id: str | None, role: str | None):
         """Async SDK agent execution with output recording and cost tracking."""
-        from app.services.agent_sdk_client import agent_sdk, calculate_cost
+        from app.services.agent_sdk_client import agent_sdk
 
         status = "completed"
         exit_code = 0
@@ -236,14 +235,15 @@ class ProcessManager:
                 db.commit()
 
             # Record cost
-            cost_usd = calculate_cost(response_model, input_tokens, output_tokens)
-            with get_platform_db() as db:
-                db.execute(
-                    "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (uuid.uuid4().hex, agent_id, node_id, None, response_model, input_tokens, output_tokens, cost_usd, "agent"),
-                )
-                db.commit()
+            from app.services.agent_sdk_client import record_sdk_cost
+            record_sdk_cost(
+                model=response_model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                source="agent",
+                agent_id=agent_id,
+                node_id=node_id,
+            )
 
         except asyncio.TimeoutError:
             log.warning("sdk_agent_timeout", agent_id=agent_id)

@@ -1,6 +1,7 @@
 """Thin wrapper around the Anthropic Python SDK for chat, commands, and agent spawning."""
 
 import os
+import uuid
 import structlog
 from anthropic import Anthropic, AsyncAnthropic
 from typing import AsyncIterator
@@ -156,6 +157,36 @@ class AgentSDKClient:
             "model": response.model,
             "stop_reason": response.stop_reason,
         }
+
+
+def record_sdk_cost(
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: float | None = None,
+    source: str = "chat",
+    agent_id: str | None = None,
+    node_id: str | None = None,
+    project_id: str | None = None,
+) -> None:
+    """Write a row to cost_ledger with real token counts from the SDK.
+
+    If cost_usd is not provided, it will be calculated from the model pricing.
+    """
+    from app.db.connections import get_platform_db
+
+    if cost_usd is None:
+        cost_usd = calculate_cost(model, input_tokens, output_tokens)
+    try:
+        with get_platform_db() as db:
+            db.execute(
+                "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (uuid.uuid4().hex, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source),
+            )
+            db.commit()
+    except Exception as e:
+        log.warning("record_sdk_cost_failed", error=str(e))
 
 
 # Singleton

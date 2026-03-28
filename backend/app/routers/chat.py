@@ -189,7 +189,7 @@ async def _check_claude_available() -> bool:
 
 async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str, session_id: str | None = None):
     """SDK-based streaming chat generator. Used when USE_AGENT_SDK is enabled."""
-    from app.services.agent_sdk_client import agent_sdk, calculate_cost
+    from app.services.agent_sdk_client import agent_sdk
 
     full_response = ""
     input_tokens = 0
@@ -244,17 +244,13 @@ async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str
 
     # Record real cost to cost_ledger
     if input_tokens or output_tokens:
-        cost_usd = calculate_cost(response_model, input_tokens, output_tokens)
-        try:
-            with get_platform_db() as db:
-                db.execute(
-                    "INSERT INTO cost_ledger (id, agent_id, node_id, project_id, model, input_tokens, output_tokens, cost_usd, source) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                    (uuid.uuid4().hex, None, None, None, response_model, input_tokens, output_tokens, cost_usd, "chat"),
-                )
-                db.commit()
-        except Exception as e:
-            logger.warning("sdk_chat_cost_record_failed: %s", e)
+        from app.services.agent_sdk_client import record_sdk_cost
+        record_sdk_cost(
+            model=response_model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            source="chat",
+        )
 
     yield {"event": "done", "data": json.dumps({"type": "done", "content": full_response, "session_id": session_id})}
 
