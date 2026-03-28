@@ -144,9 +144,9 @@ def create_node(body: CreateNodeBody):
             )
         )
 
-        # Auto-spawn default agents for project and team nodes
+        # Auto-spawn default agents for all node types
         spawned_agents = []
-        if body.node_type in ("project", "team"):
+        if body.node_type in ("project", "team", "product", "group"):
             role_rows = conn.execute(
                 select(
                     agent_roles.c.slug, agent_roles.c.name,
@@ -356,22 +356,34 @@ def get_folder_contents(node_id: str):
         if not real_path.startswith(home):
             return {"path": folder_path, "exists": False, "files": [], "error": "Path outside home directory"}
 
+        from app.services.folder_scanner import categorize_file, FILE_CATEGORIES
+
         files = []
+        category_counts: dict[str, int] = {}
         try:
             for entry in sorted(os.scandir(folder_path), key=lambda e: (not e.is_dir(), e.name.lower())):
                 if entry.name.startswith('.'):
                     continue
-                stat = entry.stat()
+                st = entry.stat()
+                cat = categorize_file(entry.name) if not entry.is_dir() else "folder"
                 files.append({
                     "name": entry.name,
                     "is_dir": entry.is_dir(),
-                    "size": stat.st_size if not entry.is_dir() else None,
-                    "modified": stat.st_mtime,
+                    "size": st.st_size if not entry.is_dir() else None,
+                    "modified": st.st_mtime,
+                    "category": cat,
                 })
+                category_counts[cat] = category_counts.get(cat, 0) + 1
         except PermissionError:
             pass
 
-        return {"path": folder_path, "exists": True, "files": files[:50]}
+        # Build category metadata for the frontend
+        categories = []
+        for cat_id, count in sorted(category_counts.items(), key=lambda x: -x[1]):
+            meta = FILE_CATEGORIES.get(cat_id, {"label": cat_id.title(), "icon": "file"})
+            categories.append({"id": cat_id, "label": meta["label"], "icon": meta["icon"], "count": count})
+
+        return {"path": folder_path, "exists": True, "files": files[:100], "categories": categories}
 
 
 @router.get("/api/filesystem/browse")
@@ -398,3 +410,59 @@ def browse_filesystem(path: str = "~"):
         pass
 
     return {"path": resolved, "exists": True, "dirs": dirs[:100], "parent": parent}
+
+
+@router.post("/api/tree/backfill-agents")
+def backfill_agents():
+    """Auto-recruit default agents for all existing nodes that have 0 agents.
+
+    Creates agents in hierarchy order (root first) and sets reports_to
+    based on the DEFAULT_HIERARCHY defined in agents.py.
+    """
+    from app.routers.agents import DEFAULT_HIERARCHY, _resolve_reports_to
+
+    with get_db() as conn:
+        # Find nodes with no agents
+        all_nodes = conn.execute(select(nodes.c.id, nodes.c.label)).fetchall()
+        role_rows = conn.execute(
+            select(
+                agent_roles.c.slug, agent_roles.c.name,
+                agent_roles.c.default_model, agent_roles.c.default_system_prompt,
+            ).order_by(agent_roles.c.sort_order)
+        ).fetchall()
+
+        if not role_rows:
+            return {"backfilled": 0, "message": "No agent roles defined"}
+
+        # Sort roles so parents are created before children
+        def _hierarchy_depth(slug: str, depth: int = 0) -> int:
+            parent = DEFAULT_HIERARCHY.get(slug)
+            if parent is None:
+                return depth
+            return _hierarchy_depth(parent, depth + 1)
+
+        sorted_roles = sorted(role_rows, key=lambda r: _hierarchy_depth(r.slug))
+
+        backfilled = 0
+        for node in all_nodes:
+            existing = conn.execute(
+                select(agents.c.id).where(agents.c.node_id == node.id).limit(1)
+            ).fetchone()
+            if existing:
+                continue
+
+            # Create agents in order so parents exist when children look up reports_to
+            for role in sorted_roles:
+                agent_id = str(uuid.uuid4())
+                reports_to = _resolve_reports_to(conn, node.id, role.slug)
+                conn.execute(
+                    insert(agents).values(
+                        id=agent_id, name=role.name, node_id=node.id,
+                        model=role.default_model, role=role.slug,
+                        system_prompt=role.default_system_prompt, status="idle",
+                        reports_to=reports_to,
+                    )
+                )
+            backfilled += 1
+
+        return {"backfilled": backfilled, "agents_per_node": len(sorted_roles)}

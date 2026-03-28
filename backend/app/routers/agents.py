@@ -123,6 +123,51 @@ def get_org_chart(
     return roots
 
 
+@router.post("/api/agents/fix-hierarchy")
+def fix_hierarchy(node_id: str | None = None):
+    """Repair reports_to for all agents (or one node) based on DEFAULT_HIERARCHY.
+
+    Sets reports_to for agents whose role is in the default hierarchy but
+    who currently have no reports_to set. Does not overwrite existing
+    relationships.
+    """
+    with get_db() as conn:
+        if node_id:
+            node_ids = [node_id]
+        else:
+            rows = conn.exec_driver_sql(
+                "SELECT DISTINCT node_id FROM agents WHERE node_id IS NOT NULL"
+            ).fetchall()
+            node_ids = [r.node_id for r in rows]
+
+        fixed = 0
+        for nid in node_ids:
+            agents_in_node = conn.exec_driver_sql(
+                "SELECT id, role, reports_to FROM agents WHERE node_id = ?", (nid,)
+            ).fetchall()
+
+            role_to_id: dict[str, str] = {}
+            for a in agents_in_node:
+                if a.role:
+                    role_to_id[a.role] = a.id
+
+            for a in agents_in_node:
+                if a.reports_to:
+                    continue  # already has a hierarchy
+                parent_role = DEFAULT_HIERARCHY.get(a.role)
+                if parent_role is None:
+                    continue  # root role, no parent needed
+                parent_id = role_to_id.get(parent_role)
+                if parent_id:
+                    conn.exec_driver_sql(
+                        "UPDATE agents SET reports_to = ? WHERE id = ?",
+                        (parent_id, a.id),
+                    )
+                    fixed += 1
+
+        return {"fixed": fixed, "nodes_checked": len(node_ids)}
+
+
 @router.post("/api/agents", status_code=201)
 def create_agent(body: CreateAgentBody):
     agent_id = str(uuid.uuid4())
@@ -377,6 +422,37 @@ def create_role(body: CreateRoleBody):
         return dict(row._mapping)
 
 
+# ---------------------------------------------------------------------------
+# Default org chart hierarchy — defines reports_to relationships
+# ---------------------------------------------------------------------------
+
+# Maps role_slug -> parent role_slug. Root roles have None.
+DEFAULT_HIERARCHY: dict[str, str | None] = {
+    "chief-of-staff": None,                       # root
+    "product-manager": "chief-of-staff",
+    "project-manager": "chief-of-staff",
+    "technical-architect": "chief-of-staff",
+    "qa-reviewer": "chief-of-staff",
+    "communications-specialist": "chief-of-staff",
+    "developer": "technical-architect",
+    "user-researcher": "product-manager",
+    "data-analyst": "product-manager",
+    "scribe": "project-manager",
+}
+
+
+def _resolve_reports_to(conn, node_id: str, role_slug: str) -> str | None:
+    """Find the agent ID this role should report to, based on DEFAULT_HIERARCHY."""
+    parent_role = DEFAULT_HIERARCHY.get(role_slug)
+    if not parent_role:
+        return None
+    row = conn.exec_driver_sql(
+        "SELECT id FROM agents WHERE node_id = ? AND role = ? LIMIT 1",
+        (node_id, parent_role),
+    ).fetchone()
+    return row.id if row else None
+
+
 @router.post("/api/agents/recruit", status_code=201)
 def recruit_agent(body: RecruitAgentBody):
     with get_db() as conn:
@@ -395,6 +471,7 @@ def recruit_agent(body: RecruitAgentBody):
         agent_name = body.name or role._mapping["name"]
         agent_model = body.model or role._mapping["default_model"]
         agent_prompt = body.system_prompt or role._mapping["default_system_prompt"]
+        reports_to = _resolve_reports_to(conn, body.node_id, role._mapping["slug"])
 
         conn.execute(
             insert(agents).values(
@@ -405,6 +482,7 @@ def recruit_agent(body: RecruitAgentBody):
                 role=role._mapping["slug"],
                 system_prompt=agent_prompt,
                 status="idle",
+                reports_to=reports_to,
             )
         )
         row = conn.exec_driver_sql(
