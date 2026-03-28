@@ -24,7 +24,7 @@ from mcp.server.fastmcp import FastMCP
 # Configuration
 # ---------------------------------------------------------------------------
 
-PLATFORM_URL = os.environ.get("COCO_PLATFORM_URL", "http://localhost:3001")
+PLATFORM_URL = os.environ.get("COCO_PLATFORM_URL", "http://localhost:8000")
 COCO_DIR = Path.home() / ".coco"
 BRAIN_JSON = COCO_DIR / "brain.json"
 QUEUE_JSON = COCO_DIR / "queue.json"
