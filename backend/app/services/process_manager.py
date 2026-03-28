@@ -7,7 +7,7 @@ import psutil
 import structlog
 from app.db.connections import get_platform_db, _connect
 from app.config import PLATFORM_DB_PATH, MAX_CONCURRENT_AGENTS, AGENT_TIMEOUT_MINUTES
-from app.services.collaboration_context import auto_capture_output
+from app.services.collaboration_context import auto_capture_output, build_coco_context, build_yolo_constraints
 from app.services.event_bus import event_bus
 
 log = structlog.get_logger()
@@ -127,7 +127,8 @@ class ProcessManager:
             log.error("reconcile_on_startup_failed", error=str(e))
 
     def spawn(self, agent_id: str, task: str, cwd: str | None = None, model: str = "sonnet",
-              node_id: str | None = None, role: str | None = None) -> int:
+              node_id: str | None = None, role: str | None = None,
+              yolo_mode: bool = False) -> int:
         """Spawn a claude -p process. Returns PID.
 
         Uses a threading semaphore to enforce the concurrent agent limit.
@@ -137,6 +138,37 @@ class ProcessManager:
         acquired = self._concurrency_semaphore.acquire(blocking=False)
         if not acquired:
             raise RuntimeError(f"Max {MAX_CONCURRENT_AGENTS} concurrent agents")
+
+        # Build context prefix for the agent
+        context_parts: list[str] = []
+
+        # CoCo brain context
+        if node_id:
+            brain_ctx = build_coco_context(node_id)
+            if brain_ctx:
+                context_parts.append(brain_ctx)
+
+        # YOLO constraints
+        if yolo_mode:
+            project_id = None
+            if node_id:
+                try:
+                    with get_platform_db() as db:
+                        row = db.execute(
+                            "SELECT project_id FROM tree_nodes WHERE id = ?", (node_id,)
+                        ).fetchone()
+                        if row:
+                            project_id = row["project_id"]
+                except Exception:
+                    pass
+            yolo_ctx = build_yolo_constraints(project_id)
+            if yolo_ctx:
+                context_parts.append(yolo_ctx)
+
+        # Prepend context to task
+        if context_parts:
+            context_block = "\n\n---\n\n".join(context_parts)
+            task = f"{context_block}\n\n---\n\nTASK:\n{task}"
 
         with self._spawn_lock:
 
