@@ -557,6 +557,24 @@ CREATE TABLE IF NOT EXISTS staged_actions (
 );
 CREATE INDEX IF NOT EXISTS idx_staged_actions_content ON staged_actions(content_id);
 CREATE INDEX IF NOT EXISTS idx_staged_actions_status ON staged_actions(status);
+
+-- Sprint 6: Verification Results
+CREATE TABLE IF NOT EXISTS verification_results (
+    id TEXT PRIMARY KEY,
+    gate TEXT NOT NULL,
+    verdict TEXT NOT NULL,
+    checks_json TEXT,
+    summary TEXT,
+    node_id TEXT,
+    entity_type TEXT,
+    entity_id TEXT,
+    retry_count INTEGER DEFAULT 0,
+    budget_spent_usd REAL DEFAULT 0.0,
+    run_at TEXT NOT NULL,
+    duration_ms INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_vr_entity ON verification_results(entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_vr_node ON verification_results(node_id);
 """
 
 MIGRATION = """
