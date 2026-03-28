@@ -103,6 +103,30 @@ def list_content(
         return {"items": [], "total": 0}
 
 
+# NOTE: Static paths MUST come before {content_id} catch-all
+# These are moved here from below to avoid FastAPI matching "suggestions" as a content_id
+
+@router.get("/api/content/suggestions")
+def list_suggestions_early(
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+):
+    """Return suggestions — delegates to the implementation below."""
+    return _list_suggestions_impl(limit, offset)
+
+
+@router.post("/api/content/run-classifier")
+def run_classifier_early(limit: int = Query(50, ge=1, le=200)):
+    """Run classifier — delegates to the implementation below."""
+    return _run_classifier_impl(limit)
+
+
+@router.post("/api/content/batch-accept-suggestions")
+def batch_accept_early(min_confidence: float = Query(0.90)):
+    """Batch accept — delegates to the implementation below."""
+    return _batch_accept_impl(min_confidence)
+
+
 @router.get("/api/content/{content_id}")
 def get_content(content_id: str):
     try:
@@ -197,12 +221,10 @@ def dismiss_content(content_id: str):
 # ---------------------------------------------------------------------------
 
 
-@router.get("/api/content/suggestions")
-def list_suggestions(
-    limit: int = Query(50, ge=1, le=200),
-    offset: int = Query(0, ge=0),
+def _list_suggestions_impl(
+    limit: int = 50,
+    offset: int = 0,
 ):
-    """Return items from content_classifications where status='suggested', joined with hub content."""
     try:
         with get_db() as conn:
             rows = conn.execute(
@@ -333,9 +355,7 @@ def reject_suggestion(content_id: str):
         raise HTTPException(500, str(e))
 
 
-@router.post("/api/content/run-classifier")
-def run_classifier(limit: int = Query(50, ge=1, le=200)):
-    """Manually trigger the auto-classifier to process unsorted content."""
+def _run_classifier_impl(limit: int = 50):
     try:
         from app.services.auto_classifier import process_unsorted
 
@@ -346,9 +366,7 @@ def run_classifier(limit: int = Query(50, ge=1, le=200)):
         raise HTTPException(500, str(e))
 
 
-@router.post("/api/content/batch-accept-suggestions")
-def batch_accept_suggestions(min_confidence: float = Query(0.90)):
-    """Accept all suggestions with confidence >= threshold."""
+def _batch_accept_impl(min_confidence: float = 0.90):
     try:
         with get_db() as conn:
             rows = conn.execute(

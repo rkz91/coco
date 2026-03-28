@@ -20,7 +20,7 @@ from app.routers import (
     costs, todos, drafts, sessions, activity, events,
     settings, chat, dashboard, goals, tree, home, collaboration,
     tts, comments, templates, jarvis, analysis, stt, triggers,
-    self_improve,
+    self_improve, search,
     inbox,
 )
 
@@ -152,6 +152,7 @@ app.include_router(triggers.router)
 app.include_router(triggers.webhook_router)
 app.include_router(self_improve.router)
 app.include_router(inbox.router)
+app.include_router(search.router)
 
 # --- Cross-cutting resolve endpoint ---
 
