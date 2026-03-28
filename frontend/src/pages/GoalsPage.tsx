@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useScope } from '../context/ScopeContext';
-import { Target, Plus, ChevronRight, Check } from 'lucide-react';
+import { Target, Plus, ChevronRight, Check, X, Circle } from 'lucide-react';
 import { cn, timeAgo } from '../lib/utils';
+import { apiPatch } from '../lib/api';
 import { InlineEditor } from '../components/shared/InlineEditor';
 import { PropertiesPanel } from '../components/shared/PropertiesPanel';
 import { PropertyField } from '../components/shared/PropertyField';
@@ -21,6 +22,53 @@ interface Goal {
   created_at: string;
 }
 
+/** Compute aggregate progress: if a goal has sub-goals, average their progress. */
+function aggregateProgress(goal: Goal, allGoals: Goal[]): number {
+  const children = allGoals.filter((g) => g.parent_id === goal.id);
+  if (children.length === 0) return goal.progress_pct;
+  const sum = children.reduce((acc, c) => acc + aggregateProgress(c, allGoals), 0);
+  return Math.round(sum / children.length);
+}
+
+function StatusIcon({ status }: { status: string }) {
+  if (status === 'achieved') return <Check size={14} className="text-emerald-500 shrink-0" />;
+  if (status === 'dropped') return <X size={14} className="text-red-500 shrink-0" />;
+  return <Circle size={14} className="text-blue-500 shrink-0 fill-blue-500/20" />;
+}
+
+function GoalStatusActions({ goal, onUpdate }: { goal: Goal; onUpdate: () => void }) {
+  const transitions: Record<string, string[]> = {
+    active: ['achieved', 'dropped'],
+    achieved: ['active'],
+    dropped: ['active'],
+  };
+
+  const available = transitions[goal.status] ?? [];
+
+  return (
+    <div className="flex gap-2">
+      {available.map((next) => (
+        <button
+          key={next}
+          onClick={async (e) => {
+            e.stopPropagation();
+            await apiPatch(`/goals/${goal.id}`, { status: next });
+            onUpdate();
+          }}
+          className={cn(
+            'text-xs px-2 py-1 rounded-md transition-colors',
+            next === 'achieved' && 'text-emerald-500 bg-emerald-500/10 hover:bg-emerald-500/20',
+            next === 'dropped' && 'text-red-500 bg-red-500/10 hover:bg-red-500/20',
+            next === 'active' && 'text-blue-500 bg-blue-500/10 hover:bg-blue-500/20',
+          )}
+        >
+          {next === 'achieved' ? '\u2713 Achieve' : next === 'dropped' ? '\u2717 Drop' : '\u21BB Reactivate'}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 function ProgressBar({ value }: { value: number }) {
   return (
     <div className="w-16 h-1.5 bg-muted rounded-full overflow-hidden">
@@ -35,10 +83,11 @@ function ProgressBar({ value }: { value: number }) {
   );
 }
 
-function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId }: { goal: Goal; allGoals: Goal[]; depth?: number; onSelect: (goal: Goal) => void; selectedId: string | null }) {
+function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId, onRefresh }: { goal: Goal; allGoals: Goal[]; depth?: number; onSelect: (goal: Goal) => void; selectedId: string | null; onRefresh: () => void }) {
   const [expanded, setExpanded] = useState(true);
   const children = allGoals.filter(g => g.parent_id === goal.id);
   const hasChildren = children.length > 0;
+  const effectiveProgress = hasChildren ? aggregateProgress(goal, allGoals) : goal.progress_pct;
 
   return (
     <div>
@@ -61,11 +110,7 @@ function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId }: { goal: G
           <div className="w-5 shrink-0" />
         )}
 
-        {goal.status === 'achieved' ? (
-          <Check size={14} className="text-success shrink-0" />
-        ) : (
-          <Target size={14} className="text-muted-foreground shrink-0" />
-        )}
+        <StatusIcon status={goal.status} />
 
         <InlineEditor
           value={goal.title}
@@ -84,9 +129,19 @@ function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId }: { goal: G
           )}
         />
 
-        <ProgressBar value={goal.progress_pct} />
+        {/* Status transition buttons - visible on hover */}
+        <div className="hidden group-hover:flex">
+          <GoalStatusActions goal={goal} onUpdate={onRefresh} />
+        </div>
 
-        <span className="text-[10px] text-muted-foreground tabular-nums">{goal.progress_pct}%</span>
+        <ProgressBar value={effectiveProgress} />
+
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {effectiveProgress}%
+          {hasChildren && effectiveProgress !== goal.progress_pct && (
+            <span className="text-muted-foreground/50 ml-0.5" title="Aggregate of sub-goals">avg</span>
+          )}
+        </span>
 
         {goal.owner && (
           <span className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
@@ -98,7 +153,7 @@ function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId }: { goal: G
       {hasChildren && expanded && (
         <div>
           {children.map(child => (
-            <GoalNode key={child.id} goal={child} allGoals={allGoals} depth={depth + 1} onSelect={onSelect} selectedId={selectedId} />
+            <GoalNode key={child.id} goal={child} allGoals={allGoals} depth={depth + 1} onSelect={onSelect} selectedId={selectedId} onRefresh={onRefresh} />
           ))}
         </div>
       )}
@@ -227,7 +282,7 @@ export default function GoalsPage() {
       ) : (
         <div className="border border-border rounded-xl overflow-hidden divide-y divide-border">
           {rootGoals.map(goal => (
-            <GoalNode key={goal.id} goal={goal} allGoals={goals} onSelect={setSelectedGoal} selectedId={selectedGoal?.id ?? null} />
+            <GoalNode key={goal.id} goal={goal} allGoals={goals} onSelect={setSelectedGoal} selectedId={selectedGoal?.id ?? null} onRefresh={() => queryClient.invalidateQueries({ queryKey: ['goals'] })} />
           ))}
         </div>
       )}
@@ -258,6 +313,7 @@ interface GoalDetailPanelProps {
 
 function GoalDetailPanel({ goal, allGoals, onClose, onSaved }: GoalDetailPanelProps) {
   const linkedTodos = allGoals.filter(g => g.parent_id === goal.id);
+  const effectiveProgress = linkedTodos.length > 0 ? aggregateProgress(goal, allGoals) : goal.progress_pct;
 
   const handleSave = async (field: string, value: string) => {
     try {
@@ -279,8 +335,13 @@ function GoalDetailPanel({ goal, allGoals, onClose, onSaved }: GoalDetailPanelPr
       open={true}
       onClose={onClose}
       title={goal.title}
-      subtitle={`${statusLabel} \u00b7 ${goal.progress_pct}% complete`}
+      subtitle={`${statusLabel} \u00b7 ${effectiveProgress}% complete`}
     >
+      {/* Status transition actions */}
+      <div className="mb-4">
+        <GoalStatusActions goal={goal} onUpdate={onSaved} />
+      </div>
+
       {/* Properties */}
       <div className="space-y-0">
         <PropertyField
@@ -303,18 +364,20 @@ function GoalDetailPanel({ goal, allGoals, onClose, onSaved }: GoalDetailPanelPr
           options={STATUS_OPTIONS}
         />
         <div className="mb-3">
-          <span className="block text-xs text-muted-foreground mb-0.5">Progress</span>
+          <span className="block text-xs text-muted-foreground mb-0.5">
+            Progress{linkedTodos.length > 0 ? ' (aggregate)' : ''}
+          </span>
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-all',
-                  goal.progress_pct >= 100 ? 'bg-success' : goal.progress_pct >= 50 ? 'bg-info' : 'bg-warning'
+                  effectiveProgress >= 100 ? 'bg-emerald-500' : effectiveProgress >= 50 ? 'bg-blue-500' : 'bg-amber-500'
                 )}
-                style={{ width: `${Math.min(goal.progress_pct, 100)}%` }}
+                style={{ width: `${Math.min(effectiveProgress, 100)}%` }}
               />
             </div>
-            <span className="text-xs text-muted-foreground tabular-nums">{goal.progress_pct}%</span>
+            <span className="text-xs text-muted-foreground tabular-nums">{effectiveProgress}%</span>
           </div>
         </div>
         <PropertyField
@@ -339,14 +402,11 @@ function GoalDetailPanel({ goal, allGoals, onClose, onSaved }: GoalDetailPanelPr
           <div className="space-y-1">
             {linkedTodos.map(sub => (
               <div key={sub.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md bg-muted/30">
-                {sub.status === 'achieved' ? (
-                  <Check size={12} className="text-success shrink-0" />
-                ) : (
-                  <Target size={12} className="text-muted-foreground shrink-0" />
-                )}
+                <StatusIcon status={sub.status} />
                 <span className={cn(
                   'text-xs flex-1 truncate',
                   sub.status === 'achieved' && 'line-through text-muted-foreground',
+                  sub.status === 'dropped' && 'line-through text-muted-foreground opacity-50',
                 )}>
                   {sub.title}
                 </span>

@@ -8,9 +8,9 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GitBranch, ChevronDown, Plus, ArrowDownRight } from 'lucide-react';
+import { GitBranch, ChevronDown, Plus, ArrowDownRight, Check, Layers } from 'lucide-react';
 import { apiFetch, apiPost } from '../../lib/api';
-import { cn } from '../../lib/utils';
+import { cn, timeAgo } from '../../lib/utils';
 import { statePillClass, STATE_LABELS } from '../../lib/state-machine';
 
 interface DelegationNode {
@@ -20,6 +20,9 @@ interface DelegationNode {
   agent_id: string | null;
   agent_name: string | null;
   delegated_by: string | null;
+  delegated_by_name?: string | null;
+  delegated_to_name?: string | null;
+  delegated_at?: string | null;
   depth: number;
 }
 
@@ -96,6 +99,12 @@ export function DelegationPanel({ taskId, taskTitle, currentAgentId }: Delegatio
       <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground uppercase tracking-wide">
         <GitBranch className="h-3.5 w-3.5" />
         Delegation Chain
+        {chain.length > 1 && (
+          <span className="flex items-center gap-1 ml-auto text-[10px] normal-case tracking-normal bg-muted/60 px-1.5 py-0.5 rounded">
+            <Layers className="h-3 w-3" />
+            Depth {Math.max(...chain.map((n) => n.depth))}
+          </span>
+        )}
       </div>
 
       {/* Chain timeline */}
@@ -112,6 +121,7 @@ export function DelegationPanel({ taskId, taskTitle, currentAgentId }: Delegatio
         ) : (
           chain.map((node, i) => {
             const isCurrent = node.task_id === taskId;
+            const isCompleted = node.status === 'done' || node.status === 'archived';
             return (
               <div
                 key={node.task_id}
@@ -120,8 +130,15 @@ export function DelegationPanel({ taskId, taskTitle, currentAgentId }: Delegatio
                   isCurrent && 'bg-accent/10 -mx-2 px-2 rounded-lg',
                 )}
               >
-                {/* Avatar */}
-                <AgentAvatar name={node.agent_name} />
+                {/* Avatar — with completion checkmark overlay */}
+                <div className="relative">
+                  <AgentAvatar name={node.agent_name} />
+                  {isCompleted && (
+                    <span className="absolute -bottom-0.5 -right-0.5 flex items-center justify-center h-3.5 w-3.5 rounded-full bg-green-500 ring-2 ring-card">
+                      <Check className="h-2 w-2 text-white" />
+                    </span>
+                  )}
+                </div>
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
@@ -130,6 +147,7 @@ export function DelegationPanel({ taskId, taskTitle, currentAgentId }: Delegatio
                       className={cn(
                         'text-sm truncate',
                         isCurrent ? 'font-semibold text-foreground' : 'text-foreground/80',
+                        isCompleted && 'line-through opacity-70',
                       )}
                     >
                       {node.task_title}
@@ -143,20 +161,31 @@ export function DelegationPanel({ taskId, taskTitle, currentAgentId }: Delegatio
                       {STATE_LABELS[node.status] ?? node.status.replace('_', ' ')}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground flex-wrap">
+                    {/* Delegated-by in blue */}
+                    {node.delegated_by && (
+                      <span className="flex items-center gap-0.5 text-blue-400">
+                        <ArrowDownRight className="h-3 w-3" />
+                        from <span className="font-medium">{node.delegated_by_name ?? node.delegated_by}</span>
+                      </span>
+                    )}
+                    {/* Delegated-to (current agent) in green */}
                     {node.agent_name ? (
-                      <span>{node.agent_name}</span>
+                      <span className={cn(node.delegated_by ? 'text-emerald-400' : 'text-muted-foreground')}>
+                        {node.delegated_by ? (
+                          <>to <span className="font-medium">{node.agent_name}</span></>
+                        ) : (
+                          node.agent_name
+                        )}
+                      </span>
                     ) : (
                       <span className="italic">Unassigned</span>
                     )}
-                    {node.delegated_by && (
-                      <>
-                        <span>-</span>
-                        <span className="flex items-center gap-0.5">
-                          <ArrowDownRight className="h-3 w-3" />
-                          delegated by {node.delegated_by}
-                        </span>
-                      </>
+                    {/* Elapsed time since delegation */}
+                    {node.delegated_at && (
+                      <span className="text-[10px] text-muted-foreground/70">
+                        {timeAgo(node.delegated_at)}
+                      </span>
                     )}
                     {i === 0 && chain.length > 1 && (
                       <span className="text-[10px] bg-muted/50 px-1.5 py-0.5 rounded">Parent</span>
