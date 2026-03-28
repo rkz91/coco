@@ -16,6 +16,7 @@ from urllib.parse import urlencode
 import structlog
 from fastapi import APIRouter, Query
 
+from app.config import USE_AGENT_SDK
 from app.db.connections import get_hub_db, get_platform_db
 from app.models.jarvis import (
     CardActionModel,
@@ -673,14 +674,57 @@ HANDLERS = {
 # ─── Claude fallback ─────────────────────────────────────────────────────────
 
 async def _claude_fallback(text: str) -> CommandResponse:
+    system_prompt = (
+        "You are CoCo, a concise AI assistant for a PM named Rijul. "
+        "Answer in 1-2 short sentences, as if spoken aloud. Be helpful and direct."
+    )
+    history_ctx = _get_history_context()
+
+    # --- SDK path (preferred when enabled) ---
+    if USE_AGENT_SDK:
+        from app.services.agent_sdk_client import agent_sdk
+        if agent_sdk.is_available():
+            try:
+                prompt = ""
+                if history_ctx:
+                    prompt += f"[Recent conversation]\n{history_ctx}\n\n"
+                prompt += f"[User message]\n{text[:2000]}"
+
+                result = agent_sdk.quick_command(
+                    prompt=prompt,
+                    model="haiku",
+                    system=system_prompt,
+                    max_tokens=512,
+                )
+                reply = result["content"].strip()
+                if len(reply) > 300:
+                    reply = reply[:297] + "..."
+
+                # Record real token cost
+                from app.services.agent_sdk_client import record_sdk_cost
+                record_sdk_cost(
+                    model=result["model"],
+                    input_tokens=result["input_tokens"],
+                    output_tokens=result["output_tokens"],
+                    source="chat",
+                )
+
+                return CommandResponse(
+                    reply=reply,
+                    action="suggest_chat",
+                    url="/chat",
+                    cards=[CardDataModel(
+                        id=_card_id(), type="text_response",
+                        data={"text": reply, "suggest_chat": True},
+                    )],
+                )
+            except Exception as e:
+                log.warning("jarvis_sdk_fallback_failed", error=str(e))
+                # Fall through to subprocess path
+
+    # --- Subprocess path (fallback) ---
     try:
         claude_path = shutil.which("claude") or os.path.expanduser("~/.local/bin/claude")
-        system_prompt = (
-            "You are CoCo, a concise AI assistant for a PM named Rijul. "
-            "Answer in 1-2 short sentences, as if spoken aloud. Be helpful and direct."
-        )
-        # Include recent session history as context
-        history_ctx = _get_history_context()
         context_block = f"[System context]\n{system_prompt}\n"
         if history_ctx:
             context_block += f"\n[Recent conversation]\n{history_ctx}\n"
@@ -710,6 +754,8 @@ async def _claude_fallback(text: str) -> CommandResponse:
             reply="I didn't understand that. Try process, briefing, todos, or search.",
             cards=[CardDataModel(id=_card_id(), type="text_response", data={"text": "Try: process, briefing, todos, health, search, or ask anything."})],
         )
+
+
 
 
 # ─── Endpoint ─────────────────────────────────────────────────────────────────

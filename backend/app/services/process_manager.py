@@ -1,3 +1,4 @@
+import asyncio
 import subprocess
 import os
 import signal
@@ -6,7 +7,7 @@ import time
 import psutil
 import structlog
 from app.db.connections import get_platform_db, _connect
-from app.config import PLATFORM_DB_PATH, MAX_CONCURRENT_AGENTS, AGENT_TIMEOUT_MINUTES
+from app.config import PLATFORM_DB_PATH, MAX_CONCURRENT_AGENTS, AGENT_TIMEOUT_MINUTES, USE_AGENT_SDK
 from app.services.collaboration_context import auto_capture_output
 from app.services.event_bus import event_bus
 
@@ -128,16 +129,33 @@ class ProcessManager:
 
     def spawn(self, agent_id: str, task: str, cwd: str | None = None, model: str = "sonnet",
               node_id: str | None = None, role: str | None = None) -> int:
-        """Spawn a claude -p process. Returns PID.
+        """Spawn a claude agent. Returns PID (or 0 for SDK-based agents).
 
         Uses a threading semaphore to enforce the concurrent agent limit.
         The semaphore is acquired before spawn and released when the agent
-        finishes (in _read_output).
+        finishes (in _read_output or _run_sdk_agent).
         """
         acquired = self._concurrency_semaphore.acquire(blocking=False)
         if not acquired:
             raise RuntimeError(f"Max {MAX_CONCURRENT_AGENTS} concurrent agents")
 
+        # --- SDK path ---
+        if USE_AGENT_SDK:
+            from app.services.agent_sdk_client import agent_sdk
+            if agent_sdk.is_available():
+                self._agent_meta[agent_id] = {"node_id": node_id, "role": role or "custom"}
+                # Launch SDK agent in a background thread running an asyncio event loop
+                sdk_thread = threading.Thread(
+                    target=self._run_sdk_agent_sync,
+                    args=(agent_id, task, model, node_id, role),
+                    daemon=True,
+                    name=f"sdk-agent-{agent_id[:8]}",
+                )
+                sdk_thread.start()
+                self._readers[agent_id] = sdk_thread
+                return 0  # No OS PID for SDK agents
+
+        # --- Subprocess path (fallback) ---
         with self._spawn_lock:
 
             # Store metadata for auto-capture on completion
@@ -172,6 +190,118 @@ class ProcessManager:
         self._readers[agent_id] = reader
 
         return proc.pid
+
+    def _run_sdk_agent_sync(self, agent_id: str, task: str, model: str,
+                            node_id: str | None, role: str | None):
+        """Run an SDK agent call in a new asyncio event loop (called from a thread)."""
+        loop = asyncio.new_event_loop()
+        try:
+            loop.run_until_complete(self._run_sdk_agent(agent_id, task, model, node_id, role))
+        finally:
+            loop.close()
+
+    async def _run_sdk_agent(self, agent_id: str, task: str, model: str,
+                             node_id: str | None, role: str | None):
+        """Async SDK agent execution with output recording and cost tracking."""
+        from app.services.agent_sdk_client import agent_sdk
+
+        status = "completed"
+        exit_code = 0
+        try:
+            result = await asyncio.wait_for(
+                agent_sdk.spawn_agent(task=task, model=model, max_tokens=16384),
+                timeout=AGENT_TIMEOUT_MINUTES * 60,
+            )
+
+            content = result.get("content", "")
+            input_tokens = result.get("input_tokens", 0)
+            output_tokens = result.get("output_tokens", 0)
+            response_model = result.get("model", model)
+
+            # Write output chunks to agent_output
+            with get_platform_db() as db:
+                # Write content in reasonable chunks (by paragraph)
+                chunks = content.split("\n\n") if content else ["(no output)"]
+                for chunk in chunks:
+                    if chunk.strip():
+                        db.execute(
+                            "INSERT INTO agent_output (agent_id, stream, chunk) VALUES (?, 'stdout', ?)",
+                            (agent_id, chunk),
+                        )
+                db.execute(
+                    "UPDATE agents SET last_heartbeat = datetime('now') WHERE id = ?",
+                    (agent_id,),
+                )
+                db.commit()
+
+            # Record cost
+            from app.services.agent_sdk_client import record_sdk_cost
+            record_sdk_cost(
+                model=response_model,
+                input_tokens=input_tokens,
+                output_tokens=output_tokens,
+                source="agent",
+                agent_id=agent_id,
+                node_id=node_id,
+            )
+
+        except asyncio.TimeoutError:
+            log.warning("sdk_agent_timeout", agent_id=agent_id)
+            status = "failed"
+            exit_code = -1
+        except Exception as e:
+            log.warning("sdk_agent_error", agent_id=agent_id, error=str(e))
+            status = "failed"
+            exit_code = -1
+        finally:
+            # Update agent status
+            with get_platform_db() as db:
+                db.execute(
+                    "UPDATE agents SET status = ?, exit_code = ?, stopped_at = datetime('now') WHERE id = ?",
+                    (status, exit_code, agent_id),
+                )
+                db.execute(
+                    "DELETE FROM agent_output WHERE agent_id = ? AND id NOT IN "
+                    "(SELECT id FROM agent_output WHERE agent_id = ? ORDER BY id DESC LIMIT 1000)",
+                    (agent_id, agent_id),
+                )
+                db.commit()
+
+            # Emit event bus notification
+            event_bus.emit(f"agent.{status}", {
+                "agent_id": agent_id,
+                "status": status,
+                "exit_code": exit_code,
+            })
+
+            # Auto-capture output for collaboration
+            if status == "completed":
+                meta = self._agent_meta.get(agent_id, {})
+                cap_node_id = meta.get("node_id")
+                cap_role = meta.get("role", "custom")
+                if cap_node_id:
+                    try:
+                        auto_capture_output(agent_id, cap_role, cap_node_id)
+                    except Exception as e:
+                        log.warning("sdk_auto_capture_failed", agent_id=agent_id, error=str(e))
+
+            # Check analysis job completion
+            try:
+                self._check_analysis_job_completion(agent_id, status)
+            except Exception as e:
+                log.warning("sdk_analysis_job_check_failed", agent_id=agent_id, error=str(e))
+
+            # Check self-improve cycle
+            try:
+                self._check_self_improve_agent(agent_id, status)
+            except Exception as e:
+                log.warning("sdk_self_improve_check_failed", agent_id=agent_id, error=str(e))
+
+            # Release concurrency semaphore
+            self._concurrency_semaphore.release()
+
+            # Clean up metadata
+            self._agent_meta.pop(agent_id, None)
 
     def _read_output(self, agent_id: str, proc: subprocess.Popen):
         """Read stdout and store in platform.db"""
