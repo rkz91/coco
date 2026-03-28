@@ -135,18 +135,22 @@ export function JarvisOverlay({ isOpen, onClose }: JarvisOverlayProps) {
   const briefingRef = useRef(briefing);
   briefingRef.current = briefing;
 
+  // Stable ref for canvas.dismiss so the effect below doesn't depend on canvas identity
+  const canvasDismissRef = useRef(canvas.dismiss);
+  canvasDismissRef.current = canvas.dismiss;
+
   // Reset state when overlay closes — stop audio immediately, don't block
   useEffect(() => {
     if (!isOpen) {
       setPhase(0);
       setActivated(false);
       setInteracting(false);
-      canvas.dismiss();
+      canvasDismissRef.current();
       // Cancel speech synchronously to avoid lingering audio
       try { audioRef.current.cancelSpeak(); } catch {}
       hasPlayed.current = false;
     }
-  }, [isOpen, canvas]);
+  }, [isOpen]);
 
   // Start the sequence after user clicks (unlocks audio)
   const hasPlayed = useRef(false);

@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from 'react';
+import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import type { CardData } from '../types/cards';
 
 type CanvasMode = 'idle' | 'active' | 'transitioning';
@@ -80,12 +80,12 @@ export function useCanvas() {
     }, TRANSITION_MS);
   }, []);
 
-  return {
+  return useMemo(() => ({
     mode: state.mode,
     cards: state.cards,
     previousCards: state.previousCards,
     showCards,
     dismiss,
     isIdle: state.mode === 'idle',
-  };
+  }), [state.mode, state.cards, state.previousCards, showCards, dismiss]);
 }

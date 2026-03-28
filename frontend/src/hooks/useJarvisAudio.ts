@@ -287,6 +287,7 @@ class JarvisAudioEngine {
 }
 
 const engine = new JarvisAudioEngine();
+let engineRefCount = 0;
 
 export function useJarvisAudio() {
   const audioUnlocked = useRef(false);
@@ -306,12 +307,18 @@ export function useJarvisAudio() {
   }, []);
 
   useEffect(() => {
+    engineRefCount++;
     document.addEventListener('click', unlock, { once: true });
     document.addEventListener('keydown', unlock, { once: true });
     return () => {
       document.removeEventListener('click', unlock);
       document.removeEventListener('keydown', unlock);
-      engine.destroy();
+      // Only destroy the singleton engine when the last consumer unmounts
+      engineRefCount--;
+      if (engineRefCount <= 0) {
+        engine.destroy();
+        engineRefCount = 0;
+      }
     };
   }, [unlock]);
 
