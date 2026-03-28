@@ -118,6 +118,11 @@ export function TaskDetail({ task, onClose }: TaskDetailProps) {
               className="text-lg font-semibold text-foreground bg-transparent border-none outline-none w-full focus:ring-1 focus:ring-accent rounded px-1 -mx-1"
             />
             <div className="flex items-center gap-2 mt-2">
+              {task.display_id && (
+                <span className="font-mono text-[11px] text-muted-foreground bg-muted/50 border border-border rounded px-1.5 py-0.5 tracking-wide">
+                  {task.display_id}
+                </span>
+              )}
               <span
                 className={cn(
                   'inline-block px-2 py-0.5 rounded-full text-xs font-medium capitalize',

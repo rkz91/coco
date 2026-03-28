@@ -6,6 +6,7 @@ import { AgentCard, type Agent } from '../components/agents/AgentCard';
 import { CreateAgentDialog } from '../components/agents/CreateAgentDialog';
 import { AgentDetail } from '../components/agents/AgentDetail';
 import { OrgChart, type OrgNode } from '../components/agents/OrgChart';
+import { useToast } from '../components/shared/Toast';
 
 type ViewMode = 'cards' | 'org-chart';
 
@@ -26,6 +27,7 @@ interface Project {
 
 export default function AgentsPage() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>(getStoredView);
@@ -87,12 +89,20 @@ export default function AgentsPage() {
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['agents'] });
 
+  const ACTION_LABELS: Record<string, string> = {
+    spawn: 'Agent spawned',
+    pause: 'Agent paused',
+    resume: 'Agent resumed',
+    kill: 'Agent terminated',
+  };
+
   const handleAction = async (agentId: string, action: string) => {
     try {
       await apiPost(`/agents/${agentId}/${action}`, {});
       invalidate();
+      toast(ACTION_LABELS[action] ?? `Agent ${action}`, 'success');
     } catch {
-      // ignore
+      toast(`Failed to ${action} agent`, 'error');
     }
   };
 

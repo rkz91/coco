@@ -10,6 +10,7 @@ import { ToastProvider } from './components/shared/Toast';
 import { NotificationProvider } from './components/shared/NotificationProvider';
 import { ScopeProvider } from './context/ScopeContext';
 import { useDesktopNotificationListener } from './hooks/useDesktopNotifications';
+import { useVoiceCommands } from './hooks/useVoiceCommands';
 
 // Eager: lightweight landing + dashboard (first paint)
 import HomePage from './pages/HomePage';
@@ -33,6 +34,12 @@ const JarvisPage = lazy(() => import('./pages/JarvisPage'));
 /** Activates desktop notification listener for agent failures. */
 function DesktopNotifications() {
   useDesktopNotificationListener();
+  return null;
+}
+
+/** Routes voice commands from FloatingMic to navigation, actions, or Jarvis. */
+function VoiceCommandRouter() {
+  useVoiceCommands();
   return null;
 }
 
@@ -61,6 +68,7 @@ export default function App() {
             <KeyboardShortcuts />
             <CocoOrb />
             <DesktopNotifications />
+            <VoiceCommandRouter />
             <Suspense fallback={<PageFallback />}>
               <Routes>
                 <Route element={<AppShell />}>

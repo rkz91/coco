@@ -185,6 +185,7 @@ def list_todos(
         platform_native: list[dict] = []
         display_id_map: dict[str, str] = {}
         blocked_by_counts: dict[str, int] = {}
+        blocking_counts: dict[str, int] = {}
         with get_platform_db() as pdb:
             override_rows = pdb.execute("SELECT * FROM todo_overrides").fetchall()
             for r in override_rows:
@@ -196,17 +197,30 @@ def list_todos(
 
             # Load display IDs
             try:
-                ident_rows = pdb.execute("SELECT hub_todo_id, display_id FROM todo_identifiers").fetchall()
-                display_id_map = {r["hub_todo_id"]: r["display_id"] for r in ident_rows}
+                ident_rows = pdb.execute(
+                    "SELECT entity_id, display_id FROM entity_identifiers WHERE entity_type = 'todo'"
+                ).fetchall()
+                display_id_map = {r["entity_id"]: r["display_id"] for r in ident_rows}
             except Exception:
                 pass
 
-            # Load blocked_by counts
+            # Load blocked_by counts (how many things block this todo)
             try:
                 dep_rows = pdb.execute(
-                    "SELECT todo_id, COUNT(*) as cnt FROM todo_dependencies GROUP BY todo_id"
+                    "SELECT todo_id, COUNT(*) as cnt FROM todo_dependencies "
+                    "WHERE dep_type = 'blocked_by' GROUP BY todo_id"
                 ).fetchall()
                 blocked_by_counts = {r["todo_id"]: r["cnt"] for r in dep_rows}
+            except Exception:
+                pass
+
+            # Load blocking counts (how many things this todo blocks)
+            try:
+                blocking_rows = pdb.execute(
+                    "SELECT depends_on, COUNT(*) as cnt FROM todo_dependencies "
+                    "WHERE dep_type = 'blocked_by' GROUP BY depends_on"
+                ).fetchall()
+                blocking_counts = {r["depends_on"]: r["cnt"] for r in blocking_rows}
             except Exception:
                 pass
 
@@ -218,13 +232,13 @@ def list_todos(
         # Step 4: Add platform-native todos
         merged.extend(platform_native)
 
-        # Step 4b: Enrich with display_id and blocked_by_count
+        # Step 4b: Enrich with display_id and dependency counts
         for t in merged:
             tid = t.get("id")
             if tid in display_id_map:
                 t["display_id"] = display_id_map[tid]
-            if tid in blocked_by_counts:
-                t["blocked_by_count"] = blocked_by_counts[tid]
+            t["blocked_by_count"] = blocked_by_counts.get(tid, 0)
+            t["blocking_count"] = blocking_counts.get(tid, 0)
 
         # Step 5: Apply filters
         if status:
@@ -245,15 +259,16 @@ def list_todos(
 @router.get("/api/todos/by-id/{display_id}")
 def get_todo_by_display_id(display_id: str):
     """Resolve a human-readable display ID (e.g. CXR-47) to the full todo."""
-    hub_todo_id = resolve_display_id(display_id)
-    if not hub_todo_id:
+    result = resolve_display_id(display_id)
+    if not result or result.get("entity_type") != "todo":
         raise HTTPException(404, f"No todo found for display ID '{display_id}'")
 
+    hub_todo_id = result["entity_id"]
     todo = _get_todo_by_id(hub_todo_id)
     if not todo:
         raise HTTPException(404, f"Todo {hub_todo_id} not found")
 
-    todo["display_id"] = display_id.upper()
+    todo["display_id"] = result["display_id"]
     return todo
 
 
@@ -516,6 +531,32 @@ def transition_todo(todo_id: str, body: TransitionBody):
 
     is_native = existing.get("is_platform_native", False)
 
+    # Check for unresolved blocking dependencies when completing
+    warning = None
+    if to_state == "done":
+        with get_platform_db() as pdb:
+            unresolved_rows = pdb.execute(
+                "SELECT td.depends_on FROM todo_dependencies td "
+                "WHERE td.todo_id = ? AND td.dep_type = 'blocked_by'",
+                (todo_id,),
+            ).fetchall()
+
+        unresolved_blockers = []
+        for r in unresolved_rows:
+            blocker = _get_todo_by_id(r["depends_on"])
+            if blocker and blocker.get("status") not in ("done", "archived"):
+                unresolved_blockers.append({
+                    "id": blocker["id"],
+                    "title": blocker.get("title", ""),
+                    "status": blocker.get("status", ""),
+                })
+
+        if unresolved_blockers:
+            warning = (
+                f"This todo has {len(unresolved_blockers)} unresolved blocker(s) "
+                f"that are not yet done."
+            )
+
     # Upsert status into todo_overrides
     with get_platform_db() as pdb:
         pdb.execute(
@@ -527,6 +568,8 @@ def transition_todo(todo_id: str, body: TransitionBody):
         pdb.commit()
 
     todo_result = _get_todo_by_id(todo_id)
+    if warning:
+        todo_result["warning"] = warning
     event_bus.emit("todo.updated", {"id": todo_id, "status": to_state, "from_state": current_state})
     return todo_result
 
@@ -742,25 +785,120 @@ def dedup_todos():
 # ---- Todo Dependencies ----
 
 
+def _has_circular_dependency(pdb, from_id: str, to_id: str) -> bool:
+    """Check if adding from_id -> to_id (from_id blocked by to_id) creates a cycle.
+
+    Uses BFS to walk the dependency graph from to_id and see if we can reach from_id.
+    If to_id is (transitively) blocked by from_id, then adding from_id blocked_by to_id
+    would create a cycle.
+    """
+    visited: set[str] = set()
+    queue = [to_id]
+    while queue:
+        current = queue.pop(0)
+        if current == from_id:
+            return True
+        if current in visited:
+            continue
+        visited.add(current)
+        # Find everything that blocks `current`
+        rows = pdb.execute(
+            "SELECT depends_on FROM todo_dependencies WHERE todo_id = ? AND dep_type = 'blocked_by'",
+            (current,),
+        ).fetchall()
+        for r in rows:
+            queue.append(r["depends_on"])
+    return False
+
+
 @router.get("/api/todos/{todo_id}/dependencies")
 def list_dependencies(todo_id: str):
-    """List all dependencies for a todo."""
+    """List all dependencies for a todo, categorized by relationship type.
+
+    Returns:
+      - blocked_by: todos that block this one (this todo depends on them)
+      - blocking: todos that this one blocks (they depend on this todo)
+      - related_to: related todos (bidirectional)
+    """
     existing = _get_todo_by_id(todo_id)
     if not existing:
         raise HTTPException(404, "Todo not found")
 
     with get_platform_db() as pdb:
-        rows = pdb.execute(
+        # Things this todo is blocked by
+        blocked_by_rows = pdb.execute(
             "SELECT id, todo_id, depends_on, dep_type, created_at "
-            "FROM todo_dependencies WHERE todo_id = ? ORDER BY created_at",
+            "FROM todo_dependencies WHERE todo_id = ? AND dep_type = 'blocked_by' ORDER BY created_at",
             (todo_id,),
         ).fetchall()
-        return [dict(r) for r in rows]
+
+        # Things this todo is blocking (reverse lookup)
+        blocking_rows = pdb.execute(
+            "SELECT id, todo_id, depends_on, dep_type, created_at "
+            "FROM todo_dependencies WHERE depends_on = ? AND dep_type = 'blocked_by' ORDER BY created_at",
+            (todo_id,),
+        ).fetchall()
+
+        # Related-to links (bidirectional)
+        related_rows = pdb.execute(
+            "SELECT id, todo_id, depends_on, dep_type, created_at "
+            "FROM todo_dependencies WHERE (todo_id = ? OR depends_on = ?) AND dep_type = 'related_to' "
+            "ORDER BY created_at",
+            (todo_id, todo_id),
+        ).fetchall()
+
+    # Collect all related todo IDs for enrichment
+    dep_ids: set[str] = set()
+    for r in blocked_by_rows:
+        dep_ids.add(r["depends_on"])
+    for r in blocking_rows:
+        dep_ids.add(r["todo_id"])
+    for r in related_rows:
+        dep_ids.add(r["todo_id"])
+        dep_ids.add(r["depends_on"])
+    dep_ids.discard(todo_id)
+
+    title_map: dict[str, str] = {}
+    status_map: dict[str, str] = {}
+    for did in dep_ids:
+        t = _get_todo_by_id(did)
+        if t:
+            title_map[did] = t.get("title", "")
+            status_map[did] = t.get("status", "")
+
+    def _enrich(row, related_id: str):
+        d = dict(row)
+        d["related_title"] = title_map.get(related_id, "")
+        d["related_status"] = status_map.get(related_id, "")
+        d["related_id"] = related_id
+        return d
+
+    return {
+        "blocked_by": [_enrich(r, r["depends_on"]) for r in blocked_by_rows],
+        "blocking": [_enrich(r, r["todo_id"]) for r in blocking_rows],
+        "related_to": [
+            _enrich(r, r["depends_on"] if r["todo_id"] == todo_id else r["todo_id"])
+            for r in related_rows
+        ],
+    }
+
+
+@router.get("/api/todos/all-dependencies")
+def list_all_dependencies():
+    """Return all todo dependencies for the dependency graph visualization."""
+    with get_platform_db() as pdb:
+        rows = pdb.execute(
+            "SELECT id, todo_id, depends_on, dep_type, created_at FROM todo_dependencies ORDER BY created_at"
+        ).fetchall()
+    return [dict(r) for r in rows]
 
 
 @router.post("/api/todos/{todo_id}/dependencies", status_code=201)
 def create_dependency(todo_id: str, body: CreateDependencyBody):
-    """Add a dependency: todo_id is blocked by depends_on."""
+    """Add a dependency: todo_id is blocked by depends_on.
+
+    Validates both todos exist and prevents circular dependencies.
+    """
     existing = _get_todo_by_id(todo_id)
     if not existing:
         raise HTTPException(404, "Todo not found")
@@ -771,6 +909,16 @@ def create_dependency(todo_id: str, body: CreateDependencyBody):
 
     if todo_id == body.depends_on:
         raise HTTPException(400, "A todo cannot depend on itself")
+
+    # Circular dependency check (only for blocked_by, not related_to)
+    if body.dep_type == "blocked_by":
+        with get_platform_db() as pdb:
+            if _has_circular_dependency(pdb, todo_id, body.depends_on):
+                raise HTTPException(
+                    422,
+                    f"Circular dependency detected: '{body.depends_on}' is already transitively "
+                    f"blocked by '{todo_id}'. Adding this dependency would create a cycle.",
+                )
 
     dep_id = str(uuid.uuid4())
 
@@ -792,7 +940,13 @@ def create_dependency(todo_id: str, body: CreateDependencyBody):
         "depends_on": body.depends_on,
         "dep_type": body.dep_type,
     })
-    return {"id": dep_id, "todo_id": todo_id, "depends_on": body.depends_on, "dep_type": body.dep_type}
+    return {
+        "id": dep_id,
+        "todo_id": todo_id,
+        "depends_on": body.depends_on,
+        "dep_type": body.dep_type,
+        "related_title": dep_todo.get("title", ""),
+    }
 
 
 @router.delete("/api/todos/{todo_id}/dependencies/{dep_id}")

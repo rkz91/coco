@@ -293,6 +293,37 @@ textarea,
   animation: pulse-dot 2s ease-in-out infinite;
 }
 
+/* Page enter transition */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-page-enter {
+  animation: page-enter 200ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Command palette entrance */
+@keyframes cmd-palette-enter {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-cmd-palette-enter {
+  animation: cmd-palette-enter 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Sidebar active indicator bar */
+.nav-item-active .nav-active-bar {
+  opacity: 1;
+}
+
+/* List navigation highlight */
+.list-nav-selected {
+  background-color: oklch(0.623 0.214 259.815 / 0.08);
+}
+.dark .list-nav-selected {
+  background-color: oklch(0.488 0.243 264.376 / 0.12);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-slide-in,
   .animate-fade-in,
@@ -303,7 +334,9 @@ textarea,
   .animate-notif-enter,
   .animate-notif-seen,
   .animate-notif-dismiss,
-  .notif-dismissed {
+  .notif-dismissed,
+  .animate-page-enter,
+  .animate-cmd-palette-enter {
     animation: none;
   }
   .notif-seen { opacity: 0.6; }
@@ -480,4 +513,157 @@ textarea,
   .animate-orb-pulse, .animate-canvas-exit, .animate-orb-expand, .animate-card-action-done {
     animation: none;
   }
+}
+
+/* ===== Floating Mic Button ===== */
+
+/* Glass background for the FAB */
+.floating-mic-glass {
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+}
+
+/* Idle state — dark glass with subtle glow */
+.floating-mic-idle {
+  background: oklch(0.205 0 0 / 0.85);
+  border: 1px solid oklch(0.4 0 0 / 0.25);
+  box-shadow: 0 2px 12px oklch(0.623 0.214 259.815 / 0.12),
+              0 0 0 1px oklch(0.623 0.214 259.815 / 0.06);
+}
+.floating-mic-idle:hover {
+  background: oklch(0.25 0 0 / 0.9);
+  border-color: oklch(0.623 0.214 259.815 / 0.35);
+  box-shadow: 0 4px 20px oklch(0.623 0.214 259.815 / 0.2),
+              0 0 0 1px oklch(0.623 0.214 259.815 / 0.1);
+}
+
+/* Listening state — red-tinted glass */
+.floating-mic-active {
+  background: oklch(0.25 0.06 25 / 0.85);
+  border: 1px solid oklch(0.577 0.245 27.325 / 0.4);
+}
+
+/* Processing state */
+.floating-mic-processing {
+  background: oklch(0.205 0.04 260 / 0.85);
+  border: 1px solid oklch(0.623 0.214 259.815 / 0.3);
+  cursor: wait;
+}
+
+/* Speaking state — accent-tinted glass */
+.floating-mic-speaking {
+  background: oklch(0.205 0.04 260 / 0.85);
+  border: 1px solid oklch(0.623 0.214 259.815 / 0.35);
+  box-shadow: 0 2px 16px oklch(0.623 0.214 259.815 / 0.15);
+}
+
+/* Subtle idle glow beneath the button */
+.floating-mic-glow {
+  position: absolute;
+  inset: -2px;
+  border-radius: 9999px;
+  background: radial-gradient(circle, oklch(0.623 0.214 259.815 / 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* Pulsing ring animation when listening */
+@keyframes floating-mic-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.floating-mic-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  border: 2px solid oklch(0.577 0.245 27.325 / 0.5);
+  pointer-events: none;
+  animation: floating-mic-pulse 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+}
+
+.floating-mic-ring-1 {
+  animation-delay: 0ms;
+}
+
+.floating-mic-ring-2 {
+  animation-delay: 600ms;
+}
+
+/* Waveform bars for speaking state */
+@keyframes floating-mic-wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+
+.floating-mic-wave-bar {
+  display: block;
+  width: 2.5px;
+  height: 16px;
+  border-radius: 9999px;
+  background: oklch(0.623 0.214 259.815 / 0.8);
+  transform-origin: center;
+  animation: floating-mic-wave 0.8s ease-in-out infinite;
+}
+
+/* Transcript / response bubble */
+.floating-mic-bubble {
+  background: oklch(0.205 0 0 / 0.88);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  border: 1px solid oklch(0.4 0 0 / 0.2);
+  border-radius: 12px;
+  padding: 8px 12px;
+  max-width: 280px;
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.3),
+              0 0 0 1px oklch(1 0 0 / 0.04);
+}
+
+/* Light theme overrides */
+:root .floating-mic-idle {
+  background: oklch(0.985 0 0 / 0.88);
+  border-color: oklch(0.922 0 0 / 0.8);
+  box-shadow: 0 2px 12px oklch(0.623 0.214 259.815 / 0.1),
+              0 1px 3px oklch(0 0 0 / 0.06);
+}
+:root .floating-mic-idle:hover {
+  background: oklch(0.965 0 0 / 0.95);
+  border-color: oklch(0.623 0.214 259.815 / 0.3);
+  box-shadow: 0 4px 20px oklch(0.623 0.214 259.815 / 0.15),
+              0 1px 3px oklch(0 0 0 / 0.08);
+}
+:root .floating-mic-active {
+  background: oklch(0.985 0.02 25 / 0.9);
+  border-color: oklch(0.577 0.245 27.325 / 0.35);
+}
+:root .floating-mic-processing {
+  background: oklch(0.985 0.02 260 / 0.9);
+  border-color: oklch(0.623 0.214 259.815 / 0.25);
+}
+:root .floating-mic-speaking {
+  background: oklch(0.985 0.02 260 / 0.9);
+  border-color: oklch(0.623 0.214 259.815 / 0.3);
+}
+:root .floating-mic-bubble {
+  background: oklch(0.985 0 0 / 0.92);
+  border-color: oklch(0.922 0 0 / 0.8);
+  box-shadow: 0 4px 24px oklch(0 0 0 / 0.08),
+              0 1px 3px oklch(0 0 0 / 0.04);
+}
+:root .floating-mic-glow {
+  background: radial-gradient(circle, oklch(0.623 0.214 259.815 / 0.06) 0%, transparent 70%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .floating-mic-ring,
+  .floating-mic-wave-bar {
+    animation: none;
+  }
+  .floating-mic-ring { display: none; }
+  .floating-mic-wave-bar { transform: scaleY(0.6); }
 }

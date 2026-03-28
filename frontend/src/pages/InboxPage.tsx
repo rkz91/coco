@@ -7,6 +7,8 @@ import {
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { useInViewport } from '../hooks/useInViewport';
+import { useToast } from '../components/shared/Toast';
+import { useListNavigation } from '../hooks/useListNavigation';
 
 type ReadState = 'unread' | 'seen' | 'dismissed';
 type InboxTab = 'all' | 'urgent' | 'drafts' | 'classify' | 'health';
@@ -212,6 +214,7 @@ export default function InboxPage() {
   const [readStates, setReadStates] = useState<Record<string, ReadState>>({});
   const [showDismissed, setShowDismissed] = useState(false);
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // ─── Helpers for read state ──────────────────────────────────────
 
@@ -296,6 +299,10 @@ export default function InboxPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drafts'] });
       queryClient.invalidateQueries({ queryKey: ['queue'] });
+      toast('Draft approved', 'success');
+    },
+    onError: () => {
+      toast('Failed to approve draft', 'error');
     },
   });
 
@@ -304,6 +311,10 @@ export default function InboxPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['drafts'] });
       queryClient.invalidateQueries({ queryKey: ['queue'] });
+      toast('Draft rejected', 'info');
+    },
+    onError: () => {
+      toast('Failed to reject draft', 'error');
     },
   });
 
@@ -313,6 +324,10 @@ export default function InboxPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['content-unsorted'] });
       queryClient.invalidateQueries({ queryKey: ['queue'] });
+      toast('Content classified', 'success');
+    },
+    onError: () => {
+      toast('Failed to classify content', 'error');
     },
   });
 
@@ -419,20 +434,31 @@ export default function InboxPage() {
     .filter(i => showDismissed || getReadState(i.id) !== 'dismissed')
     .filter(i => activeTab === 'all' || i.type === activeTab || (activeTab === 'urgent' && i.type === 'overdue'));
 
-  const handleApprove = (sourceId: string) => {
+  const handleApprove = useCallback((sourceId: string) => {
     approveMut.mutate(sourceId);
     handleDismiss(`draft-${sourceId}`);
-  };
+  }, [approveMut, handleDismiss]);
 
-  const handleReject = (sourceId: string) => {
+  const handleReject = useCallback((sourceId: string) => {
     rejectMut.mutate(sourceId);
     handleDismiss(`draft-${sourceId}`);
-  };
+  }, [rejectMut, handleDismiss]);
 
-  const handleClassify = (sourceId: string, projectId: string) => {
+  const handleClassify = useCallback((sourceId: string, projectId: string) => {
     classifyMut.mutate({ contentId: sourceId, projectId });
     handleDismiss(`classify-${sourceId}`);
-  };
+  }, [classifyMut, handleDismiss]);
+
+  // j/k keyboard navigation
+  const { selectedIndex, containerRef } = useListNavigation(filteredItems, {
+    onAction: (key, item) => {
+      if (key === 'approve' && item.type === 'draft_approval' && item.sourceId) {
+        handleApprove(item.sourceId);
+      } else if (key === 'dismiss') {
+        handleDismiss(item.id);
+      }
+    },
+  });
 
   // Counts exclude dismissed items
   const activeDedupedItems = dedupedItems.filter(i => getReadState(i.id) !== 'dismissed');
@@ -504,7 +530,7 @@ export default function InboxPage() {
         </div>
       </div>
 
-      {/* Items */}
+      {/* Items — click container to enable j/k navigation */}
       {filteredItems.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <Inbox size={40} className="mb-3 opacity-30" />
@@ -512,18 +538,27 @@ export default function InboxPage() {
           <p className="text-xs mt-1">Nothing needs your attention right now.</p>
         </div>
       ) : (
-        <div className="border border-border rounded-xl divide-y divide-border overflow-hidden">
-          {filteredItems.map(item => (
-            <InboxItemRow
+        <div
+          ref={containerRef}
+          tabIndex={0}
+          className="border border-border rounded-xl divide-y divide-border overflow-hidden outline-none"
+        >
+          {filteredItems.map((item, idx) => (
+            <div
               key={item.id}
-              item={item}
-              readState={getReadState(item.id)}
-              onMarkSeen={handleMarkSeen}
-              onDismiss={handleDismiss}
-              onApprove={handleApprove}
-              onReject={handleReject}
-              onClassify={handleClassify}
-            />
+              data-list-index={idx}
+              className={cn(idx === selectedIndex && 'list-nav-selected')}
+            >
+              <InboxItemRow
+                item={item}
+                readState={getReadState(item.id)}
+                onMarkSeen={handleMarkSeen}
+                onDismiss={handleDismiss}
+                onApprove={handleApprove}
+                onReject={handleReject}
+                onClassify={handleClassify}
+              />
+            </div>
           ))}
         </div>
       )}

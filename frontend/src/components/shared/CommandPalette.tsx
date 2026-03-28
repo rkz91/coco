@@ -3,9 +3,34 @@ import { useNavigate } from 'react-router-dom';
 import {
   Search, LayoutDashboard, FolderKanban, Radio, MessageSquare,
   DollarSign, Settings, CheckSquare, Users, Inbox, Activity, ListTodo,
-  Plus, Bot, Target, Trash2, Network, Home,
+  Plus, Bot, Target, Trash2, Network, Home, FileText, Loader2,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { apiFetch } from '../../lib/api';
+
+interface SearchResult {
+  type: 'todo' | 'agent' | 'task' | 'goal' | 'content';
+  id: string;
+  title: string;
+  subtitle: string;
+  url: string;
+}
+
+const searchTypeIcons: Record<string, React.ElementType> = {
+  todo: CheckSquare,
+  agent: Bot,
+  task: ListTodo,
+  goal: Target,
+  content: FileText,
+};
+
+const searchTypeLabels: Record<string, string> = {
+  todo: 'Todos',
+  agent: 'Agents',
+  task: 'Tasks',
+  goal: 'Goals',
+  content: 'Content',
+};
 
 interface CommandItem {
   label: string;
@@ -48,7 +73,10 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const navigate = useNavigate();
 
   const dispatchAction = useCallback((type: string) => {
@@ -70,10 +98,76 @@ export function CommandPalette() {
   const filteredActions = filtered.filter((c) => c.section === 'actions');
   const orderedFiltered = [...filteredNav, ...filteredActions];
 
+  // Debounced search across all entities via /api/search
+  // Also resolves display IDs matching XXX-123 pattern via /api/resolve/
+  useEffect(() => {
+    if (!open) return;
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.length < 2) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+
+    setSearching(true);
+    debounceRef.current = setTimeout(async () => {
+      try {
+        const results: SearchResult[] = [];
+
+        // Check if query matches display ID pattern (e.g. CXR-47)
+        const displayIdPattern = /^[A-Za-z]{2,6}-\d+$/;
+        if (displayIdPattern.test(query.trim())) {
+          try {
+            const resolved = await apiFetch<{
+              entity_id: string;
+              entity_type: string;
+              display_id: string;
+              node_id: string;
+            }>(`/resolve/${encodeURIComponent(query.trim())}`);
+            const typeUrlMap: Record<string, string> = {
+              todo: '/todos',
+              task: '/tasks',
+            };
+            results.push({
+              type: resolved.entity_type as SearchResult['type'],
+              id: resolved.entity_id,
+              title: `${resolved.display_id}`,
+              subtitle: `Go to ${resolved.entity_type} ${resolved.display_id}`,
+              url: typeUrlMap[resolved.entity_type] ?? '/todos',
+            });
+          } catch {
+            // Not found -- fall through to normal search
+          }
+        }
+
+        // Normal search
+        const searchResults = await apiFetch<SearchResult[]>(
+          `/search?q=${encodeURIComponent(query)}&limit=10`,
+        );
+        results.push(...searchResults);
+        setSearchResults(results);
+      } catch {
+        setSearchResults([]);
+      } finally {
+        setSearching(false);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [query, open]);
+
+  // Total selectable items = commands + search results
+  const totalItems = orderedFiltered.length + searchResults.length;
+
   const close = useCallback(() => {
     setOpen(false);
     setQuery('');
     setSelectedIndex(0);
+    setSearchResults([]);
+    setSearching(false);
   }, []);
 
   const execute = useCallback(
@@ -112,23 +206,38 @@ export function CommandPalette() {
     setSelectedIndex(0);
   }, [query]);
 
+  const executeSearchResult = useCallback(
+    (result: SearchResult) => {
+      navigate(result.url);
+      close();
+    },
+    [navigate, close],
+  );
+
   const onKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        setSelectedIndex((i) => Math.min(i + 1, orderedFiltered.length - 1));
+        setSelectedIndex((i) => Math.min(i + 1, totalItems - 1));
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
         setSelectedIndex((i) => Math.max(i - 1, 0));
-      } else if (e.key === 'Enter' && orderedFiltered[selectedIndex]) {
+      } else if (e.key === 'Enter') {
         e.preventDefault();
-        execute(orderedFiltered[selectedIndex]);
+        if (selectedIndex < orderedFiltered.length) {
+          const cmd = orderedFiltered[selectedIndex];
+          if (cmd) execute(cmd);
+        } else {
+          const srIdx = selectedIndex - orderedFiltered.length;
+          const result = searchResults[srIdx];
+          if (result) executeSearchResult(result);
+        }
       } else if (e.key === 'Escape') {
         e.preventDefault();
         close();
       }
     },
-    [orderedFiltered, selectedIndex, execute, close],
+    [orderedFiltered, searchResults, selectedIndex, totalItems, execute, executeSearchResult, close],
   );
 
   if (!open) return null;
@@ -166,7 +275,7 @@ export function CommandPalette() {
 
         {/* Results */}
         <div className="max-h-80 overflow-y-auto py-1">
-          {orderedFiltered.length === 0 && (
+          {orderedFiltered.length === 0 && !searching && searchResults.length === 0 && query.length < 2 && (
             <div className="px-4 py-3 text-sm text-muted-foreground">
               No results found.
             </div>
@@ -261,6 +370,81 @@ export function CommandPalette() {
                   );
                 })}
               </ul>
+            </div>
+          )}
+
+          {/* Search Results section */}
+          {searching && (
+            <div className="flex items-center gap-2 px-4 py-3 text-sm text-muted-foreground">
+              <Loader2 size={14} className="animate-spin" />
+              Searching...
+            </div>
+          )}
+          {!searching && searchResults.length > 0 && (() => {
+            // Group results by type
+            const grouped = new Map<string, SearchResult[]>();
+            for (const r of searchResults) {
+              const existing = grouped.get(r.type) || [];
+              existing.push(r);
+              grouped.set(r.type, existing);
+            }
+
+            return (
+              <div>
+                <div className="px-4 pt-3 pb-1">
+                  <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Search Results
+                  </span>
+                </div>
+                {Array.from(grouped.entries()).map(([type, items]) => {
+                  const TypeIcon = searchTypeIcons[type] || FileText;
+                  const typeLabel = searchTypeLabels[type] || type;
+                  return (
+                    <div key={type}>
+                      <div className="px-4 pt-1.5 pb-0.5">
+                        <span className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground/70">
+                          {typeLabel}
+                        </span>
+                      </div>
+                      <ul>
+                        {items.map((result) => {
+                          const idx = itemIndex++;
+                          return (
+                            <li key={`${result.type}-${result.id}`}>
+                              <button
+                                className={cn(
+                                  'w-full px-4 py-2 text-left text-sm transition-colors flex items-center gap-3',
+                                  idx === selectedIndex
+                                    ? 'bg-accent/20 text-accent'
+                                    : 'text-foreground hover:bg-accent/50',
+                                )}
+                                onClick={() => executeSearchResult(result)}
+                                onMouseEnter={() => setSelectedIndex(idx)}
+                              >
+                                <TypeIcon
+                                  size={16}
+                                  className={idx === selectedIndex ? 'text-accent' : 'text-muted-foreground'}
+                                />
+                                <div className="flex-1 min-w-0">
+                                  <div className="truncate">{result.title}</div>
+                                  <div className="text-[11px] text-muted-foreground truncate">
+                                    {result.subtitle}
+                                  </div>
+                                </div>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    </div>
+                  );
+                })}
+              </div>
+            );
+          })()}
+          {!searching && query.length >= 2 && searchResults.length === 0 && orderedFiltered.length === 0 && (
+            <div className="px-4 py-3 text-sm text-muted-foreground">
+              No results found.
             </div>
           )}
         </div>

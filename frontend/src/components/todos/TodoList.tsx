@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Clock } from 'lucide-react';
+import { Clock, Lock, ArrowRight, Link2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { apiTransition } from '../../lib/api';
 import { cn } from '../../lib/utils';
@@ -7,6 +7,7 @@ import { InlineEditor } from '../shared/InlineEditor';
 import { TransitionButtons } from '../shared/TransitionButtons';
 import { statePillClass, STATE_LABELS } from '../../lib/state-machine';
 import { apiPatch } from '../../lib/api';
+import { AddDependencyDialog } from './AddDependencyDialog';
 
 export interface Todo {
   id: string;
@@ -23,6 +24,9 @@ export interface Todo {
   created_at: string;
   completed_at: string | null;
   tags: string;
+  blocked_by_count?: number;
+  blocking_count?: number;
+  display_id?: string;
 }
 
 interface TodoListProps {
@@ -44,6 +48,7 @@ export function TodoList({ todos }: TodoListProps) {
   const qc = useQueryClient();
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [flashId, setFlashId] = useState<string | null>(null);
+  const [depDialogTodoId, setDepDialogTodoId] = useState<string | null>(null);
 
   async function handleTransition(id: string, toState: string) {
     setPendingId(id);
@@ -113,6 +118,13 @@ export function TodoList({ todos }: TodoListProps) {
                     {STATE_LABELS[todo.status] ?? todo.status}
                   </span>
 
+                  {/* Display ID badge */}
+                  {todo.display_id && (
+                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground bg-muted/50 border border-border rounded px-1.5 py-0.5 tracking-wide">
+                      {todo.display_id}
+                    </span>
+                  )}
+
                   {/* Title */}
                   <div
                     className="flex-1 min-w-0"
@@ -141,6 +153,32 @@ export function TodoList({ todos }: TodoListProps) {
                   >
                     {todo.priority}
                   </span>
+
+                  {/* Dependency badges */}
+                  {(todo.blocked_by_count ?? 0) > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 bg-red-500/15 text-red-500">
+                      <Lock className="h-3 w-3" />
+                      Blocked by {todo.blocked_by_count}
+                    </span>
+                  )}
+                  {(todo.blocking_count ?? 0) > 0 && (
+                    <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold shrink-0 bg-blue-500/15 text-blue-500">
+                      <ArrowRight className="h-3 w-3" />
+                      Blocking {todo.blocking_count}
+                    </span>
+                  )}
+
+                  {/* Add dependency button */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDepDialogTodoId(todo.id);
+                    }}
+                    className="shrink-0 p-1 rounded hover:bg-accent/50 text-muted-foreground hover:text-foreground transition-colors"
+                    title="Add dependency"
+                  >
+                    <Link2 className="h-3.5 w-3.5" />
+                  </button>
 
                   {/* Owner */}
                   {todo.owner && (
@@ -176,6 +214,17 @@ export function TodoList({ todos }: TodoListProps) {
           </div>
         </section>
       ))}
+
+      {/* Add Dependency Dialog */}
+      {depDialogTodoId && (
+        <AddDependencyDialog
+          todoId={depDialogTodoId}
+          allTodos={todos}
+          open={!!depDialogTodoId}
+          onOpenChange={(open) => { if (!open) setDepDialogTodoId(null); }}
+          onCreated={() => void qc.invalidateQueries({ queryKey: ['todos'] })}
+        />
+      )}
     </div>
   );
 }

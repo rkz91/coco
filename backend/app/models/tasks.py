@@ -8,6 +8,7 @@ class CreateTaskBody(BaseModel):
     title: str
     description: Optional[str] = None
     project_id: Optional[str] = None
+    node_id: Optional[str] = None
     priority: str = "medium"
     agent_id: Optional[str] = None
 
@@ -19,6 +20,7 @@ class PatchTaskBody(BaseModel):
     priority: Optional[str] = None
     agent_id: Optional[str] = None
     project_id: Optional[str] = None
+    node_id: Optional[str] = None
 
 
 class CheckoutTaskBody(BaseModel):

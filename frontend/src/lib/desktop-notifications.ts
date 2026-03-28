@@ -69,3 +69,42 @@ export function notify(title: string, options: NotifyOptions = {}): Notification
 
   return n;
 }
+
+export interface DesktopNotificationOptions {
+  icon?: string;
+  tag?: string;
+  onClick?: () => void;
+}
+
+/**
+ * Send a macOS desktop notification via the Web Notification API.
+ *
+ * Checks both browser permission and the user's localStorage preference
+ * before sending. Clicking the notification focuses the CoCo window and
+ * optionally fires a custom callback.
+ */
+export function sendDesktopNotification(
+  title: string,
+  body: string,
+  options: DesktopNotificationOptions = {},
+): Notification | null {
+  if (!isPermitted() || !isEnabled()) return null;
+
+  const n = new Notification(title, {
+    body,
+    icon: options.icon ?? '/favicon.svg',
+    tag: options.tag,
+  });
+
+  n.onclick = () => {
+    // Focus the CoCo browser window/tab
+    window.focus();
+    options.onClick?.();
+    n.close();
+  };
+
+  // Auto-close after 8 seconds if not interacted with
+  setTimeout(() => n.close(), 8000);
+
+  return n;
+}

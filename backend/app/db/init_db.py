@@ -280,20 +280,27 @@ CREATE TABLE IF NOT EXISTS id_sequences (
     node_id TEXT PRIMARY KEY REFERENCES nodes(id),
     next_seq INTEGER NOT NULL DEFAULT 1
 );
-CREATE TABLE IF NOT EXISTS todo_identifiers (
-    hub_todo_id TEXT PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS entity_identifiers (
+    entity_id TEXT PRIMARY KEY,
+    entity_type TEXT NOT NULL,
     node_id TEXT NOT NULL,
     sequence_num INTEGER NOT NULL,
     display_id TEXT NOT NULL,
     UNIQUE(node_id, sequence_num)
 );
-CREATE INDEX IF NOT EXISTS idx_todo_ident_display ON todo_identifiers(display_id);
+CREATE INDEX IF NOT EXISTS idx_entity_ident_display ON entity_identifiers(display_id);
+CREATE INDEX IF NOT EXISTS idx_entity_ident_type ON entity_identifiers(entity_type);
+
+-- Backward compat view so old code referencing todo_identifiers still works
+CREATE VIEW IF NOT EXISTS todo_identifiers AS
+    SELECT entity_id AS hub_todo_id, node_id, sequence_num, display_id
+    FROM entity_identifiers WHERE entity_type = 'todo';
 
 CREATE TABLE IF NOT EXISTS todo_dependencies (
     id TEXT PRIMARY KEY,
     todo_id TEXT NOT NULL,
     depends_on TEXT NOT NULL,
-    dep_type TEXT NOT NULL DEFAULT 'blocked_by',
+    dep_type TEXT NOT NULL DEFAULT 'blocked_by' CHECK(dep_type IN ('blocked_by', 'related_to')),
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     UNIQUE(todo_id, depends_on)
 );
@@ -401,6 +408,34 @@ def init_platform_db():
         conn.commit()
     except Exception as e:
         log.warning("migration_failed", error=str(e))
+
+    # Migrate todo_identifiers -> entity_identifiers if old table exists
+    try:
+        existing_tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        if "todo_identifiers" in existing_tables and "entity_identifiers" not in existing_tables:
+            conn.execute(
+                "CREATE TABLE entity_identifiers AS "
+                "SELECT hub_todo_id AS entity_id, 'todo' AS entity_type, node_id, sequence_num, display_id "
+                "FROM todo_identifiers"
+            )
+            conn.execute("DROP TABLE todo_identifiers")
+            conn.commit()
+            log.info("migrated_todo_identifiers_to_entity_identifiers")
+        elif "todo_identifiers" in existing_tables and "entity_identifiers" in existing_tables:
+            # Old table still hanging around alongside new one -- migrate any stragglers
+            conn.execute(
+                "INSERT OR IGNORE INTO entity_identifiers (entity_id, entity_type, node_id, sequence_num, display_id) "
+                "SELECT hub_todo_id, 'todo', node_id, sequence_num, display_id FROM todo_identifiers"
+            )
+            # Check if it's a real table (not the view we create)
+            is_table = conn.execute(
+                "SELECT type FROM sqlite_master WHERE name='todo_identifiers' AND type='table'"
+            ).fetchone()
+            if is_table:
+                conn.execute("DROP TABLE todo_identifiers")
+            conn.commit()
+    except Exception as e:
+        log.warning("entity_identifiers_migration_failed", error=str(e))
 
     # Add session_id to chat_messages before running SCHEMA (which creates an index on it)
     try:

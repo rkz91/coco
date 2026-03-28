@@ -1,6 +1,6 @@
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import { Search } from 'lucide-react';
-import { Sidebar } from './Sidebar';
+import { Sidebar, useSidebarCollapsed } from './Sidebar';
 import { Breadcrumbs } from '../shared/Breadcrumbs';
 import { NotificationDropdown } from '../shared/NotificationDropdown';
 import { FloatingMic } from '../shared/FloatingMic';
@@ -29,10 +29,16 @@ function ConnectionBanner() {
 }
 
 export function AppShell() {
+  const location = useLocation();
+  const collapsed = useSidebarCollapsed();
+
   return (
     <div className="flex min-h-screen bg-background">
       <Sidebar />
-      <div className="flex-1 ml-60 flex flex-col">
+      <div
+        className="flex-1 flex flex-col transition-[margin-left] duration-200 ease-out"
+        style={{ marginLeft: collapsed ? 48 : 240 }}
+      >
         {/* Offline banner */}
         <ConnectionBanner />
 
@@ -51,8 +57,11 @@ export function AppShell() {
           </div>
         </header>
 
-        {/* Content */}
-        <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        {/* Content — page transition on route change */}
+        <main
+          key={location.pathname}
+          className="flex-1 p-6 max-w-7xl w-full mx-auto animate-page-enter"
+        >
           <Outlet />
         </main>
       </div>

@@ -5,6 +5,7 @@ import { apiPost, apiFetch } from '../../lib/api';
 import { useQuery } from '@tanstack/react-query';
 import type { Agent } from './AgentCard';
 import { ROLE_META } from './AgentCard';
+import { useToast } from '../shared/Toast';
 
 interface Project {
   id: string;
@@ -20,6 +21,7 @@ interface CreateAgentDialogProps {
 const inputCls = 'w-full bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-accent/20 focus:border-accent transition-colors';
 
 export function CreateAgentDialog({ open, onOpenChange, onCreated }: CreateAgentDialogProps) {
+  const { toast } = useToast();
   const [name, setName] = useState('');
   const [projectId, setProjectId] = useState('');
   const [model, setModel] = useState('sonnet');
@@ -74,8 +76,10 @@ export function CreateAgentDialog({ open, onOpenChange, onCreated }: CreateAgent
       onCreated(spawned);
       reset();
       onOpenChange(false);
+      toast('Agent recruited and spawned', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to create agent');
+      toast('Failed to create agent', 'error');
     } finally {
       setSubmitting(false);
     }

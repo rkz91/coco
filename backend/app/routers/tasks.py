@@ -1,11 +1,15 @@
+import logging
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Query
 from app.db.connections import get_platform_db
 from app.db.tree_utils import build_node_id_filter
 from app.services.event_bus import event_bus
+from app.services.id_generator import assign_display_id
 from app.models.tasks import CheckoutTaskBody, CreateTaskBody, PatchTaskBody
 from app.models.common import TransitionBody
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Tasks"])
 
@@ -43,20 +47,20 @@ def list_tasks(
     params: list[str | int] = []
 
     if agent_id:
-        conditions.append("agent_id = ?")
+        conditions.append("t.agent_id = ?")
         params.append(agent_id)
     if status:
-        conditions.append("status = ?")
+        conditions.append("t.status = ?")
         params.append(status)
     if project_id:
-        conditions.append("project_id = ?")
+        conditions.append("t.project_id = ?")
         params.append(project_id)
     if priority:
-        conditions.append("priority = ?")
+        conditions.append("t.priority = ?")
         params.append(priority)
 
     with get_platform_db() as db:
-        node_frag, node_params = build_node_id_filter(db, node_id, subtree)
+        node_frag, node_params = build_node_id_filter(db, node_id, subtree, column="t.node_id")
         if node_frag:
             conditions.append(node_frag)
             params.extend(node_params)
@@ -64,7 +68,12 @@ def list_tasks(
         where = (" WHERE " + " AND ".join(conditions)) if conditions else ""
 
         rows = db.execute(
-            f"SELECT id, title, description, agent_id, node_id, project_id, status, priority, checked_out_by, checked_out_at, created_at, updated_at FROM tasks{where} ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            f"SELECT t.id, t.title, t.description, t.agent_id, t.node_id, t.project_id, "
+            f"t.status, t.priority, t.checked_out_by, t.checked_out_at, t.created_at, t.updated_at, "
+            f"ei.display_id "
+            f"FROM tasks t "
+            f"LEFT JOIN entity_identifiers ei ON ei.entity_id = t.id AND ei.entity_type = 'task' "
+            f"{where} ORDER BY t.created_at DESC LIMIT ? OFFSET ?",
             params + [limit, offset],
         ).fetchall()
         return [dict(r) for r in rows]
@@ -75,13 +84,14 @@ def create_task(body: CreateTaskBody):
     task_id = str(uuid.uuid4())
     with get_platform_db() as db:
         db.execute(
-            """INSERT INTO tasks (id, title, description, project_id, priority, agent_id)
-               VALUES (?, ?, ?, ?, ?, ?)""",
+            """INSERT INTO tasks (id, title, description, project_id, node_id, priority, agent_id)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
             (
                 task_id,
                 body.title,
                 body.description,
                 body.project_id,
+                body.node_id,
                 body.priority,
                 body.agent_id,
             ),
@@ -90,6 +100,16 @@ def create_task(body: CreateTaskBody):
         row = db.execute("SELECT id, title, description, agent_id, node_id, project_id, status, priority, checked_out_by, checked_out_at, created_at, updated_at FROM tasks WHERE id = ?", (task_id,)).fetchone()
         result = dict(row)
 
+    # Assign human-readable display ID if node_id is provided
+    effective_node_id = body.node_id or body.project_id
+    if effective_node_id:
+        try:
+            display_id = assign_display_id(task_id, effective_node_id, entity_type="task")
+            if display_id:
+                result["display_id"] = display_id
+        except Exception as e:
+            log.warning("assign_display_id_failed for task: %s", e)
+
     event_bus.emit("task.created", {"id": task_id, "title": body.title})
     return result
 
@@ -97,7 +117,15 @@ def create_task(body: CreateTaskBody):
 @router.get("/api/tasks/{task_id}")
 def get_task(task_id: str):
     with get_platform_db() as db:
-        row = db.execute("SELECT id, title, description, agent_id, node_id, project_id, status, priority, checked_out_by, checked_out_at, created_at, updated_at FROM tasks WHERE id = ?", (task_id,)).fetchone()
+        row = db.execute(
+            "SELECT t.id, t.title, t.description, t.agent_id, t.node_id, t.project_id, "
+            "t.status, t.priority, t.checked_out_by, t.checked_out_at, t.created_at, t.updated_at, "
+            "ei.display_id "
+            "FROM tasks t "
+            "LEFT JOIN entity_identifiers ei ON ei.entity_id = t.id AND ei.entity_type = 'task' "
+            "WHERE t.id = ?",
+            (task_id,),
+        ).fetchone()
         if not row:
             raise HTTPException(404, "Task not found")
         return dict(row)

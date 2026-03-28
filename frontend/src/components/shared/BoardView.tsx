@@ -10,6 +10,7 @@ import {
   STATE_COLORS,
 } from '../../lib/state-machine';
 import { TransitionButtons } from './TransitionButtons';
+import { Lock } from 'lucide-react';
 
 interface BoardItem {
   id: string;
@@ -19,6 +20,8 @@ interface BoardItem {
   owner?: string | null;
   agent_id?: string | null;
   due_date?: string | null;
+  blocked_by_count?: number;
+  blocking_count?: number;
 }
 
 interface BoardViewProps<T extends BoardItem> {
@@ -93,51 +96,74 @@ export function BoardView<T extends BoardItem>({
                   No items
                 </div>
               ) : (
-                stateItems.map((item) => (
-                  <div
-                    key={item.id}
-                    onClick={() => onSelect?.(item)}
-                    className={cn(
-                      'bg-card border border-border rounded-lg p-3 space-y-2 transition-all',
-                      'hover:shadow-sm hover:border-border/80',
-                      onSelect && 'cursor-pointer',
-                    )}
-                  >
-                    {/* Title + priority dot */}
-                    <div className="flex items-start gap-2">
-                      <span
-                        className={cn(
-                          'h-2 w-2 rounded-full mt-1 shrink-0',
-                          PRIORITY_DOT[item.priority] ?? 'bg-zinc-400',
-                        )}
-                        title={`${item.priority} priority`}
-                      />
-                      <span className="text-sm text-foreground line-clamp-2">{item.title}</span>
-                    </div>
-
-                    {/* Meta row */}
-                    <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
-                      {item.owner && <span>{item.owner}</span>}
-                      {item.due_date && (
-                        <span>
-                          {new Date(item.due_date).toLocaleDateString(undefined, {
-                            month: 'short',
-                            day: 'numeric',
-                          })}
-                        </span>
+                stateItems.map((item) => {
+                  const isBlocked = (item.blocked_by_count ?? 0) > 0;
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => onSelect?.(item)}
+                      className={cn(
+                        'relative bg-card border rounded-lg p-3 space-y-2 transition-all',
+                        'hover:shadow-sm hover:border-border/80',
+                        onSelect && 'cursor-pointer',
+                        isBlocked ? 'border-red-500/30' : 'border-border',
                       )}
-                    </div>
+                    >
+                      {/* Lock icon overlay for blocked todos */}
+                      {isBlocked && (
+                        <div className="absolute top-1.5 right-1.5 flex items-center gap-1 px-1.5 py-0.5 rounded bg-red-500/10" title={`Blocked by ${item.blocked_by_count} todo(s)`}>
+                          <Lock className="h-3 w-3 text-red-500" />
+                          <span className="text-[9px] font-semibold text-red-500">{item.blocked_by_count}</span>
+                        </div>
+                      )}
 
-                    {/* Transition buttons */}
-                    <TransitionButtons
-                      currentState={item.status}
-                      kind={kind}
-                      onTransition={(toState) => onTransition(item.id, toState)}
-                      isPending={isPending}
-                      size="sm"
-                    />
-                  </div>
-                ))
+                      {/* Title + priority dot */}
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={cn(
+                            'h-2 w-2 rounded-full mt-1 shrink-0',
+                            PRIORITY_DOT[item.priority] ?? 'bg-zinc-400',
+                          )}
+                          title={`${item.priority} priority`}
+                        />
+                        <span className={cn('text-sm text-foreground line-clamp-2', isBlocked && 'pr-8')}>{item.title}</span>
+                      </div>
+
+                      {/* Dependency badges */}
+                      {((item.blocked_by_count ?? 0) > 0 || (item.blocking_count ?? 0) > 0) && (
+                        <div className="flex items-center gap-1.5">
+                          {(item.blocking_count ?? 0) > 0 && (
+                            <span className="flex items-center gap-0.5 text-[9px] font-medium text-blue-500 bg-blue-500/10 px-1.5 py-0.5 rounded">
+                              Blocking {item.blocking_count}
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Meta row */}
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground">
+                        {item.owner && <span>{item.owner}</span>}
+                        {item.due_date && (
+                          <span>
+                            {new Date(item.due_date).toLocaleDateString(undefined, {
+                              month: 'short',
+                              day: 'numeric',
+                            })}
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Transition buttons */}
+                      <TransitionButtons
+                        currentState={item.status}
+                        kind={kind}
+                        onTransition={(toState) => onTransition(item.id, toState)}
+                        isPending={isPending}
+                        size="sm"
+                      />
+                    </div>
+                  );
+                })
               )}
             </div>
           </div>

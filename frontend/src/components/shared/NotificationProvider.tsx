@@ -2,6 +2,7 @@ import { type ReactNode, createContext, useContext } from 'react';
 import { useEventSource, type SSEConnectionStatus } from '../../lib/sse';
 import { useNotificationStore, type Notification } from '../../lib/notifications';
 import { useToast } from './Toast';
+import { sendDesktopNotification } from '../../lib/desktop-notifications';
 
 /**
  * Expose SSE connection status to the rest of the app (used by AppShell offline banner).
@@ -176,6 +177,29 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
             ? `${notif.title}: ${notif.description}`
             : notif.title,
           'error',
+        );
+      }
+
+      // Desktop notifications for urgent events:
+      // agent.failed, agent.completed, budget exceeded
+      const desktopTypes = new Set(['agent.failed', 'agent.completed', 'budget_warning', 'cost.budget_warning']);
+      const resolvedType = eventType !== 'message' ? eventType : (payload.type as string | undefined);
+      const shouldDesktopNotify =
+        notif.type === 'urgent' ||
+        (resolvedType && desktopTypes.has(resolvedType));
+
+      if (shouldDesktopNotify) {
+        sendDesktopNotification(
+          notif.title,
+          notif.description || '',
+          {
+            tag: resolvedType ?? 'coco-urgent',
+            onClick: () => {
+              if (notif.actionUrl) {
+                window.location.hash = notif.actionUrl;
+              }
+            },
+          },
         );
       }
     } catch {

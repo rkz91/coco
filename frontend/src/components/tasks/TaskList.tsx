@@ -13,6 +13,7 @@ export interface Task {
   title: string;
   description: string | null;
   agent_id: string | null;
+  node_id: string | null;
   project_id: string | null;
   status: string;
   priority: string;
@@ -20,6 +21,7 @@ export interface Task {
   checked_out_at: string | null;
   created_at: string;
   updated_at: string;
+  display_id?: string | null;
 }
 
 interface Agent {
@@ -238,7 +240,12 @@ export function TaskList({ tasks, isLoading, onSelect, selectedId }: TaskListPro
                   {task.priority}
                 </span>
               </span>
-              <div className="truncate" onClick={(e) => e.stopPropagation()}>
+              <div className="truncate flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                {task.display_id && (
+                  <span className="shrink-0 font-mono text-[11px] text-muted-foreground bg-muted/50 border border-border rounded px-1.5 py-0.5 tracking-wide">
+                    {task.display_id}
+                  </span>
+                )}
                 <InlineEditor
                   value={task.title}
                   onSave={async (newValue) => {

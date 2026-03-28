@@ -8,8 +8,10 @@ import { TodoList } from '../components/todos/TodoList';
 import { AddTodoDialog } from '../components/todos/AddTodoDialog';
 import { TodoFilters } from '../components/todos/TodoFilters';
 import { DedupDialog } from '../components/todos/DedupDialog';
+import { DependencyGraph } from '../components/todos/DependencyGraph';
 import { StatusBar } from '../components/shared/StatusBar';
 import { BoardView } from '../components/shared/BoardView';
+import { useToast } from '../components/shared/Toast';
 import type { TodoFilterState } from '../components/todos/TodoFilters';
 import type { Todo } from '../components/todos/TodoList';
 
@@ -153,6 +155,11 @@ export default function TodosPage() {
           <TodoFilters filters={filters} onChange={setFilters} />
         </div>
       )}
+
+      {/* Dependency Graph (collapsible) */}
+      <div className="px-4 pb-2">
+        <DependencyGraph todos={todos} />
+      </div>
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-4 pb-4">
