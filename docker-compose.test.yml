@@ -1,0 +1,11 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: coco_test
+      POSTGRES_USER: coco
+      POSTGRES_PASSWORD: coco
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
