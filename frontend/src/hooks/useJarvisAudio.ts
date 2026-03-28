@@ -140,7 +140,7 @@ class JarvisAudioEngine {
     this.ambientStop = () => {
       masterGain.gain.linearRampToValueAtTime(0.001, ctx.currentTime + 2);
       setTimeout(() => {
-        nodes.forEach((n) => { try { n.stop(); } catch {} });
+        nodes.forEach((n) => { try { n.stop(); n.disconnect(); } catch {} });
       }, 2200);
       this.ambientStop = null;
     };
@@ -162,15 +162,18 @@ class JarvisAudioEngine {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, voice: 'andrew', speed: '-5%' }),
       });
-      if (!resp.ok) return;
+      if (!resp.ok) {
+        console.warn(`[JarvisAudio] TTS prefetch returned ${resp.status} ${resp.statusText}`);
+        return;
+      }
       const blob = await resp.blob();
       this.prefetchedUrl = URL.createObjectURL(blob);
       this.prefetchedAudio = new Audio(this.prefetchedUrl);
       this.prefetchedAudio.volume = 0.9;
       // Pre-load the audio data so play() is instant
       this.prefetchedAudio.preload = 'auto';
-    } catch {
-      // Prefetch failed — speak() will fall back
+    } catch (err) {
+      console.warn('[JarvisAudio] TTS prefetch failed, speak() will use fallback:', err);
     }
   }
 
@@ -253,14 +256,18 @@ class JarvisAudioEngine {
   /** Clean up all audio resources */
   destroy() {
     this.cancelSpeak();
-    this.stopAmbient();
+    // Force-stop ambient oscillators immediately (don't wait for 2.2s fade)
+    if (this.ambientStop) {
+      // Cancel the graceful fade — just kill everything now
+      this.ambientStop = null;
+    }
     // Revoke any prefetched blob URLs
     if (this.prefetchedUrl) {
       URL.revokeObjectURL(this.prefetchedUrl);
       this.prefetchedUrl = null;
       this.prefetchedAudio = null;
     }
-    // Close audio context
+    // Close audio context (stops all connected oscillators immediately)
     if (this.ctx && this.ctx.state !== 'closed') {
       this.ctx.close().catch(() => {});
     }

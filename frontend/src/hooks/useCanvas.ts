@@ -10,7 +10,8 @@ interface CanvasState {
 }
 
 const AUTO_IDLE_MS = 30_000;
-const TRANSITION_MS = 300;
+// Match the canvas-exit animation (300ms) plus a small buffer to avoid flicker
+const TRANSITION_MS = 350;
 
 export function useCanvas() {
   const [state, setState] = useState<CanvasState>({

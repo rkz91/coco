@@ -71,7 +71,9 @@ def _piper_jarvis(text: str) -> Path | None:
     if not JARVIS_MODEL.exists():
         return None
     try:
-        out_path = TTS_CACHE_DIR / "briefing.wav"
+        import hashlib
+        text_hash = hashlib.sha256(text.encode()).hexdigest()[:12]
+        out_path = TTS_CACHE_DIR / f"piper_{text_hash}.wav"
         result = subprocess.run(
             ["piper", "--model", str(JARVIS_MODEL), "--output_file", str(out_path)],
             input=text.encode(),
@@ -93,8 +95,10 @@ async def _edge_tts(text: str, voice: str, speed: str) -> Path | None:
     """Generate audio using edge-tts (free Azure Neural voices)."""
     try:
         import edge_tts
+        import hashlib
 
-        out_path = TTS_CACHE_DIR / "briefing.mp3"
+        text_hash = hashlib.sha256(f"{text}:{voice}:{speed}".encode()).hexdigest()[:12]
+        out_path = TTS_CACHE_DIR / f"edge_{text_hash}.mp3"
         communicate = edge_tts.Communicate(text, voice, rate=speed)
         await communicate.save(str(out_path))
         if out_path.exists() and out_path.stat().st_size > 100:

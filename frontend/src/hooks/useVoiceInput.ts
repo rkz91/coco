@@ -103,7 +103,18 @@ export function useVoiceInput() {
         setState((s) => ({ ...s, isListening: false }));
         return;
       }
-      setState((s) => ({ ...s, isListening: false, error: event.error }));
+      // Friendly error messages for common mic issues
+      const friendlyErrors: Record<string, string> = {
+        'not-allowed': 'Microphone access denied. Please allow mic permission in your browser settings.',
+        'NotAllowedError': 'Microphone access denied. Please allow mic permission in your browser settings.',
+        'not-found': 'No microphone found. Please connect a mic and try again.',
+        'NotFoundError': 'No microphone found. Please connect a mic and try again.',
+        'audio-capture': 'Microphone is in use by another app. Close other apps using the mic and try again.',
+        'network': 'Network error during speech recognition. Check your connection.',
+        'service-not-allowed': 'Speech recognition service not available. Try using Chrome.',
+      };
+      const msg = friendlyErrors[event.error] || `Voice input error: ${event.error}`;
+      setState((s) => ({ ...s, isListening: false, error: msg }));
     };
 
     recognitionRef.current = recognition;

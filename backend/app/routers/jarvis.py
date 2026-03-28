@@ -487,9 +487,31 @@ async def _claude_fallback(text: str) -> CommandResponse:
 
 @router.post("/api/jarvis/command", response_model=CommandResponse)
 async def jarvis_command(req: CommandRequest):
+    # ─── Inline actions: create todo, approve draft ───
+    todo_title = _extract_create_todo(req.text)
+    if todo_title:
+        log.info("jarvis_inline_action", action="create_todo", title=todo_title[:50])
+        result = await _handle_create_todo(todo_title)
+        _record_exchange(req.text, result.reply)
+        return result
+
+    draft_id = _extract_approve_draft(req.text)
+    if draft_id:
+        log.info("jarvis_inline_action", action="approve_draft", draft_id=draft_id)
+        result = await _handle_approve_draft(draft_id)
+        _record_exchange(req.text, result.reply)
+        return result
+
+    # ─── Standard command matching ───
     handler_name, remaining = _match_command(req.text)
     if handler_name and handler_name in HANDLERS:
         log.info("jarvis_command", handler=handler_name, text=req.text[:50])
-        return await HANDLERS[handler_name](remaining=remaining)
+        result = await HANDLERS[handler_name](remaining=remaining)
+        _record_exchange(req.text, result.reply)
+        return result
+
+    # ─── Claude fallback ───
     log.info("jarvis_command_fallback", text=req.text[:50])
-    return await _claude_fallback(req.text)
+    result = await _claude_fallback(req.text)
+    _record_exchange(req.text, result.reply)
+    return result
