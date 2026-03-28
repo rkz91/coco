@@ -6,6 +6,7 @@ import {
   FolderKanban, Search, Radio, CheckSquare, Target, DollarSign, Users, Settings,
   Mail, Mic, Ticket, FileText, Plus, ChevronRight, Check, ChevronDown, X,
   GitBranch, Play, SkipForward, ChevronUp, Pencil, Download, Save,
+  FolderOpen, Folder, FolderSearch,
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { cn, timeAgo, formatCost } from '../lib/utils';
@@ -32,10 +33,14 @@ import { PersonCard, type Person } from '../components/people/PersonCard';
 import { PersonDetail } from '../components/people/PersonDetail';
 import { AddPersonDialog } from '../components/people/AddPersonDialog';
 import { ActivityFeed } from '../components/dashboard/ActivityFeed';
+import { AnalyzeFolderDialog } from '../components/tree/AnalyzeFolderDialog';
+import { AnalysisResults } from '../components/tree/AnalysisResults';
+import { FolderPickerDialog } from '../components/tree/FolderPickerDialog';
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: FolderKanban },
   { key: 'knowledge', label: 'Knowledge', icon: Search },
+  { key: 'folder', label: 'Project Folder', icon: FolderOpen },
   { key: 'agents', label: 'Agents', icon: Radio },
   { key: 'collaboration', label: 'Collaboration', icon: GitBranch },
   { key: 'todos', label: 'Todos', icon: CheckSquare },
@@ -176,6 +181,188 @@ function KnowledgeTab({ projectId }: { projectId: string }) {
     </div>
   );
 }
+
+
+// ─── Project Folder Tab ──────────────────────────────────────────────
+
+interface FolderFile {
+  name: string;
+  is_dir: boolean;
+  size: number | null;
+  modified: number;
+}
+
+function FolderTab({ nodeId, projectId }: { nodeId: string | null; projectId: string }) {
+  const queryClient = useQueryClient();
+  const [folderPickerOpen, setFolderPickerOpen] = useState(false);
+  const [analyzeDialogOpen, setAnalyzeDialogOpen] = useState(false);
+
+  const { data: nodeData } = useQuery({
+    queryKey: ['tree-node', nodeId],
+    queryFn: () => apiFetch<Record<string, unknown>>(`/tree/${nodeId}`),
+    enabled: !!nodeId,
+  });
+
+  const folderPath = (nodeData?.folder_path as string) ?? '';
+
+  const { data: folderData, isLoading: folderLoading } = useQuery<{
+    path: string; exists: boolean; files: FolderFile[];
+  }>({
+    queryKey: ['tree-folder', nodeId, folderPath],
+    queryFn: () => apiFetch(`/tree/${nodeId}/folder`),
+    enabled: !!nodeId && !!folderPath,
+    staleTime: 10_000,
+  });
+
+  const setFolderForNode = async (path: string) => {
+    if (!nodeId) return;
+    await apiPatch(`/tree/${nodeId}`, { folder_path: path || null });
+    void queryClient.invalidateQueries({ queryKey: ['tree-node', nodeId] });
+    void queryClient.invalidateQueries({ queryKey: ['tree-folder', nodeId] });
+    void queryClient.invalidateQueries({ queryKey: ['tree'] });
+  };
+
+  const formatSize = (bytes: number | null) => {
+    if (bytes == null) return '';
+    if (bytes < 1024) return `${bytes}B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)}K`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)}M`;
+  };
+
+  const formatDate = (ts: number) => {
+    const d = new Date(ts * 1000);
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  if (!nodeId) {
+    return (
+      <div className="text-center py-16 text-muted-foreground">
+        <FolderOpen size={40} className="mx-auto mb-3 opacity-40" />
+        <p className="text-sm">This project is not linked to a tree node yet.</p>
+        <p className="text-xs mt-1">Go to My Portfolio to add it to your hierarchy.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-card border border-border rounded-xl p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+            <FolderOpen size={16} className="text-muted-foreground" />
+            Project Folder
+          </h3>
+          {folderPath && (
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setAnalyzeDialogOpen(true)}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-accent/20 text-accent rounded-lg hover:bg-accent/30 transition-colors border border-accent/30"
+              >
+                <FolderSearch size={12} />
+                Analyze
+              </button>
+              <button
+                onClick={() => setFolderPickerOpen(true)}
+                className="p-1.5 text-muted-foreground rounded-lg border border-border hover:bg-accent/30 transition-colors"
+                title="Change folder"
+              >
+                <Folder size={14} />
+              </button>
+              <button
+                onClick={() => { void setFolderForNode(''); }}
+                className="p-1.5 text-muted-foreground rounded-lg border border-border hover:bg-destructive/10 transition-colors"
+                title="Remove folder"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {folderPath ? (
+          <div className="bg-muted/30 rounded-lg px-3 py-2 text-xs text-foreground font-mono truncate">
+            {folderPath}
+          </div>
+        ) : (
+          <button
+            onClick={() => setFolderPickerOpen(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-6 border-2 border-dashed border-border rounded-xl text-sm text-muted-foreground hover:border-accent hover:text-foreground transition-colors"
+          >
+            <FolderOpen size={20} />
+            Browse and select a folder
+          </button>
+        )}
+      </div>
+
+      {folderPath && (
+        <div className="bg-card border border-border rounded-xl overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
+            <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contents</h4>
+            <span className="text-xs text-muted-foreground">{folderData?.files?.length ?? 0} items</span>
+          </div>
+
+          {folderLoading ? (
+            <div className="space-y-1 p-3">
+              {[1, 2, 3, 4, 5].map(i => (
+                <div key={i} className="h-9 bg-muted/50 rounded animate-pulse" />
+              ))}
+            </div>
+          ) : !folderData?.exists ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">Folder not found or inaccessible</p>
+              <p className="text-xs mt-1 font-mono">{folderPath}</p>
+            </div>
+          ) : folderData.files.length === 0 ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <p className="text-sm">Empty folder</p>
+            </div>
+          ) : (
+            <div className="divide-y divide-border">
+              {folderData.files.map((f) => (
+                <div key={f.name} className="flex items-center gap-3 px-4 py-2.5 hover:bg-accent/20 transition-colors">
+                  <span className="text-base shrink-0">{f.is_dir ? '📁' : '📄'}</span>
+                  <span className="flex-1 min-w-0 text-sm text-foreground truncate">{f.name}</span>
+                  {f.size != null && (
+                    <span className="text-xs text-muted-foreground tabular-nums shrink-0">{formatSize(f.size)}</span>
+                  )}
+                  <span className="text-xs text-muted-foreground shrink-0">{formatDate(f.modified)}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {folderPath && (
+        <div className="bg-card border border-border rounded-xl p-4">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Analysis History</h4>
+          <AnalysisResults nodeId={nodeId} />
+        </div>
+      )}
+
+      <FolderPickerDialog
+        open={folderPickerOpen}
+        onOpenChange={setFolderPickerOpen}
+        onSelect={async (path) => {
+          await setFolderForNode(path);
+          setFolderPickerOpen(false);
+        }}
+        initialPath={folderPath || '~'}
+      />
+
+      {nodeId && (
+        <AnalyzeFolderDialog
+          open={analyzeDialogOpen}
+          onOpenChange={setAnalyzeDialogOpen}
+          nodeId={nodeId}
+          nodeFolderPath={folderPath || null}
+          nodeLabel={String(nodeData?.label ?? 'Project')}
+        />
+      )}
+    </div>
+  );
+}
+
 
 // ─── Agents Tab ─────────────────────────────────────────────────────
 
@@ -1686,6 +1873,7 @@ export default function ProjectDetailPage() {
       <div className="animate-fade-in">
         {activeTab === 'overview' && <OverviewTab project={project} projectId={projectId!} />}
         {activeTab === 'knowledge' && <KnowledgeTab projectId={projectId!} />}
+        {activeTab === 'folder' && <FolderTab nodeId={resolvedNodeId} projectId={projectId!} />}
         {activeTab === 'agents' && <AgentsTab projectId={projectId!} />}
         {activeTab === 'collaboration' && <CollaborationTab projectId={projectId!} nodeId={resolvedNodeId} />}
         {activeTab === 'todos' && <TodosTab projectId={projectId!} />}
