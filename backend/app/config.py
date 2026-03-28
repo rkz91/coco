@@ -22,3 +22,9 @@ USE_AGENT_SDK = os.getenv("USE_AGENT_SDK", "false").lower() in ("true", "1", "ye
 
 # Database URL — defaults to SQLite (platform.db), supports PostgreSQL for cloud
 DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{PLATFORM_DB_PATH}")
+
+# Security
+COCO_AUTH_TOKEN = os.getenv("COCO_AUTH_TOKEN", "")
+COCO_CORS_ORIGINS = os.getenv("COCO_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+COCO_RATE_LIMIT = os.getenv("COCO_RATE_LIMIT", "true").lower() in ("true", "1", "yes")
+COCO_RATE_LIMIT_RPM = int(os.getenv("COCO_RATE_LIMIT_RPM", "120"))
