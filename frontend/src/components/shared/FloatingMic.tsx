@@ -91,15 +91,6 @@ export function FloatingMic() {
     };
   }, []);
 
-  // Hide on /jarvis — it has its own full-screen voice input
-  if (location.pathname === '/jarvis') return null;
-
-  // No mic support or voice disabled — don't render
-  // Use hook's `supported` which accounts for both Deepgram and Web Speech
-  if (!voice.supported) return null;
-  const voiceEnabled = localStorage.getItem('voice-enabled') !== 'false';
-  if (!voiceEnabled) return null;
-
   const handleResult = useCallback((text: string) => {
     if (!text.trim()) return;
     // Dispatch event for useVoiceCommands to route
@@ -127,6 +118,15 @@ export function FloatingMic() {
     setMicState('idle');
     clearTimeout(autoDismissRef.current);
   }, []);
+
+  // Hide on /jarvis — it has its own full-screen voice input
+  if (location.pathname === '/jarvis') return null;
+
+  // No mic support or voice disabled — don't render
+  // Use hook's `supported` which accounts for both Deepgram and Web Speech
+  if (!voice.supported) return null;
+  const voiceEnabled = localStorage.getItem('voice-enabled') !== 'false';
+  if (!voiceEnabled) return null;
 
   const isListening = micState === 'listening' || voice.isListening;
   const isProcessing = micState === 'processing';
