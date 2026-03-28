@@ -726,6 +726,26 @@ hub_drafts = Table(
 # Hub sync watermark (tracks sync progress)
 # ---------------------------------------------------------------------------
 
+staged_actions = Table(
+    "staged_actions",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("content_id", Text, nullable=False),
+    Column("action_type", Text, nullable=False, server_default="todo"),
+    Column("title", Text, nullable=False),
+    Column("description", Text),
+    Column("assignee", Text),
+    Column("due_date", Text),
+    Column("priority", Text, server_default="medium"),
+    Column("source_quote", Text),
+    Column("confidence", Float, server_default="0.0"),
+    Column("extraction_mode", Text, server_default="regex"),
+    Column("status", Text, nullable=False, server_default="staged"),
+    Column("result_id", Text),
+    Column("created_at", Text, nullable=False),
+    Column("updated_at", Text, nullable=False),
+)
+
 hub_sync_watermark = Table(
     "hub_sync_watermark", metadata,
     Column("table_name", Text, primary_key=True),

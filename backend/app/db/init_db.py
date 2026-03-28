@@ -536,6 +536,27 @@ CREATE TABLE IF NOT EXISTS insights (
 );
 CREATE INDEX IF NOT EXISTS idx_insights_type ON insights(insight_type);
 CREATE INDEX IF NOT EXISTS idx_insights_status ON insights(status);
+
+-- Sprint 6: Staged Actions
+CREATE TABLE IF NOT EXISTS staged_actions (
+    id TEXT PRIMARY KEY,
+    content_id TEXT NOT NULL,
+    action_type TEXT NOT NULL DEFAULT 'todo' CHECK(action_type IN ('todo', 'decision', 'follow_up')),
+    title TEXT NOT NULL,
+    description TEXT,
+    assignee TEXT,
+    due_date TEXT,
+    priority TEXT DEFAULT 'medium',
+    source_quote TEXT,
+    confidence REAL DEFAULT 0.0,
+    extraction_mode TEXT DEFAULT 'regex' CHECK(extraction_mode IN ('regex', 'llm')),
+    status TEXT NOT NULL DEFAULT 'staged' CHECK(status IN ('staged', 'approved', 'rejected')),
+    result_id TEXT,
+    created_at TEXT NOT NULL DEFAULT (datetime('now')),
+    updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_staged_actions_content ON staged_actions(content_id);
+CREATE INDEX IF NOT EXISTS idx_staged_actions_status ON staged_actions(status);
 """
 
 MIGRATION = """

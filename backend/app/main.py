@@ -23,6 +23,7 @@ from app.routers import (
     self_improve, search,
     inbox,
     insights,
+    actions,
 )
 
 structlog.configure(
@@ -87,6 +88,7 @@ openapi_tags = [
     {"name": "Self-Improve", "description": "Self-improvement cycle management"},
     {"name": "Inbox", "description": "Inbox read-state persistence and batch actions"},
     {"name": "Insights", "description": "Cross-source entity extraction and insight generation"},
+    {"name": "Actions", "description": "Content-to-action extraction pipeline"},
 ]
 
 app = FastAPI(
@@ -156,6 +158,7 @@ app.include_router(self_improve.router)
 app.include_router(inbox.router)
 app.include_router(search.router)
 app.include_router(insights.router)
+app.include_router(actions.router)
 
 # --- Cross-cutting resolve endpoint ---
 

@@ -204,7 +204,7 @@ class ProcessManager:
                    if k in _ALLOWED_ENV_KEYS or k.startswith("CLAUDE_")}
             env.pop("CLAUDE_CODE_ENTRYPOINT", None)
 
-            cmd = ["claude", "-p", "--output-format", "stream-json"]
+            cmd = ["claude", "-p", "--verbose", "--output-format", "stream-json"]
             if model:
                 cmd.extend(["--model", model])
             cmd.append(task)
