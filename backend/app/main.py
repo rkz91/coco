@@ -25,6 +25,7 @@ from app.routers import (
     inbox,
     insights,
     actions,
+    replay,
 )
 
 structlog.configure(
@@ -40,6 +41,9 @@ async def lifespan(app: FastAPI):
     log.info("platform_starting")
     init_platform_db()
     log.info("platform_db_initialized")
+    # Ensure replays directory exists
+    from pathlib import Path as _Path
+    (_Path.home() / ".coco" / "replays").mkdir(parents=True, exist_ok=True)
     process_manager.reconcile_on_startup()
     log.info("orphan_reconciliation_done")
     deleted = event_bus.cleanup(max_age_hours=24)
@@ -92,6 +96,7 @@ openapi_tags = [
     {"name": "Inbox", "description": "Inbox read-state persistence and batch actions"},
     {"name": "Insights", "description": "Cross-source entity extraction and insight generation"},
     {"name": "Actions", "description": "Content-to-action extraction pipeline"},
+    {"name": "Replays", "description": "Agent replay generation and sharing"},
 ]
 
 app = FastAPI(
@@ -113,7 +118,12 @@ app.add_middleware(
 async def add_security_headers(request, call_next):
     response = await call_next(request)
     response.headers["X-Content-Type-Options"] = "nosniff"
-    response.headers["X-Frame-Options"] = "DENY"
+    # Allow replay share pages to be embedded in iframes (same-origin)
+    path = str(request.url.path)
+    if path.startswith("/api/replays/share/"):
+        response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    else:
+        response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     return response
 
@@ -162,6 +172,7 @@ app.include_router(inbox.router)
 app.include_router(search.router)
 app.include_router(insights.router)
 app.include_router(actions.router)
+app.include_router(replay.router)
 
 # --- Cross-cutting resolve endpoint ---
 
