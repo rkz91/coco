@@ -1,4 +1,4 @@
-"""Trigger engine — runs cron and file_watch triggers in background.
+"""Trigger engine -- runs cron and file_watch triggers in background.
 
 Cron triggers fire based on standard 5-field cron expressions.
 File-watch triggers poll directories for mtime changes.
@@ -8,12 +8,12 @@ Both types log every fire to the trigger_log table.
 import asyncio
 import json
 import os
-from datetime import datetime, timezone, timedelta
+from datetime import datetime, timezone
 from pathlib import Path
 
 import structlog
 
-from app.db.connections import get_platform_db
+from app.db.session import get_db
 
 log = structlog.get_logger()
 
@@ -23,8 +23,6 @@ class TriggerEngine:
         self._running = False
         self._tasks: list[asyncio.Task] = []
         self._file_mtime_cache: dict[str, float] = {}
-        # Track which cron triggers already fired in the current minute
-        # Key: trigger_id, Value: minute timestamp string "YYYY-MM-DDTHH:MM"
         self._cron_fired_at: dict[str, str] = {}
 
     async def start(self):
@@ -44,10 +42,6 @@ class TriggerEngine:
         log.info("trigger_engine_stopped")
 
     async def _cron_loop(self):
-        """Check cron triggers every 30 seconds.
-
-        Uses minute-level dedup to avoid double-firing within the same minute.
-        """
         while self._running:
             try:
                 triggers = self._load_triggers("cron")
@@ -57,13 +51,11 @@ class TriggerEngine:
                 for t in triggers:
                     trigger_id = t["id"]
                     config = json.loads(t["config"]) if isinstance(t["config"], str) else t["config"]
-                    # Accept both "expression" (frontend) and "cron" (legacy) keys
                     cron_expr = config.get("expression") or config.get("cron", "")
 
                     if not cron_expr:
                         continue
 
-                    # Skip if already fired this minute
                     if self._cron_fired_at.get(trigger_id) == minute_key:
                         continue
 
@@ -72,7 +64,6 @@ class TriggerEngine:
                         self._cron_fired_at[trigger_id] = minute_key
                         await self._fire(t)
 
-                # Prune old entries from dedup cache (keep only current minute)
                 self._cron_fired_at = {
                     k: v for k, v in self._cron_fired_at.items() if v == minute_key
                 }
@@ -81,7 +72,6 @@ class TriggerEngine:
             await asyncio.sleep(30)
 
     async def _file_watch_loop(self):
-        """Check file watch triggers every 30 seconds."""
         while self._running:
             try:
                 triggers = self._load_triggers("file_watch")
@@ -95,7 +85,6 @@ class TriggerEngine:
                     changed_files: list[str] = []
                     p = Path(watch_path)
 
-                    # Check if it's a file or directory
                     if p.is_file():
                         mtime = p.stat().st_mtime
                         key = f"{t['id']}:{p}"
@@ -120,12 +109,12 @@ class TriggerEngine:
             await asyncio.sleep(30)
 
     def _load_triggers(self, trigger_type: str) -> list[dict]:
-        with get_platform_db() as db:
-            rows = db.execute(
+        with get_db() as conn:
+            rows = conn.exec_driver_sql(
                 "SELECT * FROM triggers WHERE trigger_type = ? AND enabled = 1",
                 (trigger_type,),
             ).fetchall()
-            return [dict(r) for r in rows]
+            return [dict(r._mapping) for r in rows]
 
     async def _fire(self, trigger: dict, context: dict | None = None):
         """Execute trigger action and log result."""
@@ -134,9 +123,9 @@ class TriggerEngine:
         try:
             result = await _execute_trigger_action(trigger, context=context)
             status = result.get("status", "success")
-            with get_platform_db() as db:
+            with get_db() as conn:
                 _log_trigger_fire(
-                    db,
+                    conn,
                     trigger["id"],
                     status=status,
                     result=json.dumps(result),
@@ -144,9 +133,9 @@ class TriggerEngine:
                 )
             log.info("trigger_fired", trigger_id=trigger["id"], name=trigger["name"], status=status)
         except Exception as e:
-            with get_platform_db() as db:
+            with get_db() as conn:
                 _log_trigger_fire(
-                    db,
+                    conn,
                     trigger["id"],
                     status="failed",
                     error=str(e),
@@ -155,11 +144,6 @@ class TriggerEngine:
 
     @staticmethod
     def _cron_matches(expr: str, now: datetime) -> bool:
-        """Simple cron matching (minute, hour, day, month, weekday).
-
-        Supports: *, */N, N, N-M ranges, and comma-separated values.
-        Weekday: 0=Sunday (cron convention). Python isoweekday() % 7 maps correctly.
-        """
         if not expr:
             return False
         parts = expr.strip().split()
@@ -175,18 +159,12 @@ class TriggerEngine:
 
 
 def _cron_field_matches(cron_part: str, current_val: int) -> bool:
-    """Check if a single cron field matches the current value.
-
-    Supports: *, */N, N, N-M, and comma-separated combinations.
-    """
     if cron_part == "*":
         return True
 
-    # Comma-separated: any sub-part matching is sufficient
     if "," in cron_part:
         return any(_cron_field_matches(sub.strip(), current_val) for sub in cron_part.split(","))
 
-    # Step: */N
     if cron_part.startswith("*/"):
         try:
             step = int(cron_part[2:])
@@ -194,7 +172,6 @@ def _cron_field_matches(cron_part: str, current_val: int) -> bool:
         except ValueError:
             return False
 
-    # Range: N-M
     if "-" in cron_part:
         try:
             lo, hi = cron_part.split("-", 1)
@@ -202,7 +179,6 @@ def _cron_field_matches(cron_part: str, current_val: int) -> bool:
         except ValueError:
             return False
 
-    # Exact value
     try:
         return current_val == int(cron_part)
     except ValueError:

@@ -1,25 +1,28 @@
-"""SQLAlchemy Core engine factory.
+"""SQLAlchemy engine singleton for platform.db.
 
-Provides a single engine instance configured from DATABASE_URL.
-Defaults to SQLite (platform.db) but supports PostgreSQL for cloud deployment.
+All SA Core queries go through this engine.  The engine is configured
+with WAL journal mode, busy_timeout, and foreign keys to match the
+existing sqlite3 connection settings in connections.py.
 """
 
 from sqlalchemy import create_engine, event
-from app.config import DATABASE_URL
+from app.config import PLATFORM_DB_PATH
+
+_url = f"sqlite:///{PLATFORM_DB_PATH}"
 
 engine = create_engine(
-    DATABASE_URL,
-    echo=False,
+    _url,
+    connect_args={"timeout": 10},
     pool_pre_ping=True,
+    # SQLite uses NullPool by default in SA, which is fine for us
 )
 
 
 @event.listens_for(engine, "connect")
 def _set_sqlite_pragmas(dbapi_conn, connection_record):
-    """Set WAL mode, busy timeout, and foreign keys for SQLite connections."""
-    if "sqlite" in DATABASE_URL:
-        cursor = dbapi_conn.cursor()
-        cursor.execute("PRAGMA journal_mode=WAL")
-        cursor.execute("PRAGMA busy_timeout=5000")
-        cursor.execute("PRAGMA foreign_keys=ON")
-        cursor.close()
+    """Mirror the PRAGMA settings from connections._connect."""
+    cursor = dbapi_conn.cursor()
+    cursor.execute("PRAGMA journal_mode=WAL")
+    cursor.execute("PRAGMA busy_timeout=5000")
+    cursor.execute("PRAGMA foreign_keys=ON")
+    cursor.close()

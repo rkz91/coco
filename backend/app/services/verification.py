@@ -1,10 +1,10 @@
-"""Verification Gate Service — reusable quality gates for workflows and self-improve cycles.
+"""Verification Gate Service -- reusable quality gates for workflows and self-improve cycles.
 
 Gates:
-  G1 (Ideation)       — Is the idea well-formed? Does it solve a real problem?
-  G2 (Plan)           — Is the plan complete? Are dependencies identified?
-  G3 (Implementation) — Does the code work? Do tests pass? Security clean?
-  G4 (Acceptance)     — Does it meet the original requirements? Ready to ship?
+  G1 (Ideation)       -- Is the idea well-formed? Does it solve a real problem?
+  G2 (Plan)           -- Is the plan complete? Are dependencies identified?
+  G3 (Implementation) -- Does the code work? Do tests pass? Security clean?
+  G4 (Acceptance)     -- Does it meet the original requirements? Ready to ship?
 """
 import fnmatch
 import json
@@ -14,7 +14,9 @@ import structlog
 from datetime import datetime, timezone
 from dataclasses import dataclass, field
 from enum import Enum
-from app.db.connections import get_platform_db
+from sqlalchemy import insert
+from app.db.session import get_db
+from app.db.tables import verification_gates
 
 log = structlog.get_logger()
 
@@ -29,7 +31,7 @@ class GateName(str, Enum):
 class GateVerdict(str, Enum):
     PASS = "pass"
     FAIL = "fail"
-    WARN = "warn"  # Passed with warnings
+    WARN = "warn"
 
 
 @dataclass
@@ -38,7 +40,7 @@ class GateCheck:
     name: str
     passed: bool
     message: str
-    severity: str = "error"  # error, warning, info
+    severity: str = "error"
 
 
 @dataclass
@@ -68,24 +70,9 @@ class VerificationService:
     def run_gate(self, gate_name: str, input_data: dict, output_data: dict,
                  node_id: str | None = None, entity_type: str | None = None,
                  entity_id: str | None = None) -> GateResult:
-        """Run a verification gate and persist the result.
-
-        Args:
-            gate_name: One of G1_ideation, G2_plan, G3_implementation, G4_acceptance
-            input_data: The input to the stage (e.g., requirements, plan)
-            output_data: The output of the stage (e.g., plan doc, code diff, test results)
-            node_id: Optional tree node this gate belongs to
-            entity_type: Optional entity type (e.g., "improvement", "workflow")
-            entity_id: Optional entity ID
-
-        Returns:
-            GateResult with verdict and individual checks
-        """
         start = time.monotonic()
-
         gate = GateName(gate_name)
 
-        # Route to gate-specific checker
         if gate == GateName.IDEATION:
             result = self._check_ideation(input_data, output_data)
         elif gate == GateName.PLAN:
@@ -99,17 +86,12 @@ class VerificationService:
                                 summary=f"Unknown gate: {gate_name}")
 
         result.duration_ms = int((time.monotonic() - start) * 1000)
-
-        # Persist to database
         self._persist_result(result, node_id, entity_type, entity_id)
-
         return result
 
     def _check_ideation(self, input_data: dict, output_data: dict) -> GateResult:
-        """G1: Verify ideation output quality."""
         checks = []
 
-        # Check: Has a title
         title = output_data.get("title", "")
         checks.append(GateCheck(
             name="has_title",
@@ -117,7 +99,6 @@ class VerificationService:
             message=f"Title: '{title}'" if title else "Missing title",
         ))
 
-        # Check: Has a description/problem statement
         desc = output_data.get("description", "") or output_data.get("problem", "")
         checks.append(GateCheck(
             name="has_description",
@@ -125,7 +106,6 @@ class VerificationService:
             message=f"Description length: {len(desc)} chars" if desc else "Missing description",
         ))
 
-        # Check: Has priority
         priority = output_data.get("priority", "")
         checks.append(GateCheck(
             name="has_priority",
@@ -134,7 +114,6 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Has category
         category = output_data.get("category", "")
         checks.append(GateCheck(
             name="has_category",
@@ -143,7 +122,6 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Not a duplicate (basic title similarity)
         is_duplicate = output_data.get("is_duplicate", False)
         checks.append(GateCheck(
             name="not_duplicate",
@@ -170,10 +148,8 @@ class VerificationService:
         )
 
     def _check_plan(self, input_data: dict, output_data: dict) -> GateResult:
-        """G2: Verify plan completeness."""
         checks = []
 
-        # Check: Has steps/tasks
         steps = output_data.get("steps", []) or output_data.get("tasks", [])
         checks.append(GateCheck(
             name="has_steps",
@@ -181,7 +157,6 @@ class VerificationService:
             message=f"{len(steps)} steps defined" if steps else "No steps defined",
         ))
 
-        # Check: Has files to modify
         files = output_data.get("files", []) or output_data.get("files_to_modify", [])
         checks.append(GateCheck(
             name="has_file_list",
@@ -190,7 +165,6 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Has success criteria
         criteria = output_data.get("success_criteria", []) or output_data.get("acceptance_criteria", [])
         checks.append(GateCheck(
             name="has_success_criteria",
@@ -198,7 +172,6 @@ class VerificationService:
             message=f"{len(criteria)} criteria defined" if criteria else "No success criteria",
         ))
 
-        # Check: Has risk assessment
         risks = output_data.get("risks", [])
         checks.append(GateCheck(
             name="has_risk_assessment",
@@ -207,16 +180,14 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Dependencies identified
         deps = output_data.get("dependencies", [])
         checks.append(GateCheck(
             name="dependencies_identified",
-            passed=True,  # Having none is OK if explicitly stated
+            passed=True,
             message=f"{len(deps)} dependencies" if deps else "No dependencies (OK if standalone)",
             severity="info",
         ))
 
-        # Check: Estimated effort
         effort = output_data.get("effort", "") or output_data.get("estimate", "")
         checks.append(GateCheck(
             name="has_effort_estimate",
@@ -244,10 +215,8 @@ class VerificationService:
         )
 
     def _check_implementation(self, input_data: dict, output_data: dict) -> GateResult:
-        """G3: Verify implementation quality."""
         checks = []
 
-        # Check: Has code changes
         diff = output_data.get("diff", "") or output_data.get("diff_summary", "")
         checks.append(GateCheck(
             name="has_changes",
@@ -255,7 +224,6 @@ class VerificationService:
             message=f"Diff: {len(diff)} chars" if diff else "No code changes",
         ))
 
-        # Check: Tests pass
         test_results = output_data.get("test_results", {})
         tests_passed = test_results.get("passed", False) if isinstance(test_results, dict) else bool(test_results)
         test_msg = ""
@@ -271,7 +239,6 @@ class VerificationService:
             message=test_msg,
         ))
 
-        # Check: No security issues
         security = output_data.get("security_scan", {})
         security_clean = True
         if isinstance(security, dict):
@@ -284,7 +251,6 @@ class VerificationService:
             message="Security scan clean" if security_clean else f"Security issues found: {security}",
         ))
 
-        # Check: Files within denylist
         changed_files = output_data.get("changed_files", [])
         denylist_violations = []
         DENYLIST = ["*.db", ".env", "credentials*", "*.key", "*.pem"]
@@ -298,7 +264,6 @@ class VerificationService:
             message="No restricted files modified" if not denylist_violations else f"Restricted files: {denylist_violations}",
         ))
 
-        # Check: Diff size reasonable (< 2000 lines)
         diff_lines = len(diff.split("\n")) if diff else 0
         checks.append(GateCheck(
             name="reasonable_diff_size",
@@ -326,10 +291,8 @@ class VerificationService:
         )
 
     def _check_acceptance(self, input_data: dict, output_data: dict) -> GateResult:
-        """G4: Verify acceptance criteria met."""
         checks = []
 
-        # Check: Original requirements referenced
         requirements = input_data.get("requirements", []) or input_data.get("acceptance_criteria", [])
         criteria_met = output_data.get("criteria_met", [])
 
@@ -343,7 +306,6 @@ class VerificationService:
                     message=f"{'PASS' if met else 'FAIL'}: {req_text[:80]}",
                 ))
         else:
-            # No explicit requirements — check for general quality signals
             checks.append(GateCheck(
                 name="has_requirements",
                 passed=False,
@@ -351,7 +313,6 @@ class VerificationService:
                 severity="warning",
             ))
 
-        # Check: Has changelog entry
         changelog = output_data.get("changelog_entry", "") or output_data.get("changelog", "")
         checks.append(GateCheck(
             name="has_changelog",
@@ -360,7 +321,6 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Has PR description
         pr_desc = output_data.get("pr_description", "")
         checks.append(GateCheck(
             name="has_pr_description",
@@ -369,7 +329,6 @@ class VerificationService:
             severity="warning",
         ))
 
-        # Check: Review completed
         review = output_data.get("review_notes", "") or output_data.get("review", "")
         checks.append(GateCheck(
             name="review_completed",
@@ -400,25 +359,24 @@ class VerificationService:
                         entity_type: str | None, entity_id: str | None):
         """Save gate result to platform.db."""
         try:
-            with get_platform_db() as db:
-                db.execute(
-                    """INSERT INTO verification_gates
-                       (id, gate, verdict, checks_json, summary, node_id, entity_type, entity_id, run_at, duration_ms)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                    (
-                        str(uuid.uuid4()),
-                        result.gate,
-                        result.verdict.value,
-                        json.dumps([{"name": c.name, "passed": c.passed, "message": c.message, "severity": c.severity} for c in result.checks]),
-                        result.summary,
-                        node_id,
-                        entity_type,
-                        entity_id,
-                        result.run_at,
-                        result.duration_ms,
-                    ),
+            with get_db() as conn:
+                conn.execute(
+                    insert(verification_gates).values(
+                        id=str(uuid.uuid4()),
+                        gate=result.gate,
+                        verdict=result.verdict.value,
+                        checks_json=json.dumps([
+                            {"name": c.name, "passed": c.passed, "message": c.message, "severity": c.severity}
+                            for c in result.checks
+                        ]),
+                        summary=result.summary,
+                        node_id=node_id,
+                        entity_type=entity_type,
+                        entity_id=entity_id,
+                        run_at=result.run_at,
+                        duration_ms=result.duration_ms,
+                    )
                 )
-                db.commit()
         except Exception as e:
             log.warning("verification_gate_persist_failed", error=str(e))
 
@@ -426,7 +384,7 @@ class VerificationService:
                     node_id: str | None = None, limit: int = 20) -> list[dict]:
         """Retrieve gate history from database."""
         try:
-            with get_platform_db() as db:
+            with get_db() as conn:
                 conditions = []
                 params: list = []
                 if entity_type:
@@ -442,12 +400,12 @@ class VerificationService:
                 where = " AND ".join(conditions) if conditions else "1=1"
                 params.append(limit)
 
-                rows = db.execute(
+                rows = conn.exec_driver_sql(
                     f"SELECT * FROM verification_gates WHERE {where} ORDER BY run_at DESC LIMIT ?",
-                    params,
+                    tuple(params),
                 ).fetchall()
 
-                return [dict(r) for r in rows]
+                return [dict(r._mapping) for r in rows]
         except Exception as e:
             log.warning("verification_gate_history_failed", error=str(e))
             return []
