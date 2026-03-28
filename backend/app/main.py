@@ -32,9 +32,12 @@ async def lifespan(app: FastAPI):
     log.info("platform_db_initialized")
     process_manager.reconcile_on_startup()
     log.info("orphan_reconciliation_done")
+    process_manager.start_heartbeat()
+    log.info("heartbeat_loop_started")
     await trigger_engine.start()
     log.info("trigger_engine_started")
     yield
+    process_manager.stop_heartbeat()
     await trigger_engine.stop()
     log.info("platform_stopping")
 
