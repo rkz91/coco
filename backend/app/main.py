@@ -7,6 +7,9 @@ from pathlib import Path
 import structlog
 import time
 
+from app.config import COCO_CORS_ORIGINS
+from app.middleware.auth import AuthMiddleware, AUTH_TOKEN
+from app.middleware.rate_limit import RateLimitMiddleware, RATE_LIMIT_ENABLED
 from app.db.init_db import init_platform_db
 from app.services.event_bus import event_bus
 from app.services.process_manager import process_manager
@@ -98,12 +101,22 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 
+cors_origins = [o.strip() for o in COCO_CORS_ORIGINS.split(",") if o.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=cors_origins,
     allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Accept", "Authorization"],
 )
+
+# Optional auth middleware — only active when COCO_AUTH_TOKEN is set
+if AUTH_TOKEN:
+    app.add_middleware(AuthMiddleware)
+
+# Rate limiting middleware — active by default, disable with COCO_RATE_LIMIT=false
+if RATE_LIMIT_ENABLED:
+    app.add_middleware(RateLimitMiddleware)
 
 # Security headers middleware
 @app.middleware("http")
@@ -112,6 +125,8 @@ async def add_security_headers(request, call_next):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws://localhost:* http://localhost:*; media-src 'self' blob:"
     return response
 
 # Response time middleware
