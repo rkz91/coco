@@ -166,3 +166,35 @@ CREATE TABLE leaderboard_submissions (
 | Feature gate misses a Studio dependency in Core mode | Full UI walkthrough test in Core edition before release |
 | BSL license scares potential contributors | README clearly explains BSL → MIT conversion timeline |
 | Missed secret in commit history | Run `trufflehog` scan on full history before public push |
+
+---
+
+## Sprint 5.5 Compatibility Addendum
+
+> Sprint 5.5 introduces SQLAlchemy Core + hub mirror tables. All new code in Sprint 8+ MUST use SA Core, not raw sqlite3.
+
+### Schema changes (1 table → SA Core definition in `tables.py`)
+
+| Raw SQL in this plan | SA Core replacement |
+|---|---|
+| `CREATE TABLE leaderboard_submissions` (line 118) | `leaderboard_submissions = Table("leaderboard_submissions", metadata, ...)` in `tables.py` |
+
+### Connection pattern changes
+
+`leaderboard.py` router uses `get_db()` from `app.db.session`:
+
+```python
+from app.db.session import get_db
+from app.db.tables import leaderboard_submissions
+
+with get_db() as conn:
+    conn.execute(leaderboard_submissions.insert().values(...))
+```
+
+### Open-source implications
+
+Sprint 8 splits Core vs Studio editions. The `DATABASE_URL` env var from Sprint 5.5 fits naturally:
+- **Core edition:** `DATABASE_URL=sqlite:///~/.coco/platform.db` (default, zero-config)
+- **Studio/Cloud edition:** `DATABASE_URL=postgresql://...` (docker-compose provides this)
+
+The `docker-compose.yml` from Sprint 5.5 should be referenced in Sprint 8's setup docs.

@@ -32,13 +32,14 @@ The CLI workflow (`/coco`, CoCo SKILL.md, `think.py`, MCP tools) continues to wo
 | Phase 3: Dashboard | 4 days | 11 days |
 | Phase 4: Station Management | 5 days | 16 days |
 | Phase 5: Knowledge Hub Browser | 4 days | 20 days |
-| Phase 6: Decision Queue | 3 days | 23 days |
-| Phase 7: Chat Interface | 4 days | 27 days |
-| Phase 8: Task Management | 4 days | 31 days |
-| Phase 9: Cost & Budget | 3 days | 34 days |
-| Phase 10: People & Learning | 4 days | 38 days |
-| Phase 11: Todos & Settings | 3 days | 41 days |
-| Phase 12: Polish & Production | 5 days | 46 days |
+| **Phase 5.5: Database Abstraction & Hub Sync** | **4 days** | **24 days** |
+| Phase 6: Decision Queue | 3 days | 27 days |
+| Phase 7: Chat Interface | 4 days | 31 days |
+| Phase 8: Task Management | 4 days | 35 days |
+| Phase 9: Cost & Budget | 3 days | 38 days |
+| Phase 10: People & Learning | 4 days | 42 days |
+| Phase 11: Todos & Settings | 3 days | 45 days |
+| Phase 12: Polish & Production | 5 days | 50 days |
 
 **Total estimate: ~50 working days (~10 weeks)**
 

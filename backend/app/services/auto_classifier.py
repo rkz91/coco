@@ -248,7 +248,7 @@ def _load_classification_rules() -> dict:
     try:
         with get_hub_db() as hub:
             projects = hub.execute(
-                "SELECT id, name, jira_project_key FROM projects WHERE active = 1"
+                "SELECT id, name, jira_key FROM projects WHERE active = 1"
             ).fetchall()
             for p in projects:
                 pid = p["id"]
@@ -257,8 +257,8 @@ def _load_classification_rules() -> dict:
                 # Add project name words as keywords
                 name_words = [w.lower() for w in (p["name"] or "").split() if len(w) > 2]
                 rules[pid]["keywords"].extend(name_words)
-                if p.get("jira_project_key"):
-                    rules[pid]["jira_key"] = p["jira_project_key"]
+                if p.get("jira_key"):
+                    rules[pid]["jira_key"] = p["jira_key"]
     except Exception as e:
         log.debug("hub_rules_load_failed", error=str(e))
 
@@ -268,9 +268,13 @@ def _load_classification_rules() -> dict:
 def _llm_classify(
     title: str, body: str | None, source: str | None, sender: str | None
 ) -> dict | None:
-    """Use Anthropic API (Haiku) to classify content. Returns None if unavailable."""
-    api_key = os.environ.get("ANTHROPIC_API_KEY")
-    if not api_key:
+    """Use Anthropic SDK (Haiku) to classify content. Returns None if unavailable."""
+    try:
+        from app.services.agent_sdk_client import agent_sdk, record_sdk_cost
+    except ImportError:
+        return None
+
+    if not agent_sdk.is_available():
         return None
 
     # Get available projects
@@ -303,25 +307,16 @@ Return exactly this JSON format (no other text):
 If no project matches, return: {{"project_id": null, "confidence": 0.0, "reasoning": "no match"}}"""
 
     try:
-        import httpx
+        result = agent_sdk.quick_command(prompt, model="haiku", max_tokens=256)
+        content = result["content"].strip()
 
-        resp = httpx.post(
-            "https://api.anthropic.com/v1/messages",
-            headers={
-                "x-api-key": api_key,
-                "anthropic-version": "2023-06-01",
-                "content-type": "application/json",
-            },
-            json={
-                "model": "claude-3-5-haiku-latest",
-                "max_tokens": 256,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            timeout=15.0,
+        # Record cost
+        record_sdk_cost(
+            model=result.get("model", "haiku"),
+            input_tokens=result.get("input_tokens", 0),
+            output_tokens=result.get("output_tokens", 0),
+            source="classifier",
         )
-        resp.raise_for_status()
-        data = resp.json()
-        content = data.get("content", [{}])[0].get("text", "").strip()
     except Exception as e:
         log.warning("llm_classify_api_failed", error=str(e))
         return None

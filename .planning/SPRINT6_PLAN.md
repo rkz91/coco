@@ -245,3 +245,47 @@ CREATE TABLE IF NOT EXISTS verification_results (
 | Entity extraction false positives | Medium | Low | Start regex-only, LLM opt-in |
 | Verification gates consume tokens | Medium | High | Sonnet verifiers, 10K token budget per gate |
 | Subagent explosion | Low | High | Hard cap 3 per parent, inherits budget |
+
+---
+
+## Sprint 5.5 Compatibility Addendum
+
+> Sprint 5.5 introduces SQLAlchemy Core + hub mirror tables. All new code in Sprint 6+ MUST use SA Core, not raw sqlite3.
+
+### Schema changes (5 tables → SA Core definitions in `tables.py`)
+
+| Raw SQL in this plan | SA Core replacement |
+|---|---|
+| `CREATE TABLE agent_sessions` (line 17) | `agent_sessions = Table("agent_sessions", metadata, ...)` in `tables.py` |
+| `CREATE TABLE entities` (line 65) | `entities = Table("entities", metadata, ...)` in `tables.py` |
+| `CREATE TABLE insights` (line 77) | `insights = Table("insights", metadata, ...)` in `tables.py` |
+| `CREATE TABLE staged_actions` (line 138) | `staged_actions = Table("staged_actions", metadata, ...)` in `tables.py` |
+| `CREATE TABLE verification_results` (line 188) | `verification_results = Table("verification_results", metadata, ...)` in `tables.py` |
+
+### Connection pattern changes
+
+All new files use `get_db()` from `app.db.session`, NOT `get_platform_db()` or `get_hub_db()`:
+
+```python
+# CORRECT (Sprint 6+ pattern)
+from app.db.session import get_db
+from app.db.tables import entities, insights
+
+with get_db() as conn:
+    conn.execute(entities.insert().values(id=eid, content_id=cid, ...))
+
+# WRONG (pre-5.5 pattern — do not use)
+from app.db.connections import get_platform_db
+with get_platform_db() as db:
+    db.execute("INSERT INTO entities ...")
+```
+
+### FTS5 / search queries
+
+Entity extraction (Day 4) and insight engine (Day 5) use `content_fts` for BM25 search. After Sprint 5.5:
+- **SQLite mode:** Query `hub_content` mirror table's FTS5 index (rebuilt during hub sync)
+- **PostgreSQL mode:** Use `to_tsvector()` / `to_tsquery()` via `search_content()` helper in `app.db.search`
+
+### Hub reads
+
+`entity_extractor.py` and `insight_engine.py` read from `content` table. After Sprint 5.5, read from `hub_content` mirror table instead of `get_hub_db()`.

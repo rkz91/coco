@@ -119,8 +119,9 @@ export function FloatingMic() {
     clearTimeout(autoDismissRef.current);
   }, []);
 
-  // Hide on /jarvis — it has its own full-screen voice input
-  if (location.pathname === '/jarvis') return null;
+  // Hide when Jarvis overlay is active — it has its own full-screen voice input
+  const params = new URLSearchParams(location.search);
+  if (params.get('jarvis') === 'true') return null;
 
   // No mic support or voice disabled — don't render
   // Use hook's `supported` which accounts for both Deepgram and Web Speech

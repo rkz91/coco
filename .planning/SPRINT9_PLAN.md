@@ -189,3 +189,31 @@ CREATE TABLE onboarding_state (
 | Demo video production takes too long | Fallback: 4 annotated screenshots + GIF |
 | HN post doesn't get traction | Multi-channel distribution: Reddit r/ChatGPT, r/ClaudeAI, Twitter/X, Discord communities |
 | Sprint 8 runs late | Defer onboarding (Workstream D), launch with polish-only (Workstreams A-C) |
+
+---
+
+## Sprint 5.5 Compatibility Addendum
+
+> Sprint 5.5 introduces SQLAlchemy Core + hub mirror tables. All new code in Sprint 9+ MUST use SA Core, not raw sqlite3.
+
+### Schema changes (1 table → SA Core definition in `tables.py`)
+
+| Raw SQL in this plan | SA Core replacement |
+|---|---|
+| `CREATE TABLE onboarding_state` (line 130) | `onboarding_state = Table("onboarding_state", metadata, ...)` in `tables.py` |
+
+### Connection pattern changes
+
+`onboarding.py` router uses `get_db()` from `app.db.session`:
+
+```python
+from app.db.session import get_db
+from app.db.tables import onboarding_state, nodes, agents
+
+with get_db() as conn:
+    conn.execute(onboarding_state.insert().values(id="default", step=0, ...))
+```
+
+### Sample data loader
+
+The onboarding sample data loader (Day 8: "demo team, 2 projects, 5 todos, 2 agents, 3 knowledge items") must use SA Core inserts into platform tables. Do NOT read from `get_hub_db()` — use `hub_*` mirror tables if hub data is needed for seeding.

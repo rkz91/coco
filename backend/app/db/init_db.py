@@ -582,6 +582,30 @@ def init_platform_db():
     except Exception as e:
         log.warning("chat_session_migration_failed", error=str(e))
 
+    # Add new columns to content_classifications before SCHEMA (which creates an index on status)
+    try:
+        existing = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
+        if "content_classifications" in existing:
+            cc_cols = {r[1] for r in conn.execute("PRAGMA table_info(content_classifications)").fetchall()}
+            for col, ddl_suffix in [
+                ("confidence", " REAL DEFAULT 0.0"),
+                ("reasoning", " TEXT"),
+                ("auto_classified", " INTEGER DEFAULT 0"),
+                ("status", " TEXT DEFAULT 'pending'"),
+                ("classified_project_id", " TEXT"),
+                ("suggested_project_id", " TEXT"),
+                ("created_at", " TEXT"),
+            ]:
+                if col not in cc_cols:
+                    try:
+                        conn.execute(f"ALTER TABLE content_classifications ADD COLUMN {col}{ddl_suffix}")
+                    except Exception:
+                        pass
+            conn.commit()
+            log.info("migration_content_classifications_columns_added")
+    except Exception as e:
+        log.warning("content_classifications_pre_migration_failed", error=str(e))
+
     conn.executescript(SCHEMA)
 
     # Add new columns to existing tables

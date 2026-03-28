@@ -175,3 +175,32 @@ CREATE TABLE podcasts (
 | `stream-json` format changes between Claude versions | Loose parser with graceful fallback; version-detect header |
 | TTS quality degrades on long scripts | Chunk at sentence boundaries, max 3 minutes |
 | Replay HTML file size too large | Cap at 1000 events, compress inline assets |
+
+---
+
+## Sprint 5.5 Compatibility Addendum
+
+> Sprint 5.5 introduces SQLAlchemy Core + hub mirror tables. All new code in Sprint 7+ MUST use SA Core, not raw sqlite3.
+
+### Schema changes (2 tables → SA Core definitions in `tables.py`)
+
+| Raw SQL in this plan | SA Core replacement |
+|---|---|
+| `CREATE TABLE agent_replays` (line 83) | `agent_replays = Table("agent_replays", metadata, ...)` in `tables.py` |
+| `CREATE TABLE podcasts` (line 137) | `podcasts = Table("podcasts", metadata, ...)` in `tables.py` |
+
+### Connection pattern changes
+
+`replay.py` and `podcast.py` services use `get_db()` from `app.db.session`:
+
+```python
+from app.db.session import get_db
+from app.db.tables import agent_replays, podcasts
+
+with get_db() as conn:
+    conn.execute(agent_replays.insert().values(...))
+```
+
+### Hub reads
+
+`podcast.py` aggregation (Day 9 — "overnight data: completed agents, inbox decisions, cost summary, todos due") reads from `hub_todos` and `hub_content` mirror tables, not `get_hub_db()` directly.
