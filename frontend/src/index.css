@@ -719,3 +719,10 @@ textarea,
   .floating-mic-cursor { animation: none; opacity: 1; }
   .floating-mic-bubble-enter { animation: none; }
 }
+
+/* ===== Mermaid Diagrams (beautiful-mermaid) ===== */
+.mermaid-diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}

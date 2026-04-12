@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Plus, FolderKanban, Radio, LayoutGrid, GitFork, ListTodo, ChevronDown, ChevronRight } from 'lucide-react';
+import { Skeleton } from 'boneyard-js/react';
 import { apiFetch, apiPost } from '../lib/api';
 import { AgentCard, type Agent } from '../components/agents/AgentCard';
 import { CreateAgentDialog } from '../components/agents/CreateAgentDialog';
@@ -152,56 +153,56 @@ export default function AgentsPage() {
       </div>
 
       {isLoading ? (
-        <div className="space-y-4">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="h-24 bg-muted/50 rounded-lg animate-pulse" />
-          ))}
-        </div>
-      ) : agents.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <Radio size={40} className="mb-3 opacity-30" />
-          <p className="text-sm font-medium">No agents</p>
-          <p className="text-xs mt-1">Create an agent to start delegating work.</p>
-          <button
-            onClick={() => setDialogOpen(true)}
-            className="mt-4 flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-accent text-accent-foreground hover:opacity-90"
-          >
-            <Plus size={14} />
-            Recruit Agent
-          </button>
-        </div>
-      ) : viewMode === 'org-chart' ? (
-        <OrgChart
-          roots={orgChartRoots}
-          onSelect={(id) => setSelectedId(id)}
-        />
+        <Skeleton name="agents-grid" loading animate="pulse" />
       ) : (
-        <div className="space-y-6">
-          {groupKeys.map((key) => (
-            <section key={key}>
-              <div className="flex items-center gap-2 mb-3">
-                <FolderKanban size={14} className="text-muted-foreground" />
-                <h2 className="text-sm font-medium text-muted-foreground">
-                  {key === '__unassigned__' ? 'Unassigned' : (projectMap[key] ?? key)}
-                </h2>
-                <span className="text-xs text-muted-foreground">({grouped[key].length})</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-                {grouped[key].map((agent) => (
-                  <AgentCard
-                    key={agent.id}
-                    agent={agent}
-                    onClick={() => setSelectedId(agent.id)}
-                    onSpawn={() => handleAction(agent.id, 'spawn')}
-                    onPause={() => handleAction(agent.id, 'pause')}
-                    onResume={() => handleAction(agent.id, 'resume')}
-                    onKill={() => handleAction(agent.id, 'kill')}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+        <Skeleton name="agents-grid" loading={false}>
+          {agents.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+              <Radio size={40} className="mb-3 opacity-30" />
+              <p className="text-sm font-medium">No agents</p>
+              <p className="text-xs mt-1">Create an agent to start delegating work.</p>
+              <button
+                onClick={() => setDialogOpen(true)}
+                className="mt-4 flex items-center gap-1.5 px-4 py-2 text-sm rounded-lg bg-accent text-accent-foreground hover:opacity-90"
+              >
+                <Plus size={14} />
+                Recruit Agent
+              </button>
+            </div>
+          ) : viewMode === 'org-chart' ? (
+            <OrgChart
+              roots={orgChartRoots}
+              onSelect={(id) => setSelectedId(id)}
+            />
+          ) : (
+            <div className="space-y-6">
+              {groupKeys.map((key) => (
+                <section key={key}>
+                  <div className="flex items-center gap-2 mb-3">
+                    <FolderKanban size={14} className="text-muted-foreground" />
+                    <h2 className="text-sm font-medium text-muted-foreground">
+                      {key === '__unassigned__' ? 'Unassigned' : (projectMap[key] ?? key)}
+                    </h2>
+                    <span className="text-xs text-muted-foreground">({grouped[key].length})</span>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                    {grouped[key].map((agent) => (
+                      <AgentCard
+                        key={agent.id}
+                        agent={agent}
+                        onClick={() => setSelectedId(agent.id)}
+                        onSpawn={() => handleAction(agent.id, 'spawn')}
+                        onPause={() => handleAction(agent.id, 'pause')}
+                        onResume={() => handleAction(agent.id, 'resume')}
+                        onKill={() => handleAction(agent.id, 'kill')}
+                      />
+                    ))}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
+        </Skeleton>
       )}
 
       {/* Task Queue Section */}

@@ -61,6 +61,10 @@ def build_chat_context(
     if agents_section:
         sections.append(agents_section)
 
+    knowledge_section = _build_knowledge_engine_section(project_id)
+    if knowledge_section:
+        sections.append(knowledge_section)
+
     try:
         from app.services.collaboration_context import build_knowledge_context
         knowledge_ctx = build_knowledge_context(
@@ -77,6 +81,58 @@ def build_chat_context(
 # ---------------------------------------------------------------------------
 # Section builders
 # ---------------------------------------------------------------------------
+
+
+def _build_knowledge_engine_section(project_id: str | None = None) -> str | None:
+    """Query the Knowledge Engine for relevant entities and connections."""
+    from app.config import KNOWLEDGE_DB_PATH
+    if not KNOWLEDGE_DB_PATH.exists():
+        return None
+
+    try:
+        import sqlite3
+        conn = sqlite3.connect(f"file:{KNOWLEDGE_DB_PATH}?mode=ro", uri=True)
+        conn.row_factory = sqlite3.Row
+
+        parts = []
+
+        # Get entity count
+        total = conn.execute("SELECT COUNT(*) FROM global_entities").fetchone()[0]
+        article_count = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
+        connection_count = conn.execute("SELECT COUNT(*) FROM cross_project_connections").fetchone()[0]
+
+        parts.append(f"Knowledge Graph: {total} entities, {article_count} articles, {connection_count} cross-project connections.")
+
+        # Get top entities for this project (if project_id provided)
+        if project_id:
+            rows = conn.execute("""
+                SELECT ge.canonical_name, ge.type, ge.importance_score
+                FROM global_entities ge
+                JOIN project_entity_links pel ON ge.gid = pel.gid
+                WHERE pel.project_slug = ?
+                ORDER BY ge.importance_score DESC
+                LIMIT 5
+            """, (project_id,)).fetchall()
+            if rows:
+                entity_list = ", ".join(f"{r['canonical_name']} ({r['type']})" for r in rows)
+                parts.append(f"Key entities for this project: {entity_list}")
+        else:
+            # Top 5 global entities
+            rows = conn.execute("""
+                SELECT canonical_name, type, importance_score
+                FROM global_entities
+                ORDER BY importance_score DESC
+                LIMIT 5
+            """).fetchall()
+            if rows:
+                entity_list = ", ".join(f"{r['canonical_name']} ({r['type']})" for r in rows)
+                parts.append(f"Top entities: {entity_list}")
+
+        conn.close()
+        return "\n".join(parts) if parts else None
+    except Exception as e:
+        log.debug("knowledge_engine_section_skipped: %s", e)
+        return None
 
 
 def _build_brain_section() -> str:

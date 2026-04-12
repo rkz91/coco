@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
+import { Skeleton } from 'boneyard-js/react';
 import { Plus, FolderKanban, Users, Package, Folder, ChevronRight, Upload } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -140,7 +141,7 @@ export default function ProjectsPage() {
     queryFn: () => apiFetch<Project[]>('/projects'),
   });
 
-  if (treeLoading || projectsLoading) return <ProjectsSkeleton />;
+  if (treeLoading || projectsLoading) return <Skeleton name="projects-grid" loading animate="pulse" fallback={<ProjectsSkeleton />} />;
 
   // Build project lookup
   const projectMap = new Map<string, Project>();
@@ -152,53 +153,55 @@ export default function ProjectsPage() {
   const topNodes = tree?.children ?? [];
 
   return (
-    <div className="space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Teams</h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            {projectList?.length ?? 0} stakeholder teams across {topNodes.length} groups
-          </p>
+    <Skeleton name="projects-grid" loading={false}>
+      <div className="space-y-8">
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-foreground">Teams</h1>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {projectList?.length ?? 0} stakeholder teams across {topNodes.length} groups
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 transition-all"
+            >
+              <Upload size={14} />
+              Import Template
+            </button>
+            <Link
+              to="/tree"
+              className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 transition-all"
+            >
+              Manage Tree
+              <ChevronRight size={14} />
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setImportOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 transition-all"
-          >
-            <Upload size={14} />
-            Import Template
-          </button>
-          <Link
-            to="/tree"
-            className="inline-flex items-center gap-2 rounded-lg border border-border px-4 py-2 text-sm font-medium text-foreground hover:bg-accent/30 transition-all"
-          >
-            Manage Tree
-            <ChevronRight size={14} />
-          </Link>
-        </div>
+
+        {topNodes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <FolderKanban size={40} className="mb-3 opacity-30" />
+            <p className="text-sm font-medium">No groups yet</p>
+            <p className="text-xs mt-1">
+              Go to <Link to="/tree" className="text-accent hover:underline">My Portfolio</Link> to build your hierarchy.
+            </p>
+          </div>
+        ) : (
+          topNodes.map(group => (
+            <TreeSection key={group.id} node={group} projects={projectMap} />
+          ))
+        )}
+
+        <ImportTemplateDialog
+          open={importOpen}
+          onOpenChange={setImportOpen}
+          onImported={() => {
+            // Refresh tree and projects after import
+          }}
+        />
       </div>
-
-      {topNodes.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
-          <FolderKanban size={40} className="mb-3 opacity-30" />
-          <p className="text-sm font-medium">No groups yet</p>
-          <p className="text-xs mt-1">
-            Go to <Link to="/tree" className="text-accent hover:underline">My Portfolio</Link> to build your hierarchy.
-          </p>
-        </div>
-      ) : (
-        topNodes.map(group => (
-          <TreeSection key={group.id} node={group} projects={projectMap} />
-        ))
-      )}
-
-      <ImportTemplateDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImported={() => {
-          // Refresh tree and projects after import
-        }}
-      />
-    </div>
+    </Skeleton>
   );
 }

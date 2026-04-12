@@ -10,8 +10,9 @@ import { ProjectHealthGrid } from '../components/home/ProjectHealthGrid';
 import { FocusList } from '../components/home/FocusList';
 import { JarvisOverlay } from '../components/home/JarvisOverlay';
 import type { HomeData, Todo } from '../types/home';
+import { Skeleton } from 'boneyard-js/react';
 
-function LoadingState() {
+function HomeFallback() {
   return (
     <div className="space-y-6">
       <div className="h-8 rounded-lg bg-muted/50 animate-pulse" />
@@ -135,7 +136,7 @@ export default function HomePage() {
     }
   };
 
-  if (isLoading || !data) return <LoadingState />;
+  if (isLoading || !data) return <Skeleton name="home-dashboard" loading animate="pulse" fallback={<HomeFallback />} />;
 
   if (isError) {
     return (
@@ -198,6 +199,7 @@ export default function HomePage() {
   }
 
   return (
+    <Skeleton name="home-dashboard" loading={false}>
     <div className="space-y-5">
       {/* Auto-sync banner */}
       {syncBanner && (
@@ -292,5 +294,6 @@ export default function HomePage() {
       {/* Jarvis cinematic overlay */}
       <JarvisOverlay isOpen={jarvisOpen} onClose={() => setJarvisOpen(false)} />
     </div>
+    </Skeleton>
   );
 }

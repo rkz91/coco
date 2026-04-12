@@ -31,6 +31,7 @@ from app.routers import (
     actions,
     replay,
     podcast,
+    knowledge_search,
 )
 
 structlog.configure(
@@ -105,6 +106,7 @@ openapi_tags = [
     {"name": "Insights", "description": "Cross-source entity extraction and insight generation"},
     {"name": "Actions", "description": "Content-to-action extraction pipeline"},
     {"name": "Replays", "description": "Agent replay generation and sharing"},
+    {"name": "Knowledge", "description": "Knowledge Engine search and articles"},
 ]
 
 app = FastAPI(
@@ -190,6 +192,7 @@ app.include_router(actions.router)
 app.include_router(replay.router)
 app.include_router(podcast.router)
 app.include_router(analysis.router)
+app.include_router(knowledge_search.router)
 
 # Studio routers (only when COCO_EDITION=studio)
 if is_studio():

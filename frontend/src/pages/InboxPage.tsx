@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { Skeleton } from 'boneyard-js/react';
 import { useScope } from '../context/ScopeContext';
 import { apiPost, apiFetch, apiPatch } from '../lib/api';
 import {
@@ -268,7 +269,7 @@ export default function InboxPage() {
 
   // ─── Server-persisted read states ────────────────────────────────
 
-  const { data: serverReadStates, refetch: refetchReadStates } = useQuery({
+  const { data: serverReadStates, isLoading: isLoadingReadStates, refetch: refetchReadStates } = useQuery({
     queryKey: ['inbox-read-states'],
     queryFn: () => apiFetch<Record<string, ReadState>>('/inbox/read-states'),
     staleTime: 5_000,
@@ -863,6 +864,9 @@ export default function InboxPage() {
         </div>
       </div>
 
+      {/* Skeleton loading state for initial data fetch */}
+      <Skeleton name="inbox-list" loading={isLoadingReadStates} animate="pulse">
+
       {/* Voice mode: show large-format decision card */}
       {voiceMode ? (
         <div className="py-4">
@@ -1066,6 +1070,8 @@ export default function InboxPage() {
           )}
         </>
       )}
+
+      </Skeleton>
 
       {/* Floating batch action bar */}
       {selectMode && selectedIds.size > 0 && (

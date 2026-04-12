@@ -6,6 +6,7 @@ import { apiFetch, apiPost } from '../../lib/api';
 import { cn, timeAgo } from '../../lib/utils';
 import { PropertiesPanel } from '../shared/PropertiesPanel';
 import { PropertyField } from '../shared/PropertyField';
+import { RichContent } from '../shared/RichContent';
 import { CommentThread } from '../shared/CommentThread';
 import type { ContentItem } from './ContentList';
 import type { ReactNode } from 'react';
@@ -102,10 +103,13 @@ export function ContentDetail({ item, onClose }: ContentDetailProps) {
             className="prose prose-sm max-w-none text-foreground"
             dangerouslySetInnerHTML={{ __html: DOMPurify.sanitize(bodyText) }}
           />
+        ) : bodyText ? (
+          <RichContent
+            text={bodyText}
+            className="text-sm text-foreground leading-relaxed"
+          />
         ) : (
-          <pre className="whitespace-pre-wrap text-sm text-foreground font-sans leading-relaxed">
-            {bodyText || <span className="text-muted-foreground italic">No content available</span>}
-          </pre>
+          <p className="text-muted-foreground italic text-sm">No content available</p>
         )}
       </div>
 

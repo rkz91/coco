@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { apiFetch, apiPost } from '../../lib/api';
 import { cn, timeAgo } from '../../lib/utils';
+import { RichContent } from '../shared/RichContent';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -349,13 +350,13 @@ function AgentResultSection({ agent }: { agent: AgentResult }) {
 }
 
 // ---------------------------------------------------------------------------
-// Simple markdown renderer (renders as pre-formatted with some structure)
+// Markdown renderer (with mermaid diagram support via RichContent)
 // ---------------------------------------------------------------------------
 
 function MarkdownContent({ text }: { text: string }) {
   return (
-    <div className="text-xs text-foreground/90 leading-relaxed whitespace-pre-wrap font-mono bg-muted/30 rounded-lg p-3 max-h-80 overflow-y-auto">
-      {text}
+    <div className="max-h-80 overflow-y-auto">
+      <RichContent text={text} mono />
     </div>
   );
 }

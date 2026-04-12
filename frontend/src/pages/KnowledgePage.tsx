@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { Skeleton } from 'boneyard-js/react';
 import { FileText, Sparkles, Network } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
@@ -76,15 +77,17 @@ export default function KnowledgePage() {
       {activeTab === 'content' && (
         <>
           <FilterBar />
-          <div className="flex-1 overflow-hidden">
-            <ContentList
-              items={data?.items ?? []}
-              total={data?.total ?? 0}
-              isLoading={isLoading}
-              selectedId={selected?.id ?? null}
-              onSelect={setSelected}
-            />
-          </div>
+          <Skeleton name="knowledge-content" loading={isLoading && activeTab === 'content'}>
+            <div className="flex-1 overflow-hidden">
+              <ContentList
+                items={data?.items ?? []}
+                total={data?.total ?? 0}
+                isLoading={isLoading}
+                selectedId={selected?.id ?? null}
+                onSelect={setSelected}
+              />
+            </div>
+          </Skeleton>
           {selected && (
             <ContentDetail
               item={selected}
