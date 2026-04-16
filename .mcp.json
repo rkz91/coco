@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "graphify": {
+      "command": "/Users/Rijul_Kalra/.coco/graphify-env/bin/python3",
+      "args": ["-m", "graphify.serve", "/Users/Rijul_Kalra/.coco/graphify-bridge/graphify-out/graph.json"],
+      "type": "stdio"
+    }
+  }
+}

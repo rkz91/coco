@@ -1,0 +1,1662 @@
+{
+  "version": 1,
+  "last_scan": "2026-04-09T20:06:12.730325+00:00",
+  "files": {
+    "backend/.venv/lib/python3.13/site-packages/murmurhash-1.0.15.dist-info/top_level.txt": {
+      "hash": "ea26c8b3147b02b8c6e504db153c2f8f",
+      "size": 11,
+      "modified": "2026-03-28T16:40:24.965977+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730115+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/zh_normalization/README.md": {
+      "hash": "1a464f4c549697828e1fae7cf3dd470b",
+      "size": 1541,
+      "modified": "2026-03-28T16:40:26.740253+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730118+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/uvicorn-0.42.0.dist-info/licenses/LICENSE.md": {
+      "hash": "5c778842f66a649636561c423c0eec2e",
+      "size": 1526,
+      "modified": "2026-03-27T15:05:14.207093+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730119+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/curated_transformers-0.1.1.dist-info/top_level.txt": {
+      "hash": "7c1e84e4eba4065a5cee58dd937619b4",
+      "size": 21,
+      "modified": "2026-03-28T16:40:24.974359+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730121+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/httpx_sse-0.4.3.dist-info/top_level.txt": {
+      "hash": "04382056442a48f0a7b9d8d3aa98e774",
+      "size": 10,
+      "modified": "2026-03-28T17:26:40.287583+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730122+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/confection-1.3.3.dist-info/top_level.txt": {
+      "hash": "644adeca4c296d3e4d2ff74d8bf5419b",
+      "size": 11,
+      "modified": "2026-03-28T16:40:25.545535+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730122+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_curated_transformers/tests/tokenization/toy-chars.txt": {
+      "hash": "570b44c78aebd42f0b89f7859a0d2b31",
+      "size": 138,
+      "modified": "2026-03-28T16:40:25.563182+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730123+00:00"
+    },
+    "docs/v1-cli/RESEARCH.md": {
+      "hash": "442c36dc9a08d6990d75adfd34c4811e",
+      "size": 7309,
+      "modified": "2026-03-28T01:58:03.320336+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730124+00:00"
+    },
+    "PLATFORM-ANALYSIS-2.pdf": {
+      "hash": "94087d35cf48a465e9a26bb255c8def1",
+      "size": 51683,
+      "modified": "2026-04-08T04:09:30.395298+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730125+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc/tests/mypy/outputs/fail-plugin.txt": {
+      "hash": "5c673d54dff08215a750fe153dba0174",
+      "size": 2416,
+      "modified": "2026-03-28T16:40:25.764784+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730126+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/tests/indexes/test_links_priority/simple/foobar/index.html": {
+      "hash": "8f6c384492448086db776d20426e088b",
+      "size": 174,
+      "modified": "2026-03-28T16:40:25.891031+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730127+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/anyio-4.13.0.dist-info/top_level.txt": {
+      "hash": "ed5a97064b32e2de132a87802c6ef7f7",
+      "size": 6,
+      "modified": "2026-03-27T15:05:14.213765+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730128+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/jaraco/text/Lorem ipsum.txt": {
+      "hash": "4ce7501f6608f6ce4011d627979e1ae4",
+      "size": 1335,
+      "modified": "2026-03-28T16:40:25.734867+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730128+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sympy-1.14.0.dist-info/top_level.txt": {
+      "hash": "6af6c0bcd9832b13c2bfbb39c8f57750",
+      "size": 13,
+      "modified": "2026-03-28T04:23:53.315017+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730129+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/huggingface_hub-1.8.0.dist-info/top_level.txt": {
+      "hash": "a886f9a365f14a7e55ef19c790621fae",
+      "size": 16,
+      "modified": "2026-03-28T04:23:52.396370+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730130+00:00"
+    },
+    "prototypes/comparison.html": {
+      "hash": "1b0d121eb37be79428e567bc366d8927",
+      "size": 28636,
+      "modified": "2026-04-08T19:22:54.951219+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730131+00:00"
+    },
+    "PLATFORM-ANALYSIS-6.pdf": {
+      "hash": "8131b932e8058cecfa40b09fda957ad8",
+      "size": 51535,
+      "modified": "2026-04-08T04:09:30.276911+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730131+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/requests-2.33.0.dist-info/top_level.txt": {
+      "hash": "197b4deb87ffa3decd9f045926a86cd0",
+      "size": 9,
+      "modified": "2026-03-28T04:23:52.036218+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730132+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/markupsafe-3.0.3.dist-info/top_level.txt": {
+      "hash": "5862354c9fbb5b15204672c79808e25c",
+      "size": 11,
+      "modified": "2026-03-28T15:17:24.439584+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730133+00:00"
+    },
+    "docs/v1-cli/ROADMAP.md": {
+      "hash": "7db65b3cf142647b60abaef776d125dc",
+      "size": 17424,
+      "modified": "2026-03-28T01:58:03.327376+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730134+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/entry_points.txt": {
+      "hash": "6f858322c9bc0659f250a01c58792b67",
+      "size": 220,
+      "modified": "2026-03-19T16:31:07.261972+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730134+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/yarl-1.23.0.dist-info/top_level.txt": {
+      "hash": "27964b21b4567dc07a0f989ae2cbaa05",
+      "size": 5,
+      "modified": "2026-03-19T16:31:05.869305+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730135+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/phonemizer_fork-3.3.2.dist-info/entry_points.txt": {
+      "hash": "cb62689cd4b1bb996559ce9e1bf1524e",
+      "size": 51,
+      "modified": "2026-03-28T16:40:25.572794+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730136+00:00"
+    },
+    "prototypes/path-a-costs.html": {
+      "hash": "7a2dd0cb5d69b417921c0eda1eabe58d",
+      "size": 32559,
+      "modified": "2026-04-08T19:25:42.031715+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730137+00:00"
+    },
+    "PLATFORM-ANALYSIS-10.pdf": {
+      "hash": "e7e49cdef2cd1aad89ad84633abfc702",
+      "size": 58773,
+      "modified": "2026-04-08T04:09:30.265712+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730137+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/vi_cleaner/README.md": {
+      "hash": "7860905ec1c3fb0db2b8bf1025df1253",
+      "size": 272,
+      "modified": "2026-03-28T16:40:26.732675+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730138+00:00"
+    },
+    "frontend/index.html": {
+      "hash": "16899639682b89bf8861d10c9a4579c4",
+      "size": 1584,
+      "modified": "2026-03-27T18:14:31.272516+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730139+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy/lang/sr/lemma_lookup_licence.txt": {
+      "hash": "6cd3d70573011e9fefb6d6e58c5358e5",
+      "size": 1549,
+      "modified": "2026-03-28T16:40:27.028229+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730140+00:00"
+    },
+    "prototypes/path-a-agents.html": {
+      "hash": "389c9ac9110cb30a3c471ca27c3dfbc3",
+      "size": 22969,
+      "modified": "2026-04-08T19:25:46.282210+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730141+00:00"
+    },
+    "scripts/dashboard/public/index.html": {
+      "hash": "60417b4f28b30f8b77d7964e5b71bf24",
+      "size": 42966,
+      "modified": "2026-03-28T01:58:12.329474+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730142+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/six-1.17.0.dist-info/top_level.txt": {
+      "hash": "5d2dfbea120f23e84e689374aa2ba84f",
+      "size": 4,
+      "modified": "2026-03-19T15:32:42.014297+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730142+00:00"
+    },
+    "docs/ARCHITECTURE.md": {
+      "hash": "d7395324379b24aab0da23025f1c60a2",
+      "size": 1420,
+      "modified": "2026-03-28T19:37:01.903536+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730143+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/autocommand-2.2.2.dist-info/top_level.txt": {
+      "hash": "c3fbd7931840d987f261beba8c77c4d2",
+      "size": 12,
+      "modified": "2026-03-28T16:40:25.895853+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730144+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/curated_tokenizers-0.0.9.dist-info/top_level.txt": {
+      "hash": "5037e366c41a1274fc56505f19b401fb",
+      "size": 19,
+      "modified": "2026-03-28T16:41:00.059745+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730145+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy/_core/include/numpy/random/LICENSE.txt": {
+      "hash": "e1c97b70a98c8ec5aff0aa275fdb2c91",
+      "size": 1018,
+      "modified": "2026-03-19T16:31:06.785030+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730146+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pycparser-3.0.dist-info/top_level.txt": {
+      "hash": "0de5b0e5c6df03da418eadb1a2731207",
+      "size": 10,
+      "modified": "2026-03-28T04:23:52.020673+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730146+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/addict-2.4.0.dist-info/top_level.txt": {
+      "hash": "1c3daa630263799359bce6f00abac228",
+      "size": 7,
+      "modified": "2026-03-28T16:40:24.901025+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730147+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/termcolor-3.3.0.dist-info/licenses/COPYING.txt": {
+      "hash": "e5f5f7c9b280511f124dba5dda3d180e",
+      "size": 1072,
+      "modified": "2026-03-28T16:40:24.908991+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730148+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/isodate-0.7.2.dist-info/top_level.txt": {
+      "hash": "6847f7331566773b900ad5accc9cde05",
+      "size": 8,
+      "modified": "2026-03-28T16:40:24.953205+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730149+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pyparsing/ai/best_practices.md": {
+      "hash": "130472ecbe642ede6d35371becbb4701",
+      "size": 8472,
+      "modified": "2026-03-28T16:40:25.564221+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730150+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sse_starlette-3.3.3.dist-info/top_level.txt": {
+      "hash": "81016d0a9935abd44f715eedcce39a5e",
+      "size": 14,
+      "modified": "2026-03-27T15:05:14.114362+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730150+00:00"
+    },
+    "prototypes/path-c-command.html": {
+      "hash": "455e740bcff92c63d0796a4b35fb7509",
+      "size": 39814,
+      "modified": "2026-04-08T19:30:10.461461+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730151+00:00"
+    },
+    "scripts/dashboard/public/skills.html": {
+      "hash": "6a6fa14b82180448b5428ffd7d793f85",
+      "size": 10700,
+      "modified": "2026-03-28T01:58:12.328663+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730152+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/tabulate-0.10.0.dist-info/entry_points.txt": {
+      "hash": "f2c2606a095e960659c0e32dac9bc514",
+      "size": 44,
+      "modified": "2026-03-28T04:52:51.656066+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730153+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/alembic-1.18.4.dist-info/entry_points.txt": {
+      "hash": "177721187985a60bfdfe5e444edd6878",
+      "size": 48,
+      "modified": "2026-03-28T15:17:24.475204+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730154+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/aiosignal-1.4.0.dist-info/top_level.txt": {
+      "hash": "f23d72ede8fa99a9f65f5004bd3f1f0a",
+      "size": 10,
+      "modified": "2026-03-19T16:31:05.880125+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730154+00:00"
+    },
+    "PLATFORM-ANALYSIS.md": {
+      "hash": "bcf7cbaa1f6c8a4454dbd612bd256912",
+      "size": 28390,
+      "modified": "2026-04-08T04:12:31.994751+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730155+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/aiohttp-3.13.3.dist-info/top_level.txt": {
+      "hash": "3f2e08e98e2f74684b61aa4ac7d5a037",
+      "size": 8,
+      "modified": "2026-03-19T16:31:06.346086+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730156+00:00"
+    },
+    "docs/research/yolo-mode-research.md": {
+      "hash": "045c4d3162b8925a5a4399622d96bd4e",
+      "size": 10484,
+      "modified": "2026-03-28T02:50:33.942655+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730156+00:00"
+    },
+    "prototypes/path-a-happy-path.html": {
+      "hash": "1da6d902abeda26c3e9ea5783a2031c7",
+      "size": 18556,
+      "modified": "2026-04-08T20:01:45.588247+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730157+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/torch/utils/model_dump/skeleton.html": {
+      "hash": "3c3e9f41de31ab419f8843503e6b805e",
+      "size": 384,
+      "modified": "2026-03-28T16:40:31.832824+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730158+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy/tests/tokenizer/sun.txt": {
+      "hash": "9e38ab53bf7062feaff69de6706aa099",
+      "size": 2591,
+      "modified": "2026-03-28T16:40:26.713239+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730159+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/docstring_parser-0.17.0.dist-info/licenses/LICENSE.md": {
+      "hash": "4014649477385d83f428a6adae447a49",
+      "size": 1084,
+      "modified": "2026-03-18T15:06:54.518075+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730159+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/babel-2.18.0.dist-info/top_level.txt": {
+      "hash": "a8c022e317dded2317ab2de61fb09810",
+      "size": 6,
+      "modified": "2026-03-28T16:40:28.235437+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730160+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/pcg64/LICENSE.md": {
+      "hash": "5d0d131c837b97f368c758589b4e82f0",
+      "size": 1154,
+      "modified": "2026-03-19T16:31:07.267819+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730161+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/frozenlist-1.8.0.dist-info/top_level.txt": {
+      "hash": "8e0dbd99fb6fca908d940949d4dad235",
+      "size": 11,
+      "modified": "2026-03-19T16:31:06.026592+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730162+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/mpmath-1.3.0.dist-info/top_level.txt": {
+      "hash": "6f543ff8394ecf237397d73f5664dec7",
+      "size": 7,
+      "modified": "2026-03-28T04:23:52.361575+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730162+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/jsonschema-4.26.0.dist-info/entry_points.txt": {
+      "hash": "095614c840316fb033b6b246ebc5a437",
+      "size": 51,
+      "modified": "2026-03-28T04:23:52.109260+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730163+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/linalg/lapack_lite/LICENSE.txt": {
+      "hash": "7d9f3a90a3f3d41052b70a31c1daf8ad",
+      "size": 2266,
+      "modified": "2026-03-19T16:31:07.263383+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730164+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/networkx-3.6.1.dist-info/licenses/LICENSE.txt": {
+      "hash": "f7592b173aee2da0e062f9cfa0378e9d",
+      "size": 1763,
+      "modified": "2026-03-28T16:40:26.261491+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730165+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pyyaml-6.0.3.dist-info/top_level.txt": {
+      "hash": "0f52777150a67dfcd9c7b0fae02a7041",
+      "size": 11,
+      "modified": "2026-03-19T16:31:05.873655+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730166+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc/tests/mypy/outputs/fail-no-plugin.txt": {
+      "hash": "931d1cf242f556cab630de403acccf4b",
+      "size": 113,
+      "modified": "2026-03-28T16:40:25.765248+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730166+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "9f0a0584f7f6a97a68dec3d1524c1348",
+      "size": 46826,
+      "modified": "2026-03-19T16:31:07.262513+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730167+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/cffi-2.0.0.dist-info/entry_points.txt": {
+      "hash": "688ceebec0652fc05ac25caec3e15043",
+      "size": 75,
+      "modified": "2026-03-28T04:23:52.154387+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730168+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/anyio-4.13.0.dist-info/entry_points.txt": {
+      "hash": "b5e037147bc565eba99a2f4142dd7990",
+      "size": 39,
+      "modified": "2026-03-27T15:05:14.213473+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730169+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/jinja2-3.1.6.dist-info/entry_points.txt": {
+      "hash": "27ee54d73799b15fbbfc380f02f07957",
+      "size": 58,
+      "modified": "2026-03-28T16:40:25.579260+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730169+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/babel-2.18.0.dist-info/entry_points.txt": {
+      "hash": "f69deb5bc17c3b6ad6066f01b3cc6519",
+      "size": 750,
+      "modified": "2026-03-28T16:40:28.235174+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730170+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/srsly-2.5.3.dist-info/top_level.txt": {
+      "hash": "945ad89a33c22e2cdf53f83845c66f69",
+      "size": 6,
+      "modified": "2026-03-28T16:40:24.958602+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730171+00:00"
+    },
+    "scripts/dashboard/public/history.html": {
+      "hash": "d5a8b20be1435aa3b9969045f550720d",
+      "size": 12865,
+      "modified": "2026-03-28T01:58:12.330302+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730172+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/curated_tokenizers/tests/toy-word-pieces.txt": {
+      "hash": "95b8985c8f7a16ae6c8227adf389fad4",
+      "size": 31,
+      "modified": "2026-03-28T16:41:00.059991+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730172+00:00"
+    },
+    "docs/SKILL.md": {
+      "hash": "dffe03d6727c2ce40a1f270b6d67b3c5",
+      "size": 167961,
+      "modified": "2026-03-28T03:34:48.737527+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730173+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/mcp-1.26.0.dist-info/entry_points.txt": {
+      "hash": "1fcdeef9a49f289335810bcb67353a03",
+      "size": 42,
+      "modified": "2026-03-28T17:26:40.350005+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730174+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pkg_resources/api_tests.txt": {
+      "hash": "77459c19444030a0926f523388fa4ef8",
+      "size": 12595,
+      "modified": "2026-03-28T16:40:25.529364+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730175+00:00"
+    },
+    "docs/phases/phase2/PLAN.md": {
+      "hash": "60d489a0fd57ef0e3b82872b2fff4d9f",
+      "size": 77512,
+      "modified": "2026-03-28T01:58:03.346267+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730176+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy/random/LICENSE.md": {
+      "hash": "09b2aa3c0d32aea36fb330dc9c728fc4",
+      "size": 3511,
+      "modified": "2026-03-19T16:31:07.184001+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730176+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/httpcore-1.0.9.dist-info/licenses/LICENSE.md": {
+      "hash": "1c1f23b073da202e1f4f9e426490210c",
+      "size": 1518,
+      "modified": "2026-03-18T15:06:54.639442+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730177+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/torch-2.11.0.dist-info/top_level.txt": {
+      "hash": "6e8a6cbdc9641477978ceeb67ecaae5a",
+      "size": 25,
+      "modified": "2026-03-28T16:40:31.868047+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730178+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy/_core/tests/data/umath-validation-set-README.txt": {
+      "hash": "fd7efb77a74e2d8bb17c2866324fd1fd",
+      "size": 967,
+      "modified": "2026-03-19T16:31:06.905230+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730179+00:00"
+    },
+    "prototypes/path-a-project.html": {
+      "hash": "a253b5ed13d9ad0326ee330116fffaae",
+      "size": 37651,
+      "modified": "2026-04-08T19:25:10.110279+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730179+00:00"
+    },
+    "PLATFORM-ANALYSIS.html": {
+      "hash": "ed88d2662f2a462be04aae7fd09f34a6",
+      "size": 1182373,
+      "modified": "2026-04-08T04:12:57.359042+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730180+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sqlalchemy/dialects/type_migration_guidelines.txt": {
+      "hash": "7d0b93253393236d08e439087365e02f",
+      "size": 8239,
+      "modified": "2026-03-28T15:17:24.491421+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730181+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/tqdm-4.67.3.dist-info/entry_points.txt": {
+      "hash": "c6769783826aecd0242b7cfa5db3a780",
+      "size": 39,
+      "modified": "2026-03-19T16:31:06.089707+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730182+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/tabulate-0.10.0.dist-info/top_level.txt": {
+      "hash": "cea099efc5985524e529f98f4b99e552",
+      "size": 9,
+      "modified": "2026-03-28T04:52:51.656461+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730182+00:00"
+    },
+    "prototypes/path-b-agents.html": {
+      "hash": "44f46f817e86cc06a9f5171457d9cb27",
+      "size": 48705,
+      "modified": "2026-04-08T19:18:14.574379+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730183+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/language_tags-1.2.0.dist-info/top_level.txt": {
+      "hash": "f68ad0a6b6ef6275b1744744fbdd9df3",
+      "size": 14,
+      "modified": "2026-03-28T16:40:25.585145+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730184+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/charset_normalizer-3.4.6.dist-info/top_level.txt": {
+      "hash": "dfaac83899949704ff63bb5b50d92758",
+      "size": 47,
+      "modified": "2026-03-19T15:32:42.311787+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730185+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy/tests/package/test.txt": {
+      "hash": "464ae466739aa9caaa12f3f6b3efef68",
+      "size": 846,
+      "modified": "2026-03-28T16:40:26.817345+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730186+00:00"
+    },
+    "PLATFORM-ANALYSIS-8.pdf": {
+      "hash": "907dc4d78809ca892f32aa805e12c734",
+      "size": 75591,
+      "modified": "2026-04-08T04:09:30.450019+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730187+00:00"
+    },
+    ".github/PULL_REQUEST_TEMPLATE.md": {
+      "hash": "4532f7fcd4902c7ea27b69a0e06381b7",
+      "size": 477,
+      "modified": "2026-03-28T19:37:01.902314+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730187+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/fastapi/.agents/skills/fastapi/references/dependencies.md": {
+      "hash": "098e98e52fef9ee6a3180018b99f5b2e",
+      "size": 3263,
+      "modified": "2026-03-27T15:05:14.167762+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730188+00:00"
+    },
+    "PLATFORM-ANALYSIS-5.pdf": {
+      "hash": "f73c8c0941f5e922db145e6b4a6e200c",
+      "size": 31412,
+      "modified": "2026-04-08T04:09:30.265620+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730189+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/h11-0.16.0.dist-info/licenses/LICENSE.txt": {
+      "hash": "f5501d19c3116f4aaeef89369f458693",
+      "size": 1124,
+      "modified": "2026-03-18T15:06:54.525403+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730190+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pkg_resources/tests/data/my-test-package_unpacked-egg/my_test_package-1.0-py3.7.egg/EGG-INFO/dependency_links.txt": {
+      "hash": "68b329da9893e34099c7d8ad5cb9c940",
+      "size": 1,
+      "modified": "2026-03-28T16:40:25.579933+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730190+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/rfc3986-1.5.0.dist-info/top_level.txt": {
+      "hash": "c29db8dbe104c7aaf217b7230b447d5e",
+      "size": 8,
+      "modified": "2026-03-28T16:40:24.960945+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730191+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sympy-1.14.0.dist-info/entry_points.txt": {
+      "hash": "366d367eaa9d1fbf478e6b1a1d432ee4",
+      "size": 39,
+      "modified": "2026-03-28T04:23:53.314832+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730192+00:00"
+    },
+    "prototypes/path-b-home.html": {
+      "hash": "ad05a0b5868795a9df2f28cd7327e9c7",
+      "size": 58277,
+      "modified": "2026-04-08T19:26:46.137364+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730192+00:00"
+    },
+    "README.md": {
+      "hash": "60e4281d2ab1e80a40e8fd0701f4eb6a",
+      "size": 4902,
+      "modified": "2026-03-28T19:37:01.902906+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730193+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/h11-0.16.0.dist-info/top_level.txt": {
+      "hash": "58b314cbeb0f4b3c2be5961ed1452c97",
+      "size": 4,
+      "modified": "2026-03-18T15:06:54.567601+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730194+00:00"
+    },
+    "PLATFORM-ANALYSIS-4.pdf": {
+      "hash": "dfdb84579985ee82e6cba0bd43cc8f6a",
+      "size": 51116,
+      "modified": "2026-04-08T04:09:30.265704+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730195+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/catalogue-2.0.10.dist-info/top_level.txt": {
+      "hash": "570c8523ddc7c2d921e741f062ae4539",
+      "size": 10,
+      "modified": "2026-03-28T16:40:24.887532+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730195+00:00"
+    },
+    "prototypes/path-b-main.html": {
+      "hash": "5f02a54b68c35f01cbcfe8a7c908d4e8",
+      "size": 78978,
+      "modified": "2026-04-08T19:26:42.367237+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730196+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/fastapi/.agents/skills/fastapi/SKILL.md": {
+      "hash": "1c87963415a4e73535d571f5ab56e22f",
+      "size": 10388,
+      "modified": "2026-03-27T15:05:14.158652+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730197+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/preshed-3.0.13.dist-info/top_level.txt": {
+      "hash": "0279dc193a89ec977ce880b7ac67cab6",
+      "size": 8,
+      "modified": "2026-03-28T16:40:24.919683+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730198+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/blis-1.3.3.dist-info/top_level.txt": {
+      "hash": "2b46ea4624413d0423a4276092865980",
+      "size": 5,
+      "modified": "2026-03-28T16:40:24.956200+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730198+00:00"
+    },
+    "prototypes/path-b-settings.html": {
+      "hash": "21dccf45fb029421af24d546bfc4f303",
+      "size": 38963,
+      "modified": "2026-04-08T19:27:09.605722+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730199+00:00"
+    },
+    "PLATFORM-ANALYSIS-7.pdf": {
+      "hash": "a720059fb8ddbc817e88ac50a100bc3e",
+      "size": 54626,
+      "modified": "2026-04-08T04:09:30.276614+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730200+00:00"
+    },
+    "prototypes/path-c-flow.html": {
+      "hash": "c90874965a616dc25d082bcd46dde0e2",
+      "size": 38031,
+      "modified": "2026-04-08T19:30:52.781905+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730200+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/transformers-5.4.0.dist-info/entry_points.txt": {
+      "hash": "11e6ea2b8a9f721e11997df62c3639e5",
+      "size": 68,
+      "modified": "2026-03-28T16:40:28.224789+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730201+00:00"
+    },
+    "docs/SETUP.md": {
+      "hash": "ccc68472b0c6d8a0e251e47ad9966a04",
+      "size": 1515,
+      "modified": "2026-03-28T19:37:01.903823+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730202+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/distro-1.9.0.dist-info/entry_points.txt": {
+      "hash": "5cfa67bd39c62cfd27b6540ab658249d",
+      "size": 46,
+      "modified": "2026-03-18T15:06:54.612592+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730203+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/fft/pocketfft/LICENSE.md": {
+      "hash": "bb0e49a83ba802d32f3a05a7b8b2180b",
+      "size": 1498,
+      "modified": "2026-03-19T16:31:07.266224+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730203+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc-8.3.13.dist-info/entry_points.txt": {
+      "hash": "d5ce8d3994c1f32a7e5c64e29afddc82",
+      "size": 66,
+      "modified": "2026-03-28T16:40:25.795186+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730204+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/huggingface_hub/templates/modelcard_template.md": {
+      "hash": "4310fd6f64570b0aab661d7e4983117d",
+      "size": 6870,
+      "modified": "2026-03-28T04:23:52.374701+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730205+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/dlinfo-2.0.0.dist-info/top_level.txt": {
+      "hash": "dda4b2b1fbe068f07b1c6339da335b22",
+      "size": 7,
+      "modified": "2026-03-28T16:40:24.915858+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730206+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/splitmix64/LICENSE.md": {
+      "hash": "aed2fe30600fb0e72efc56b188d9e0df",
+      "size": 332,
+      "modified": "2026-03-19T16:31:07.268143+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730206+00:00"
+    },
+    "CLAUDE.local.md": {
+      "hash": "cbbada2ef49ee94e9168cb1c58e5bf69",
+      "size": 2463,
+      "modified": "2026-03-27T14:53:03.513481+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730207+00:00"
+    },
+    "prototypes/path-c-stream.html": {
+      "hash": "186806df5cbc04a708b7342877ce8731",
+      "size": 70794,
+      "modified": "2026-04-08T19:31:21.619920+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730208+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/LICENSE.md": {
+      "hash": "09b2aa3c0d32aea36fb330dc9c728fc4",
+      "size": 3511,
+      "modified": "2026-03-19T16:31:07.266584+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730209+00:00"
+    },
+    "prototypes/path-c-main.html": {
+      "hash": "81e1ec9217f184ef20bb935b89c3b9f9",
+      "size": 55743,
+      "modified": "2026-04-08T19:30:21.212982+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730209+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/uvicorn-0.42.0.dist-info/entry_points.txt": {
+      "hash": "9bdb8f3b89d92dc69346c4e8e964e8ac",
+      "size": 46,
+      "modified": "2026-03-27T15:05:14.206564+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730210+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/huggingface_hub-1.8.0.dist-info/entry_points.txt": {
+      "hash": "5b86afef1fe82f8b379de585ce7f491b",
+      "size": 154,
+      "modified": "2026-03-28T04:23:52.395930+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730211+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/regex-2026.2.28.dist-info/top_level.txt": {
+      "hash": "0afc29b0f401fd47865c752ad298daee",
+      "size": 6,
+      "modified": "2026-03-28T16:40:25.598246+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730212+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/shellingham-1.5.4.dist-info/top_level.txt": {
+      "hash": "0825daa8a3ca9cb5fc4f1970eeacc48b",
+      "size": 12,
+      "modified": "2026-03-18T01:03:15.628297+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730212+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/multidict-6.7.1.dist-info/top_level.txt": {
+      "hash": "c25c8390af673b8ed2d00811b61fe34b",
+      "size": 10,
+      "modified": "2026-03-19T16:31:05.771191+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730213+00:00"
+    },
+    "prototypes/path-a-light.html": {
+      "hash": "641c797f783b12b44264f6094d2e7682",
+      "size": 30099,
+      "modified": "2026-04-08T20:03:53.236086+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730214+00:00"
+    },
+    "prototypes/path-b-tree.html": {
+      "hash": "91655dfd26a6109a816d2f5737dc4ab0",
+      "size": 35976,
+      "modified": "2026-04-08T19:26:21.477381+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730214+00:00"
+    },
+    "docs/v1-cli/README.html": {
+      "hash": "96220dc6dc08dadd9e88fd3781b0df7e",
+      "size": 40500,
+      "modified": "2026-03-28T19:40:16.624806+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730215+00:00"
+    },
+    "prototypes/path-b-chat.html": {
+      "hash": "d3bc220ce543adbf6238b8345eba8834",
+      "size": 30736,
+      "modified": "2026-04-08T19:26:17.811999+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730216+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_curated_transformers-0.3.1.dist-info/entry_points.txt": {
+      "hash": "c2abd6910e72d787d6660802aa5f97e8",
+      "size": 3518,
+      "modified": "2026-03-28T16:40:25.590465+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730216+00:00"
+    },
+    "docs/CoCo-Presentation.html": {
+      "hash": "038c0c41ba1f34ecc44d5dd595d1a3cc",
+      "size": 34886,
+      "modified": "2026-03-28T01:58:03.334805+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730217+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/click-8.3.1.dist-info/licenses/LICENSE.txt": {
+      "hash": "1fa98232fd645608937a0fdc82e999b8",
+      "size": 1475,
+      "modified": "2026-03-18T01:03:17.864747+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730218+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc-8.3.13.dist-info/top_level.txt": {
+      "hash": "fe932bf3890064136221b42139e4d79d",
+      "size": 6,
+      "modified": "2026-03-28T16:40:25.795455+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730219+00:00"
+    },
+    "prototypes/path-c-mobile.html": {
+      "hash": "1df4d455ba79afb86a3adc5305b9c56f",
+      "size": 52704,
+      "modified": "2026-04-08T19:23:06.669242+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730219+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/g2pkc/idioms.txt": {
+      "hash": "f63635ff946c4c995ca427f246896ad0",
+      "size": 7863,
+      "modified": "2026-03-28T16:40:26.719935+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730220+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/segments-2.4.0.dist-info/entry_points.txt": {
+      "hash": "d33b68e45222562d4e764dabf3dde6e6",
+      "size": 52,
+      "modified": "2026-03-28T16:40:24.917916+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730221+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/en_core_web_sm-3.8.0.dist-info/entry_points.txt": {
+      "hash": "8e9bbf6d535c94cf25ecf8ac468b4fbb",
+      "size": 47,
+      "modified": "2026-03-28T20:06:59.574657+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730222+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/psutil-7.2.2.dist-info/top_level.txt": {
+      "hash": "d3401109f4f08fb7f9c3f411ea9209f2",
+      "size": 7,
+      "modified": "2026-03-27T15:05:14.120497+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730222+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/weasel-1.0.0.dist-info/entry_points.txt": {
+      "hash": "81f80a4245aa82b00010f1b3cc31dd99",
+      "size": 42,
+      "modified": "2026-03-28T16:40:25.546794+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730223+00:00"
+    },
+    "prototypes/path-a-inbox.html": {
+      "hash": "440b4143eddd2c40fb6eac0f80186923",
+      "size": 29822,
+      "modified": "2026-04-08T19:14:51.625602+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730224+00:00"
+    },
+    "prototypes/PATH-B.html": {
+      "hash": "16c2d1cebcaf24706988053d0fd5b8b6",
+      "size": 5161,
+      "modified": "2026-04-08T19:23:22.619317+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730225+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/networkx-3.6.1.dist-info/entry_points.txt": {
+      "hash": "d74a474f8425ffcb581e31a8dc55c1bd",
+      "size": 94,
+      "modified": "2026-03-28T16:40:26.262931+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730225+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/websockets-16.0.dist-info/entry_points.txt": {
+      "hash": "13d62d47a7efe53fedbdebe3fb3654c7",
+      "size": 51,
+      "modified": "2026-03-27T15:05:14.133514+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730226+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/alembic-1.18.4.dist-info/top_level.txt": {
+      "hash": "f2c45722f2bd3c02369c8f53d5c2f5af",
+      "size": 8,
+      "modified": "2026-03-28T15:17:24.475829+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730227+00:00"
+    },
+    "prototypes/path-b-panels.html": {
+      "hash": "3820f66682452a837dd2948df334ce55",
+      "size": 41386,
+      "modified": "2026-04-08T19:26:14.140228+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730227+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/curated_tokenizers/tests/incorrect-merges.txt": {
+      "hash": "465b2a0ef2ad2ca69759e9d68837d60a",
+      "size": 19,
+      "modified": "2026-03-28T16:41:00.059827+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730228+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/wheel-0.46.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "7ffb0db04527cfe380e4f2726bd05ebf",
+      "size": 1107,
+      "modified": "2026-03-28T16:40:25.769127+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730229+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sniffio-1.3.1.dist-info/top_level.txt": {
+      "hash": "3de012fd906024f377340e680e181425",
+      "size": 8,
+      "modified": "2026-03-18T15:06:54.499508+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730230+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/jinja2-3.1.6.dist-info/licenses/LICENSE.txt": {
+      "hash": "5dc88300786f1c214c1e9827a5229462",
+      "size": 1475,
+      "modified": "2026-03-28T16:40:25.581085+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730230+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_curated_transformers-0.3.1.dist-info/top_level.txt": {
+      "hash": "6dbf67a49a4fe9daac8e6f50d2e3e0dc",
+      "size": 27,
+      "modified": "2026-03-28T16:40:25.591208+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730231+00:00"
+    },
+    "PLATFORM-ANALYSIS-3.pdf": {
+      "hash": "e61fb0b98a6d658b8738bed2c3bfbb24",
+      "size": 28427,
+      "modified": "2026-04-08T04:09:30.431231+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730232+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/philox/LICENSE.md": {
+      "hash": "d1f2eb63cadd62578bd54c4a7f20f03e",
+      "size": 1509,
+      "modified": "2026-03-19T16:31:07.267971+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730233+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/docopt-0.6.2.dist-info/top_level.txt": {
+      "hash": "66d2b20c6fa5c95ac17a05d908889c66",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.548935+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730233+00:00"
+    },
+    "prototypes/PATH-A.html": {
+      "hash": "e84b672359e76471e2f50678f927f8c7",
+      "size": 5325,
+      "modified": "2026-04-08T19:22:57.148833+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730234+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/mako-1.3.10.dist-info/entry_points.txt": {
+      "hash": "8622175679bd881278193a6508d31a32",
+      "size": 512,
+      "modified": "2026-03-28T15:17:24.442165+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730235+00:00"
+    },
+    "prototypes/path-c-agents.html": {
+      "hash": "0822d6b8744874eed6bff2af0646eba1",
+      "size": 27751,
+      "modified": "2026-04-08T19:18:09.856616+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730235+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/typer-0.24.1.dist-info/entry_points.txt": {
+      "hash": "93ed84f98101e250743cff68a3cae2bb",
+      "size": 57,
+      "modified": "2026-03-18T01:03:15.914643+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730236+00:00"
+    },
+    "cli/prompts/coco-system.md": {
+      "hash": "d6175b564140fb8f5be50709c26676cf",
+      "size": 4328,
+      "modified": "2026-03-28T19:40:00.854582+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730237+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/tests/config/setupcfg_examples.txt": {
+      "hash": "2630e986ff45f901d4f5ba66d0ff3da7",
+      "size": 1912,
+      "modified": "2026-03-28T16:40:25.875450+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730238+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/g2pkc/README.md": {
+      "hash": "dbe427112789e77490c54f4930926a62",
+      "size": 163,
+      "modified": "2026-03-28T16:40:26.718492+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730238+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_loggers-1.0.5.dist-info/entry_points.txt": {
+      "hash": "6f333ec85f227fdb398848a79818db32",
+      "size": 807,
+      "modified": "2026-03-28T16:40:24.887565+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730239+00:00"
+    },
+    "docs/phases/phase4/PLAN.md": {
+      "hash": "13a0c22f18219d06b3e0e6172e3a37ef",
+      "size": 39014,
+      "modified": "2026-03-28T01:58:03.354307+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730240+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/networkx-3.6.1.dist-info/top_level.txt": {
+      "hash": "77f386cf50a8eddca496ae13788a8c2a",
+      "size": 9,
+      "modified": "2026-03-28T16:40:26.263251+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730241+00:00"
+    },
+    "frontend/dist/index.html": {
+      "hash": "9a81beb5fe9ede3dffe2a51081b0676d",
+      "size": 2080,
+      "modified": "2026-04-08T14:09:17.074592+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730241+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/segments-2.4.0.dist-info/top_level.txt": {
+      "hash": "37de7e389e2f61a080ffd2f1a3bb2ad0",
+      "size": 9,
+      "modified": "2026-03-28T16:40:24.918101+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730242+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/httptools-0.7.1.dist-info/top_level.txt": {
+      "hash": "4a4a669fe7e9666c416dfab9e400ada1",
+      "size": 10,
+      "modified": "2026-03-27T15:05:14.180714+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730243+00:00"
+    },
+    "docs/API.md": {
+      "hash": "03124450ce4a0915443ee4f14c8afe6a",
+      "size": 3556,
+      "modified": "2026-03-28T19:37:01.903249+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730243+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/idna-3.11.dist-info/licenses/LICENSE.md": {
+      "hash": "18a4795c19833413a7e2f1cb3cd3b143",
+      "size": 1541,
+      "modified": "2026-03-18T15:06:54.650198+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730244+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/jaraco.text-4.0.0.dist-info/top_level.txt": {
+      "hash": "0ba8d736b7b4ab182687318b0497e61e",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.902171+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730245+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/importlib_metadata-8.7.1.dist-info/top_level.txt": {
+      "hash": "a24465f7850ba59507bf86d89165525c",
+      "size": 19,
+      "modified": "2026-03-28T16:40:25.900425+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730246+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_legacy-3.0.12.dist-info/top_level.txt": {
+      "hash": "9fd9b2e00073eb3af4e94dcd764b63f4",
+      "size": 13,
+      "modified": "2026-03-28T16:40:24.970237+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730246+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy-3.8.13.dist-info/entry_points.txt": {
+      "hash": "15e772f82c70b1a2bd257cfa78490b64",
+      "size": 46,
+      "modified": "2026-03-28T16:40:24.978246+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730247+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pygments-2.19.2.dist-info/entry_points.txt": {
+      "hash": "e3efb1666169831efc4000eaa9e0ecde",
+      "size": 53,
+      "modified": "2026-03-18T01:03:19.204334+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730249+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_curated_transformers/tests/tokenization/toy-merges.txt": {
+      "hash": "3f63c429d2adeaf459dab9612d5c0ddd",
+      "size": 4690,
+      "modified": "2026-03-28T16:40:25.565206+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730249+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sqlalchemy-2.0.48.dist-info/top_level.txt": {
+      "hash": "f9d4331aace5d7e63887c25a3f5bede3",
+      "size": 11,
+      "modified": "2026-03-28T15:17:24.437697+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730250+00:00"
+    },
+    "PLATFORM-ANALYSIS-rendered.md": {
+      "hash": "6a852040c249fcb85ef5ce8045b3b37f",
+      "size": 6024,
+      "modified": "2026-04-08T04:12:40.037719+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730251+00:00"
+    },
+    "prototypes/path-a-chat.html": {
+      "hash": "6aa5af2bbed52e6e62e9249420d1897b",
+      "size": 41928,
+      "modified": "2026-04-08T19:21:10.881712+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730252+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/starlette-1.0.0.dist-info/licenses/LICENSE.md": {
+      "hash": "11e8c8dbfd5fa373c703de492140ff7a",
+      "size": 1518,
+      "modified": "2026-03-27T15:05:14.203146+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730252+00:00"
+    },
+    "scripts/dashboard/public/sessions.html": {
+      "hash": "460fc4984ec1453cb7d776d193ad6024",
+      "size": 11309,
+      "modified": "2026-03-28T01:58:12.331150+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730253+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/httpx-0.28.1.dist-info/entry_points.txt": {
+      "hash": "204e3e08e0463bda04a93cd1e1d9d232",
+      "size": 37,
+      "modified": "2026-03-18T15:06:54.643843+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730254+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc/tests/mypy/outputs/success-plugin.txt": {
+      "hash": "8c7fc38906687a750c04319fe8ce2d95",
+      "size": 494,
+      "modified": "2026-03-28T16:40:25.765459+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730255+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/g2pkc/rules.txt": {
+      "hash": "5ee7dead235897e419d4eb81259adb89",
+      "size": 14803,
+      "modified": "2026-03-28T16:40:26.720971+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730255+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy-3.8.13.dist-info/top_level.txt": {
+      "hash": "a90a99d335814dc96890948e3fef0a3b",
+      "size": 6,
+      "modified": "2026-03-28T16:40:24.978578+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730256+00:00"
+    },
+    "PLATFORM-ANALYSIS-1.pdf": {
+      "hash": "cb432a60afc688dcdf5709417e9fc0a5",
+      "size": 72801,
+      "modified": "2026-04-08T04:09:30.296487+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730257+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/num2words-0.5.14.dist-info/top_level.txt": {
+      "hash": "97e33eecb53669bd0ff37aedafcbc459",
+      "size": 10,
+      "modified": "2026-03-28T16:40:25.612585+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730257+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/zipp-3.23.0.dist-info/top_level.txt": {
+      "hash": "9b929466ec7848714de24bcf75ae57cb",
+      "size": 5,
+      "modified": "2026-03-28T16:40:25.966272+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730258+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/edge_tts-7.2.8.dist-info/top_level.txt": {
+      "hash": "83ba09a655cb95a3d280317f9efe79cf",
+      "size": 23,
+      "modified": "2026-03-28T04:52:51.677395+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730259+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_legacy-3.0.12.dist-info/entry_points.txt": {
+      "hash": "6e43e80de06260200af96f90e467e8e4",
+      "size": 1557,
+      "modified": "2026-03-28T16:40:24.969953+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730260+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/python_dotenv-1.2.2.dist-info/top_level.txt": {
+      "hash": "922cdc46358dd7b4a4d23cf8f1278903",
+      "size": 7,
+      "modified": "2026-03-18T01:03:17.025618+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730260+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/csvw-3.7.0.dist-info/top_level.txt": {
+      "hash": "daf00c60d3e0794163438a49b8443337",
+      "size": 5,
+      "modified": "2026-03-28T16:40:25.554318+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730261+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy/lang/hr/lemma_lookup_license.txt": {
+      "hash": "82ff85af72be5706f10ee29353ffce4a",
+      "size": 971,
+      "modified": "2026-03-28T16:40:27.038244+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730262+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/python_multipart-0.0.22.dist-info/licenses/LICENSE.txt": {
+      "hash": "3d98f0d58b28321924a89ab60c82410e",
+      "size": 556,
+      "modified": "2026-03-28T17:26:40.336327+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730262+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/thinc/tests/mypy/outputs/success-no-plugin.txt": {
+      "hash": "40ff64305538076f3a772bfaeb5df91a",
+      "size": 576,
+      "modified": "2026-03-28T16:40:25.765005+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730263+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools-81.0.0.dist-info/entry_points.txt": {
+      "hash": "f7823e28f7dde216b07386a8f305853d",
+      "size": 2449,
+      "modified": "2026-03-28T16:40:25.893619+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730264+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/en_core_web_sm-3.8.0.dist-info/top_level.txt": {
+      "hash": "61437259a9197e218de8c6e678653663",
+      "size": 15,
+      "modified": "2026-03-28T20:06:59.584706+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730264+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/propcache-0.4.1.dist-info/top_level.txt": {
+      "hash": "63ef4b6c04a7def229d0adb188dd8847",
+      "size": 10,
+      "modified": "2026-03-19T16:31:06.028933+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730265+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/fastapi/.agents/skills/fastapi/references/streaming.md": {
+      "hash": "1dbbffa2c8ddbb0c57ec2cce8176e845",
+      "size": 2581,
+      "modified": "2026-03-27T15:05:14.170080+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730266+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/joblib-1.5.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "2e481820abf0a70a18011a30153df066",
+      "size": 1527,
+      "modified": "2026-03-28T16:40:25.632539+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730267+00:00"
+    },
+    "backend/app/templates/replay.html": {
+      "hash": "e1060eb23b603ff13525d706bf80e480",
+      "size": 14137,
+      "modified": "2026-03-28T19:23:56.360437+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730267+00:00"
+    },
+    "CONTRIBUTING.md": {
+      "hash": "dc17440aafcfc4b6ee18b771a1c466f4",
+      "size": 3041,
+      "modified": "2026-03-28T19:37:01.902601+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730268+00:00"
+    },
+    "prototypes/QA-REPORT.md": {
+      "hash": "a8fe53d7f54d1a8dbadfe035172fc900",
+      "size": 7026,
+      "modified": "2026-04-08T19:27:59.387757+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730269+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/cffi-2.0.0.dist-info/top_level.txt": {
+      "hash": "67ea4a90c355e59a4eb7026e12e6aa43",
+      "size": 19,
+      "modified": "2026-03-28T04:23:52.155005+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730270+00:00"
+    },
+    "prototypes/path-c-keys.html": {
+      "hash": "06a9a0440ebe3ccc6f6467a8b7709baf",
+      "size": 38727,
+      "modified": "2026-04-08T19:22:50.664076+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730270+00:00"
+    },
+    "prototypes/PATH-C.html": {
+      "hash": "1bd3f6501638841186960736e6f69114",
+      "size": 6749,
+      "modified": "2026-04-08T19:23:44.869037+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730271+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/en_core_web_sm/en_core_web_sm-3.8.0/README.md": {
+      "hash": "65bd75e5845ffe6c3e77d01e8b0318c4",
+      "size": 2587,
+      "modified": "2026-03-28T20:06:59.231550+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730272+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sympy/parsing/autolev/test-examples/README.txt": {
+      "hash": "4900c831b135e9353183c6ef05fa4741",
+      "size": 528,
+      "modified": "2026-03-28T04:23:52.758560+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730273+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/weasel-1.0.0.dist-info/top_level.txt": {
+      "hash": "9480fdf21717d2047f1d793accd81867",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.548330+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730273+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/websockets-16.0.dist-info/top_level.txt": {
+      "hash": "f36b810914d17b7d95a034db8477fece",
+      "size": 11,
+      "modified": "2026-03-27T15:05:14.134251+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730274+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/jaraco_functools-4.4.0.dist-info/top_level.txt": {
+      "hash": "0ba8d736b7b4ab182687318b0497e61e",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.957270+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730275+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/tqdm-4.67.3.dist-info/top_level.txt": {
+      "hash": "0e9e1d61c217a23419ddc4bf5bf70525",
+      "size": 5,
+      "modified": "2026-03-19T16:31:06.090116+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730275+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/aiohttp-3.13.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "748073912af33aa59430d3702aa32d41",
+      "size": 588,
+      "modified": "2026-03-19T16:31:06.347859+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730276+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/fastapi-0.135.2.dist-info/entry_points.txt": {
+      "hash": "2d7e5f5dc33b9b356440b92564c1cdfa",
+      "size": 61,
+      "modified": "2026-03-27T15:05:14.125908+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730277+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/certifi-2026.2.25.dist-info/top_level.txt": {
+      "hash": "5ebd7f7c387ebb31c14e3c701023ac97",
+      "size": 8,
+      "modified": "2026-03-18T15:06:54.697722+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730277+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools-81.0.0.dist-info/top_level.txt": {
+      "hash": "789a691c859dea4bb010d18728bad148",
+      "size": 41,
+      "modified": "2026-03-28T16:40:25.893856+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730278+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/srsly-2.5.3.dist-info/entry_points.txt": {
+      "hash": "3d9f16444a037d58a65ebc73183b3d65",
+      "size": 172,
+      "modified": "2026-03-28T16:40:24.958027+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730279+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/annotated_doc-0.0.4.dist-info/entry_points.txt": {
+      "hash": "1620e8d4506e2164172aac04e5659291",
+      "size": 34,
+      "modified": "2026-03-18T01:03:16.546470+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730280+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/urllib3-2.6.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "52d273a3054ced561275d4d15260ecda",
+      "size": 1093,
+      "modified": "2026-03-19T15:32:42.277518+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730280+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/fastapi/.agents/skills/fastapi/references/other-tools.md": {
+      "hash": "e57706ea7ccdf90b070b8dc9c500873c",
+      "size": 1526,
+      "modified": "2026-03-27T15:05:14.168483+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730281+00:00"
+    },
+    "PLATFORM-ANALYSIS-9.pdf": {
+      "hash": "30f392a076f086e40914a8a68da94f45",
+      "size": 31233,
+      "modified": "2026-04-08T04:09:30.265076+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730282+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/regex-2026.2.28.dist-info/licenses/LICENSE.txt": {
+      "hash": "7b5751ddd6b643203c31ff873051d069",
+      "size": 11584,
+      "modified": "2026-03-28T16:40:25.602525+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730282+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/_core/src/multiarray/dragon4_LICENSE.txt": {
+      "hash": "d82ecc7c1dc5709b559fe3ef67b4d73a",
+      "size": 1414,
+      "modified": "2026-03-19T16:31:07.265368+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730283+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/markdown_it_py-4.0.0.dist-info/entry_points.txt": {
+      "hash": "1456dddc54b5784919ca3e95d51f82c8",
+      "size": 58,
+      "modified": "2026-03-18T01:03:17.807681+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730284+00:00"
+    },
+    "docs/STUDIO.md": {
+      "hash": "d63db2994fb0abb76523afcfc8bf1e82",
+      "size": 1321,
+      "modified": "2026-03-28T19:37:01.904104+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730284+00:00"
+    },
+    "prototypes/path-a-home.html": {
+      "hash": "ebe9c8b451375750205711416fefe713",
+      "size": 33416,
+      "modified": "2026-04-08T19:14:36.631318+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730285+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/huggingface_hub/templates/datasetcard_template.md": {
+      "hash": "12c6a5ef189e67f5be69bc1bbe9549d5",
+      "size": 5503,
+      "modified": "2026-03-28T04:23:52.374426+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730286+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/wasabi-1.1.3.dist-info/top_level.txt": {
+      "hash": "0f52f017d3cd9443cf0232f49056a728",
+      "size": 7,
+      "modified": "2026-03-28T16:40:24.960908+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730287+00:00"
+    },
+    "frontend/README.md": {
+      "hash": "f6e3faf55d738cf2affe1b44195f27cf",
+      "size": 2425,
+      "modified": "2026-03-27T15:02:48.106824+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730287+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/sympy/parsing/latex/LICENSE.txt": {
+      "hash": "b70381bd640070cb20be9d6f93f47036",
+      "size": 1075,
+      "modified": "2026-03-28T04:23:52.768399+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730288+00:00"
+    },
+    "prototypes/path-b-flow.html": {
+      "hash": "1afe26609d0594966ca01d8c682a02bb",
+      "size": 31048,
+      "modified": "2026-04-08T19:17:32.275427+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730289+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/torch-2.11.0.dist-info/entry_points.txt": {
+      "hash": "03a34256a7412ebd7caed476c794ed40",
+      "size": 211,
+      "modified": "2026-03-28T16:40:31.866183+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730289+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/anthropic/lib/foundry.md": {
+      "hash": "f1f0d07a27d93e9cad219d59e3d3d940",
+      "size": 2745,
+      "modified": "2026-03-28T17:21:35.567588+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730290+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/sfc64/LICENSE.md": {
+      "hash": "ad204ac84919852ee6d8e4154dddca08",
+      "size": 1226,
+      "modified": "2026-03-19T16:31:07.267622+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730291+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/python_dateutil-2.9.0.post0.dist-info/top_level.txt": {
+      "hash": "bee7c7a3f937dadd8438a1ae4a3c6714",
+      "size": 9,
+      "modified": "2026-03-24T15:54:27.734061+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730291+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pkg_resources/tests/data/my-test-package_unpacked-egg/my_test_package-1.0-py3.7.egg/EGG-INFO/top_level.txt": {
+      "hash": "68b329da9893e34099c7d8ad5cb9c940",
+      "size": 1,
+      "modified": "2026-03-28T16:40:25.581034+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730292+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/joblib-1.5.3.dist-info/top_level.txt": {
+      "hash": "13f9b8461dbd6e9f40c8ec14106faf6b",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.633630+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730293+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pkg_resources/tests/data/my-test-package_unpacked-egg/my_test_package-1.0-py3.7.egg/EGG-INFO/SOURCES.txt": {
+      "hash": "7dac05d5bb12b83222d3008bcaa5ceac",
+      "size": 208,
+      "modified": "2026-03-28T16:40:25.578689+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730294+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/tests/indexes/test_links_priority/external.html": {
+      "hash": "efaf4d8f81365b7dd8b41909bb863780",
+      "size": 92,
+      "modified": "2026-03-28T16:40:25.890545+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730294+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/spacy_loggers-1.0.5.dist-info/top_level.txt": {
+      "hash": "4c54466a0addfaea8fda096b6d3a76f8",
+      "size": 14,
+      "modified": "2026-03-28T16:40:24.887725+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730295+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/edge_tts-7.2.8.dist-info/entry_points.txt": {
+      "hash": "81cbd0ef4881952825a5e8aa9434b2e6",
+      "size": 97,
+      "modified": "2026-03-28T04:52:51.676791+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730296+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/wheel-0.46.3.dist-info/entry_points.txt": {
+      "hash": "eeb0edcf9e2a85ba094ced336d5f1363",
+      "size": 110,
+      "modified": "2026-03-28T16:40:25.964979+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730296+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/pyjwt-2.12.1.dist-info/top_level.txt": {
+      "hash": "539ab55f594726c4b96f18218747e9b8",
+      "size": 4,
+      "modified": "2026-03-28T17:26:40.336127+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730297+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/httpx-0.28.1.dist-info/licenses/LICENSE.md": {
+      "hash": "c624803bdf6fc1c4ce39f5ae11d7bd05",
+      "size": 1508,
+      "modified": "2026-03-18T15:06:54.645192+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730298+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/smart_open-7.5.1.dist-info/top_level.txt": {
+      "hash": "eb40dfc0c5d3d9b10be63ac8e1a27201",
+      "size": 11,
+      "modified": "2026-03-28T16:40:25.556888+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730298+00:00"
+    },
+    "USER-JOURNEY-GAPS.html": {
+      "hash": "78d54d91064a47df582d44d3ee683a49",
+      "size": 13500,
+      "modified": "2026-04-08T18:29:56.103148+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730299+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/markupsafe-3.0.3.dist-info/licenses/LICENSE.txt": {
+      "hash": "ffeffa59c90c9c4a033c7574f8f3fb75",
+      "size": 1475,
+      "modified": "2026-03-28T15:17:24.440421+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730300+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/distributions/LICENSE.md": {
+      "hash": "0a26f80d7361a8d65d2f8daf8c7e3de8",
+      "size": 2745,
+      "modified": "2026-03-19T16:31:07.268297+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730300+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/transformers-5.4.0.dist-info/top_level.txt": {
+      "hash": "909ab8394051de93b12c3ca8d19a8561",
+      "size": 13,
+      "modified": "2026-03-28T16:40:28.225163+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730301+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/backports.tarfile-1.2.0.dist-info/top_level.txt": {
+      "hash": "9ba458821ad258b6ef62b47e91302982",
+      "size": 10,
+      "modified": "2026-03-28T16:40:25.899244+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730302+00:00"
+    },
+    "docs/phases/phase0/coco-system-prompt.md": {
+      "hash": "6b8abd853d6bd644c6f6e6891edc4900",
+      "size": 3970,
+      "modified": "2026-03-28T19:40:01.706311+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730302+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy/ma/API_CHANGES.txt": {
+      "hash": "e275133c8f869be496724fba9156453f",
+      "size": 3405,
+      "modified": "2026-03-19T16:31:06.216719+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730303+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/rdflib-7.6.0.dist-info/entry_points.txt": {
+      "hash": "7fefadf8e02d4f9d1475b896c0b9bce4",
+      "size": 254,
+      "modified": "2026-03-28T16:40:25.745460+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730304+00:00"
+    },
+    "docs/phases/phase1/PLAN.md": {
+      "hash": "f13be08acb6536e6f0009a8e64ebc947",
+      "size": 55059,
+      "modified": "2026-03-28T01:58:03.342870+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730305+00:00"
+    },
+    "docs/phases/phase3/PLAN.md": {
+      "hash": "4fc18c075863d1a738ab667d3e4aa32e",
+      "size": 46603,
+      "modified": "2026-03-28T01:58:03.349797+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730305+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/_core/src/npysort/x86-simd-sort/LICENSE.md": {
+      "hash": "32e4087908578b334f5b91fce7a470a0",
+      "size": 1514,
+      "modified": "2026-03-19T16:31:07.265039+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730306+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/random/src/mt19937/LICENSE.md": {
+      "hash": "58535013375c548c899f1d5b80a0e886",
+      "size": 2926,
+      "modified": "2026-03-19T16:31:07.267459+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730307+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/uritemplate-4.2.0.dist-info/top_level.txt": {
+      "hash": "4c24f4645dad13fe30d186d2d3dfd12d",
+      "size": 12,
+      "modified": "2026-03-28T16:40:24.871854+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730308+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/torchgen/packaged/autograd/README.md": {
+      "hash": "877fe0b947e6e27cebab7488061a786c",
+      "size": 147,
+      "modified": "2026-03-28T16:40:31.854621+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730308+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/cymem-2.0.13.dist-info/top_level.txt": {
+      "hash": "abf8efa528312fce8bef2b8462c22391",
+      "size": 6,
+      "modified": "2026-03-28T16:40:25.551279+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730309+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/mako-1.3.10.dist-info/top_level.txt": {
+      "hash": "bf28e20cc6b9fb44b8a40875d97a36a9",
+      "size": 5,
+      "modified": "2026-03-28T15:17:24.442616+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730310+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/setuptools/_vendor/jaraco_context-6.1.0.dist-info/top_level.txt": {
+      "hash": "0ba8d736b7b4ab182687318b0497e61e",
+      "size": 7,
+      "modified": "2026-03-28T16:40:25.903411+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730310+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/misaki/data/ja_words.txt": {
+      "hash": "388959b6b1f0782d0df17c85fe2ce571",
+      "size": 1921140,
+      "modified": "2026-03-28T16:40:26.249418+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730311+00:00"
+    },
+    "docs/v1-cli/TECH-SPEC.md": {
+      "hash": "591ea6a69b822423646576addf306b60",
+      "size": 35035,
+      "modified": "2026-03-28T01:58:03.324014+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730312+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/python_dotenv-1.2.2.dist-info/entry_points.txt": {
+      "hash": "97c730e838887dcbd6eb0da07c816ab1",
+      "size": 47,
+      "modified": "2026-03-18T01:03:17.023007+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730313+00:00"
+    },
+    "docs/phases/phase5/PLAN.md": {
+      "hash": "ab07b9d3d445e664424656fc6de5338f",
+      "size": 32028,
+      "modified": "2026-03-28T01:58:03.358123+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730313+00:00"
+    },
+    "prototypes/path-a-flow.html": {
+      "hash": "bdac8ae154891706088b1b3834f224a5",
+      "size": 21480,
+      "modified": "2026-04-08T19:13:17.694806+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730314+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/distro-1.9.0.dist-info/top_level.txt": {
+      "hash": "a6234878be2d64a751865bd16f6fff03",
+      "size": 7,
+      "modified": "2026-03-18T15:06:54.613067+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730315+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/curated_tokenizers/tests/robbert-merges-1000.txt": {
+      "hash": "a4f10ed52c36388af92b47e4bc9097b3",
+      "size": 6291,
+      "modified": "2026-03-28T16:41:00.059879+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730316+00:00"
+    },
+    "prototypes/path-a-real.html": {
+      "hash": "dccc2e771c193ad02007921e1a2eed66",
+      "size": 42296,
+      "modified": "2026-04-08T20:25:28.215938+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730317+00:00"
+    },
+    "prototypes/path-c-settings.html": {
+      "hash": "859fa2180311eee056cdd69d458b5888",
+      "size": 21183,
+      "modified": "2026-04-08T19:19:28.609607+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730317+00:00"
+    },
+    "prototypes/path-a-main.html": {
+      "hash": "484c86e9225ae3a21434b60c697d0ac0",
+      "size": 68889,
+      "modified": "2026-04-08T19:25:16.594870+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730318+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/kokoro-0.9.4.dist-info/entry_points.txt": {
+      "hash": "f391c9af26fd984c42670bccbcdf7cff",
+      "size": 48,
+      "modified": "2026-03-28T16:40:24.955324+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730319+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/csvw-3.7.0.dist-info/entry_points.txt": {
+      "hash": "4e34df7d0dc5f45ae468a09757a1cb55",
+      "size": 268,
+      "modified": "2026-03-28T16:40:25.551134+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730320+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/wrapt-2.1.2.dist-info/top_level.txt": {
+      "hash": "56b26c1f522de5306e55df1e0905459a",
+      "size": 6,
+      "modified": "2026-03-19T15:32:42.161404+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730320+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/uvloop-0.22.1.dist-info/top_level.txt": {
+      "hash": "8c75097354ae43d65d62a60b41328bbb",
+      "size": 7,
+      "modified": "2026-03-27T15:05:14.216363+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730321+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/charset_normalizer-3.4.6.dist-info/entry_points.txt": {
+      "hash": "946b4fcd3fcface4499fbdd19855ffaf",
+      "size": 65,
+      "modified": "2026-03-19T15:32:42.311336+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730322+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/numpy-2.4.3.dist-info/licenses/numpy/_core/include/numpy/libdivide/LICENSE.txt": {
+      "hash": "e1c97b70a98c8ec5aff0aa275fdb2c91",
+      "size": 1018,
+      "modified": "2026-03-19T16:31:07.264168+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730322+00:00"
+    },
+    "backend/.venv/lib/python3.13/site-packages/watchfiles-1.1.1.dist-info/entry_points.txt": {
+      "hash": "969955982d784ed3222d4a02300bd2d6",
+      "size": 48,
+      "modified": "2026-03-27T15:05:14.157700+00:00",
+      "scanned_at": "2026-04-09T20:06:12.730323+00:00"
+    }
+  }
+}

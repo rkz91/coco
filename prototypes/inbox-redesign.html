@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Inbox Redesign — Smart Triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0b;
+    --bg-card: #141416;
+    --bg-card-hover: #1a1a1e;
+    --bg-section: #111113;
+    --border: #27272a;
+    --border-subtle: #1e1e22;
+    --fg: #fafafa;
+    --fg-muted: #71717a;
+    --fg-dim: #52525b;
+    --accent: #3b82f6;
+    --accent-muted: rgba(59, 130, 246, 0.15);
+    --red: #ef4444;
+    --red-muted: rgba(239, 68, 68, 0.12);
+    --amber: #f59e0b;
+    --amber-muted: rgba(245, 158, 11, 0.12);
+    --green: #22c55e;
+    --green-muted: rgba(34, 197, 94, 0.12);
+    --purple: #a855f7;
+    --purple-muted: rgba(168, 85, 247, 0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.5; }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  /* Sidebar stub */
+  .sidebar { width: 220px; background: #0e0e10; border-right: 1px solid var(--border-subtle); padding: 16px 12px; flex-shrink: 0; }
+  .sidebar-brand { display: flex; align-items: center; gap: 8px; padding: 4px 8px; margin-bottom: 16px; }
+  .sidebar-brand .icon { width: 28px; height: 28px; border-radius: 8px; background: var(--accent); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; color: white; }
+  .sidebar-brand span { font-size: 13px; font-weight: 700; color: var(--fg); }
+  .sidebar-brand small { font-size: 10px; color: var(--fg-dim); display: block; }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 6px; font-size: 13px; color: var(--fg-muted); cursor: pointer; margin: 1px 0; }
+  .nav-item:hover { color: var(--fg); background: rgba(255,255,255,0.04); }
+  .nav-item.active { color: var(--fg); background: rgba(59,130,246,0.1); font-weight: 500; border-left: 2px solid var(--accent); margin-left: -2px; }
+  .nav-item .badge { margin-left: auto; background: var(--red); color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; }
+  .nav-section { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: var(--fg-dim); padding: 12px 12px 4px; }
+
+  /* Main content */
+  .main { flex: 1; overflow-y: auto; }
+  .main-header { padding: 20px 28px 0; }
+  .main-header h1 { font-size: 20px; font-weight: 600; }
+  .main-header p { font-size: 12px; color: var(--fg-muted); margin-top: 2px; }
+
+  /* Triage progress bar */
+  .triage-progress { margin: 16px 28px 0; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 18px; }
+  .triage-progress .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .triage-progress .label { font-size: 12px; font-weight: 500; color: var(--fg-muted); }
+  .triage-progress .count { font-size: 12px; font-weight: 600; color: var(--fg); }
+  .triage-progress .count span { color: var(--green); }
+  .bar-bg { height: 4px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .bar-green { background: var(--green); }
+  .triage-progress .stats { display: flex; gap: 16px; margin-top: 10px; }
+  .triage-progress .stat { font-size: 11px; color: var(--fg-dim); }
+  .triage-progress .stat strong { color: var(--fg-muted); font-weight: 600; }
+
+  /* Sections */
+  .section { margin: 20px 28px; }
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; }
+  .section-title { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; }
+  .section-title .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .section-title .count-badge { font-size: 11px; font-weight: 500; color: var(--fg-dim); background: var(--bg); padding: 2px 8px; border-radius: 10px; border: 1px solid var(--border-subtle); }
+  .section-actions { display: flex; gap: 6px; }
+  .section-actions button { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--fg-muted); cursor: pointer; font-family: inherit; }
+  .section-actions button:hover { color: var(--fg); background: var(--bg-card-hover); }
+  .section-actions button.primary { background: var(--accent-muted); border-color: transparent; color: var(--accent); }
+
+  /* Item cards */
+  .item-group { border: 1px solid var(--border-subtle); border-radius: 10px; overflow: hidden; background: var(--bg-card); }
+  .item { display: flex; align-items: flex-start; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--border-subtle); cursor: pointer; transition: background 0.15s; }
+  .item:last-child { border-bottom: none; }
+  .item:hover { background: var(--bg-card-hover); }
+
+  .item-icon { width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; margin-top: 2px; }
+  .item-icon.urgent { background: var(--red-muted); color: var(--red); }
+  .item-icon.draft { background: var(--accent-muted); color: var(--accent); }
+  .item-icon.classify { background: var(--amber-muted); color: var(--amber); }
+  .item-icon.noise { background: rgba(255,255,255,0.04); color: var(--fg-dim); }
+  .item-icon.auto { background: var(--green-muted); color: var(--green); }
+
+  .item-content { flex: 1; min-width: 0; }
+  .item-title { font-size: 13px; font-weight: 500; color: var(--fg); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-subtitle { font-size: 12px; color: var(--fg-muted); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .item-meta { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+  .item-tag { font-size: 10px; font-weight: 500; padding: 1px 7px; border-radius: 4px; white-space: nowrap; }
+  .tag-project { background: var(--accent-muted); color: var(--accent); }
+  .tag-source { background: rgba(255,255,255,0.05); color: var(--fg-dim); }
+  .tag-stale { background: var(--amber-muted); color: var(--amber); }
+  .tag-suggestion { background: var(--purple-muted); color: var(--purple); }
+  .tag-auto { background: var(--green-muted); color: var(--green); }
+  .item-time { font-size: 11px; color: var(--fg-dim); white-space: nowrap; flex-shrink: 0; margin-top: 2px; tabular-nums: true; }
+
+  .item-actions { display: flex; gap: 4px; flex-shrink: 0; margin-top: 2px; opacity: 0; transition: opacity 0.15s; }
+  .item:hover .item-actions { opacity: 1; }
+  .item-actions button { width: 28px; height: 28px; border-radius: 6px; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; font-size: 14px; background: transparent; }
+  .item-actions button.approve { color: var(--green); }
+  .item-actions button.approve:hover { background: var(--green-muted); }
+  .item-actions button.reject { color: var(--red); }
+  .item-actions button.reject:hover { background: var(--red-muted); }
+  .item-actions button.dismiss { color: var(--fg-dim); }
+  .item-actions button.dismiss:hover { background: rgba(255,255,255,0.06); }
+
+  /* CoCo suggestion inline */
+  .coco-suggestion { display: flex; align-items: center; gap: 6px; margin-top: 6px; padding: 6px 10px; background: var(--purple-muted); border-radius: 6px; font-size: 11px; color: var(--purple); }
+  .coco-suggestion button { font-size: 11px; padding: 2px 8px; border-radius: 4px; border: 1px solid rgba(168,85,247,0.3); background: transparent; color: var(--purple); cursor: pointer; font-family: inherit; font-weight: 500; }
+  .coco-suggestion button:hover { background: rgba(168,85,247,0.15); }
+  .coco-suggestion button.accept { background: var(--purple); color: white; border-color: transparent; }
+
+  /* Noise cluster */
+  .noise-cluster { background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; padding: 14px 16px; }
+  .noise-cluster .cluster-header { display: flex; align-items: center; justify-content: space-between; }
+  .noise-cluster .cluster-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .noise-cluster .cluster-title .count { font-size: 11px; color: var(--fg-dim); background: var(--bg); padding: 2px 8px; border-radius: 10px; }
+  .noise-cluster .cluster-preview { font-size: 12px; color: var(--fg-dim); margin-top: 6px; }
+  .noise-cluster .cluster-actions { display: flex; gap: 6px; }
+  .noise-cluster .cluster-actions button { font-size: 11px; padding: 4px 10px; border-radius: 6px; border: 1px solid var(--border); background: transparent; color: var(--fg-muted); cursor: pointer; font-family: inherit; }
+  .noise-cluster .cluster-actions button:hover { color: var(--fg); }
+  .noise-cluster .cluster-actions button.dismiss-all { color: var(--red); border-color: rgba(239,68,68,0.2); }
+
+  /* Collapsed section */
+  .collapsed-section { margin: 16px 28px; padding: 12px 16px; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 10px; cursor: pointer; }
+  .collapsed-section:hover { background: var(--bg-card-hover); }
+  .collapsed-section .cs-header { display: flex; align-items: center; justify-content: space-between; }
+  .collapsed-section .cs-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+  .collapsed-section .cs-count { font-size: 11px; color: var(--fg-dim); }
+
+  /* Design notes */
+  .design-note { margin: 24px 28px; padding: 16px; background: rgba(59,130,246,0.06); border: 1px dashed rgba(59,130,246,0.2); border-radius: 10px; }
+  .design-note h3 { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .design-note p { font-size: 12px; color: var(--fg-muted); line-height: 1.6; }
+  .design-note ul { font-size: 12px; color: var(--fg-muted); line-height: 1.8; padding-left: 16px; }
+</style>
+</head>
+<body>
+<div class="layout">
+  <!-- Sidebar (stub) -->
+  <aside class="sidebar">
+    <div class="sidebar-brand">
+      <div class="icon">C</div>
+      <div><span>CoCo</span><small>Rijul's Brain</small></div>
+    </div>
+    <div class="nav-section">Home</div>
+    <div class="nav-item">🏠 Home</div>
+    <div class="nav-item">📊 Analytics</div>
+    <div class="nav-item active">📥 Inbox <span class="badge">47</span></div>
+    <div class="nav-section">Work</div>
+    <div class="nav-item">🗂 My Portfolio</div>
+    <div class="nav-item">👥 Teams</div>
+    <div class="nav-item">✅ Todos</div>
+    <div class="nav-item">📝 Drafts</div>
+    <div class="nav-section">Intelligence</div>
+    <div class="nav-item">🔍 Knowledge</div>
+    <div class="nav-item">🧠 Brain</div>
+    <div class="nav-item">🕸 Graph</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+    <div class="main-header">
+      <h1>Inbox</h1>
+      <p>47 items need your attention — CoCo auto-handled 266 others</p>
+    </div>
+
+    <!-- Triage progress -->
+    <div class="triage-progress">
+      <div class="top">
+        <span class="label">Triage progress</span>
+        <span class="count"><span>266</span> / 313 handled</span>
+      </div>
+      <div class="bar-bg"><div class="bar-fill bar-green" style="width: 85%"></div></div>
+      <div class="stats">
+        <span class="stat"><strong>266</strong> auto-handled</span>
+        <span class="stat"><strong>12</strong> approved</span>
+        <span class="stat"><strong>35</strong> classified</span>
+        <span class="stat"><strong>47</strong> remaining</span>
+      </div>
+    </div>
+
+    <div class="design-note">
+      <h3>Design Philosophy</h3>
+      <p>The Inbox is your <strong>triage command center</strong> — not an email client. Items are organized by <strong>what action you need to take</strong>, not where they came from. CoCo pre-handles what it can (classify, dismiss noise, file FYI) and surfaces only what needs your judgment.</p>
+      <ul>
+        <li><strong>Sections by action type</strong> — not flat chronological list</li>
+        <li><strong>Smart clustering</strong> — 7 identical GitGuardian alerts → 1 dismissable cluster</li>
+        <li><strong>CoCo suggestions</strong> — "I think this belongs to Optimize" with one-click accept</li>
+        <li><strong>Progress bar</strong> — gamifies triage, shows how much CoCo saved you</li>
+        <li><strong>Stale badges</strong> — items older than 2 weeks flagged for bulk dismissal</li>
+      </ul>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 1: Needs Decision NOW (urgent + overdue) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="dot" style="background: var(--red)"></span>
+          Needs Decision
+          <span class="count-badge">3</span>
+        </div>
+      </div>
+      <div class="item-group">
+        <div class="item">
+          <div class="item-icon urgent">⚠</div>
+          <div class="item-content">
+            <div class="item-title">New Risk Demand Submitted — 1024</div>
+            <div class="item-subtitle">Risk demand requires approval within 48h — from Global Risk Ops</div>
+            <div class="item-meta">
+              <span class="item-tag tag-source">email</span>
+              <span class="item-tag tag-stale">due today</span>
+            </div>
+          </div>
+          <span class="item-time">Apr 7</span>
+          <div class="item-actions">
+            <button class="approve" title="Handle">✓</button>
+            <button class="dismiss" title="Defer">→</button>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-icon urgent">⚠</div>
+          <div class="item-content">
+            <div class="item-title">Review internal incident #29214721 on GitGuardian</div>
+            <div class="item-subtitle">Secret detected in repository — security team flagged as high priority</div>
+            <div class="item-meta">
+              <span class="item-tag tag-source">todo · overdue</span>
+              <span class="item-tag tag-stale">3 weeks overdue</span>
+            </div>
+          </div>
+          <span class="item-time">Mar 28</span>
+          <div class="item-actions">
+            <button class="approve" title="Mark done">✓</button>
+            <button class="dismiss" title="Dismiss">×</button>
+          </div>
+        </div>
+        <div class="item">
+          <div class="item-icon urgent">⚠</div>
+          <div class="item-content">
+            <div class="item-title">TP Inventory Dashboard Check-In</div>
+            <div class="item-subtitle">Discuss progress and timeline of updating the Dashboard for PSR's use</div>
+            <div class="item-meta">
+              <span class="item-tag tag-project">optimize</span>
+              <span class="item-tag tag-source">email</span>
+            </div>
+          </div>
+          <span class="item-time">Mar 28</span>
+          <div class="item-actions">
+            <button class="approve" title="Handle">✓</button>
+            <button class="dismiss" title="Defer">→</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 2: Review & Approve (drafts by project) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="dot" style="background: var(--accent)"></span>
+          Review &amp; Approve
+          <span class="count-badge">35 drafts across 4 projects</span>
+        </div>
+        <div class="section-actions">
+          <button class="primary">Approve all reg-coe</button>
+          <button>Preview</button>
+        </div>
+      </div>
+
+      <!-- Project group: reg-coe -->
+      <div style="margin-bottom: 8px;">
+        <div style="font-size: 11px; font-weight: 600; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 4px 6px; display: flex; align-items: center; gap: 8px;">
+          <span class="item-tag tag-project">reg-coe</span> Regulatory Compliance — 5 drafts
+        </div>
+        <div class="item-group">
+          <div class="item">
+            <div class="item-icon draft">📋</div>
+            <div class="item-content">
+              <div class="item-title">Meeting Notes — Action Items</div>
+              <div class="item-subtitle">Start testing portal with COE team after receiving notification from Ramesh</div>
+              <div class="item-meta">
+                <span class="item-tag tag-source">from voice memo</span>
+              </div>
+            </div>
+            <span class="item-time">Mar 28</span>
+            <div class="item-actions">
+              <button class="approve" title="Approve">✓</button>
+              <button class="reject" title="Reject">×</button>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-icon draft">📋</div>
+            <div class="item-content">
+              <div class="item-title">Decision Log — Decisions</div>
+              <div class="item-subtitle">Deploy portal to production by Monday if testing goes well, otherwise by end of Monday</div>
+              <div class="item-meta">
+                <span class="item-tag tag-source">from voice memo</span>
+              </div>
+            </div>
+            <span class="item-time">Mar 28</span>
+            <div class="item-actions">
+              <button class="approve" title="Approve">✓</button>
+              <button class="reject" title="Reject">×</button>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-icon draft">📋</div>
+            <div class="item-content">
+              <div class="item-title">Change Log — Changes</div>
+              <div class="item-subtitle">Deploy portal to production by Monday if testing goes well</div>
+            </div>
+            <span class="item-time">Mar 28</span>
+            <div class="item-actions">
+              <button class="approve" title="Approve">✓</button>
+              <button class="reject" title="Reject">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Project group: audit-board -->
+      <div>
+        <div style="font-size: 11px; font-weight: 600; color: var(--fg-dim); text-transform: uppercase; letter-spacing: 0.05em; padding: 0 4px 6px; display: flex; align-items: center; gap: 8px;">
+          <span class="item-tag tag-project">audit-board</span> AuditBoard — 10 drafts
+        </div>
+        <div class="item-group">
+          <div class="item">
+            <div class="item-icon draft">📋</div>
+            <div class="item-content">
+              <div class="item-title">Decision Log — Decisions</div>
+              <div class="item-subtitle">Finalized rollout timeline for AB1 steady state controls — Q2 target confirmed</div>
+              <div class="item-meta">
+                <span class="item-tag tag-source">from email</span>
+              </div>
+            </div>
+            <span class="item-time">Mar 27</span>
+            <div class="item-actions">
+              <button class="approve" title="Approve">✓</button>
+              <button class="reject" title="Reject">×</button>
+            </div>
+          </div>
+          <div class="item">
+            <div class="item-icon draft">📋</div>
+            <div class="item-content">
+              <div class="item-title">Meeting Notes — Action Items</div>
+              <div class="item-subtitle">Share intake form with Will's team for review and feedback (Marcella)</div>
+            </div>
+            <span class="item-time">Mar 27</span>
+            <div class="item-actions">
+              <button class="approve" title="Approve">✓</button>
+              <button class="reject" title="Reject">×</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 3: Route to Project (classify with CoCo suggestions) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="dot" style="background: var(--amber)"></span>
+          Route to Project
+          <span class="count-badge">9 items</span>
+        </div>
+        <div class="section-actions">
+          <button>Accept all suggestions</button>
+        </div>
+      </div>
+      <div class="item-group">
+        <div class="item" style="flex-wrap: wrap;">
+          <div class="item-icon classify">📂</div>
+          <div class="item-content">
+            <div class="item-title">[EXT][Support] Re: Sandbox Refresh</div>
+            <div class="item-subtitle">External support ticket about sandbox environment refresh</div>
+            <div class="item-meta">
+              <span class="item-tag tag-source">email</span>
+            </div>
+            <div class="coco-suggestion">
+              🤖 CoCo suggests: <strong>Cross Risk Internal (TCRE)</strong> — 87% confidence
+              <button class="accept">Accept</button>
+              <button>Change</button>
+              <button>Dismiss</button>
+            </div>
+          </div>
+          <span class="item-time">Mar 27</span>
+        </div>
+        <div class="item" style="flex-wrap: wrap;">
+          <div class="item-icon classify">📂</div>
+          <div class="item-content">
+            <div class="item-title">[DROPP-112] Playbook and Guide v1 Creation</div>
+            <div class="item-subtitle">JIRA ticket for creating the DRO playbook and guide document</div>
+            <div class="item-meta">
+              <span class="item-tag tag-source">jira</span>
+            </div>
+            <div class="coco-suggestion">
+              🤖 CoCo suggests: <strong>Digital Risk Operations</strong> — 94% confidence
+              <button class="accept">Accept</button>
+              <button>Change</button>
+              <button>Dismiss</button>
+            </div>
+          </div>
+          <span class="item-time">Mar 20</span>
+        </div>
+        <div class="item" style="flex-wrap: wrap;">
+          <div class="item-icon classify">📂</div>
+          <div class="item-content">
+            <div class="item-title">RE: New Risk Demand Submitted — 1020</div>
+            <div class="item-subtitle">Second risk demand submission for review</div>
+            <div class="item-meta">
+              <span class="item-tag tag-source">email</span>
+              <span class="item-tag tag-stale">3 weeks old</span>
+            </div>
+            <div class="coco-suggestion">
+              🤖 CoCo suggests: <strong>Anti-Corruption (ACC)</strong> — 72% confidence
+              <button class="accept">Accept</button>
+              <button>Change</button>
+              <button>Dismiss</button>
+            </div>
+          </div>
+          <span class="item-time">Mar 28</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 4: Batch Noise — clustered duplicates -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="dot" style="background: var(--fg-dim)"></span>
+          Noise Clusters
+          <span class="count-badge">3 clusters · 196 items</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <div class="noise-cluster">
+          <div class="cluster-header">
+            <div class="cluster-title">
+              🔔 GitGuardian incident notifications <span class="count">7 items</span>
+            </div>
+            <div class="cluster-actions">
+              <button>Review</button>
+              <button class="dismiss-all">Dismiss all</button>
+            </div>
+          </div>
+          <div class="cluster-preview">"[EXT]pooja-arora951 granted you access to internal incident #29214721" and 6 similar</div>
+        </div>
+        <div class="noise-cluster">
+          <div class="cluster-header">
+            <div class="cluster-title">
+              📄 ServiceNow IRM Sprint Planning <span class="count">4 items</span>
+            </div>
+            <div class="cluster-actions">
+              <button>Review</button>
+              <button class="dismiss-all">Dismiss all</button>
+            </div>
+          </div>
+          <div class="cluster-preview">"ServiceNow IRM Team 2B Sprint 104/105 Planning" and 2 similar</div>
+        </div>
+        <div class="noise-cluster">
+          <div class="cluster-header">
+            <div class="cluster-title">
+              📄 Release Notes — Intapp <span class="count">4 items</span>
+            </div>
+            <div class="cluster-actions">
+              <button>Review</button>
+              <button class="dismiss-all">Dismiss all</button>
+            </div>
+          </div>
+          <div class="cluster-preview">"December / January Release Notes - Intapp", "February Release Notes", "March", "April"</div>
+        </div>
+        <div class="noise-cluster">
+          <div class="cluster-header">
+            <div class="cluster-title">
+              📄 Colleague Safety & Wellbeing Sprints <span class="count">3 items</span>
+            </div>
+            <div class="cluster-actions">
+              <button>Review</button>
+              <button class="dismiss-all">Dismiss all</button>
+            </div>
+          </div>
+          <div class="cluster-preview">"Colleague Safety & Wellbeing Sprint 102/103 Planning" and 1 similar</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- SECTION 5: Auto-handled (collapsed) -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="collapsed-section">
+      <div class="cs-header">
+        <div class="cs-title">
+          <span style="color: var(--green);">🤖</span>
+          Auto-handled by CoCo
+          <span class="item-tag tag-auto">266 items</span>
+        </div>
+        <span class="cs-count" style="color: var(--fg-dim);">▸ Click to expand audit log</span>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <!-- Design comparison -->
+    <!-- ═══════════════════════════════════════════════════════════ -->
+    <div class="design-note" style="margin-bottom: 40px;">
+      <h3>Before vs After</h3>
+      <ul>
+        <li><strong>Before:</strong> 313 items in a flat list sorted by date. "Draft → update / From: content" repeated 50 times. No way to tell what needs action.</li>
+        <li><strong>After:</strong> 47 items across 4 action sections. Drafts grouped by project with content previews. Noise clustered for batch dismissal. Progress bar shows CoCo handled 85%.</li>
+        <li><strong>Key insight:</strong> The sidebar badge drops from 472 → 47 because CoCo pre-handles noise. User sees only what needs human judgment.</li>
+        <li><strong>Triage time:</strong> ~23 seconds per session (approve 5 drafts, classify 3 items, dismiss 2 noise clusters) vs current infinite scroll through 313 identical items.</li>
+      </ul>
+    </div>
+  </main>
+</div>
+</body>
+</html>

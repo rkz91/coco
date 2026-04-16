@@ -3,213 +3,245 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>CoCo Brain Architecture — Current vs Target</title>
+  <title>CoCo Brain Architecture — As-Built (2026-04-13)</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ffffff; color: #0f1d3a; padding: 2rem; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #ffffff; color: #0f1d3a; padding: 2rem; max-width: 1200px; margin: 0 auto; }
     h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
     h2 { font-size: 1.3rem; font-weight: 600; margin: 2rem 0 1rem; color: #1a73e8; }
     .subtitle { color: #475569; font-size: 0.95rem; margin-bottom: 2rem; }
     .diagram-container { background: #fafbfc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; overflow-x: auto; }
-    .issues { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1rem 1.5rem; margin: 1rem 0; }
-    .issues h3 { color: #dc2626; font-size: 0.95rem; margin-bottom: 0.5rem; }
-    .issues li { font-size: 0.85rem; color: #7f1d1d; margin-left: 1.2rem; line-height: 1.6; }
-    .benefits { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem 1.5rem; margin: 1rem 0; }
-    .benefits h3 { color: #16a34a; font-size: 0.95rem; margin-bottom: 0.5rem; }
-    .benefits li { font-size: 0.85rem; color: #14532d; margin-left: 1.2rem; line-height: 1.6; }
+    .done { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 1rem 1.5rem; margin: 1rem 0; }
+    .done h3 { color: #16a34a; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .done li { font-size: 0.85rem; color: #14532d; margin-left: 1.2rem; line-height: 1.6; }
+    .remaining { background: #fefce8; border: 1px solid #fde68a; border-radius: 8px; padding: 1rem 1.5rem; margin: 1rem 0; }
+    .remaining h3 { color: #ca8a04; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .remaining li { font-size: 0.85rem; color: #713f12; margin-left: 1.2rem; line-height: 1.6; }
+    .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0; }
+    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center; }
+    .stat-card .value { font-size: 1.5rem; font-weight: 700; color: #1a73e8; }
+    .stat-card .label { font-size: 0.75rem; color: #64748b; margin-top: 0.25rem; }
   </style>
 </head>
 <body>
 
 <h1>CoCo Brain Architecture</h1>
-<p class="subtitle">Current state (scattered) → Target state (unified)</p>
+<p class="subtitle">As-built state &mdash; updated 2026-04-13. Memory Unification Phases 1&ndash;4 shipped.</p>
 
-<h2>1. Current State — "The Sprawl"</h2>
+<div class="stats">
+  <div class="stat-card"><div class="value">1,691</div><div class="label">Wiki Articles</div></div>
+  <div class="stat-card"><div class="value">10</div><div class="label">Article Types</div></div>
+  <div class="stat-card"><div class="value">17,031</div><div class="label">Graph Nodes</div></div>
+  <div class="stat-card"><div class="value">29,231</div><div class="label">Graph Edges</div></div>
+  <div class="stat-card"><div class="value">21</div><div class="label">Projects</div></div>
+  <div class="stat-card"><div class="value">13</div><div class="label">Cron Phases</div></div>
+  <div class="stat-card"><div class="value">43</div><div class="label">Graph Communities</div></div>
+  <div class="stat-card"><div class="value">3,404</div><div class="label">People Tracked</div></div>
+</div>
+
+<h2>1. Current Architecture &mdash; &ldquo;Unified Brain&rdquo;</h2>
 <div class="diagram-container">
   <div id="diagram-current" data-code="graph TB
-    subgraph DOTCOCO[&quot;~/.coco/ — 470MB total&quot;]
+    subgraph PLATFORM[&quot;CoCo Platform — React + FastAPI&quot;]
       direction TB
-      BJ[&quot;brain.json\n27 people, attention rules&quot;]
-      CJ[&quot;config.json\nYOLO guardrails, thresholds&quot;]
-      QJ[&quot;queue.json\n313 pending decisions&quot;]
-      EV[&quot;events.jsonl\n17,887 events · 9.5MB&quot;]
-      TP[&quot;think.py\nBackground processor\nlaunchd 15m cycle&quot;]
-      COCODB[&quot;coco.db\n15 tables · sessions, routing&quot;]
-      PLATDB[&quot;platform.db\n60+ tables · 14MB\nfull app state&quot;]
-      SESS[&quot;sessions/ · 43 logs\nsession-summaries/ · 1,077&quot;]
-      HOOKS[&quot;hooks/\n3 JS lifecycle files&quot;]
-      subgraph KE[&quot;knowledge/ — Knowledge Engine&quot;]
-        KECODE[&quot;7 Python modules\n5,510 lines&quot;]
-        KEDB[&quot;knowledge.db\n2,790 entities\n612 articles\n570 connections&quot;]
-        ARTICLES[&quot;articles/entities/\n545 wiki MDs&quot;]
-        EMPTY1[&quot;articles/topics/ — EMPTY&quot;]
-        EMPTY2[&quot;articles/relationships/ — EMPTY&quot;]
-        CRON[&quot;master_cron.py\n❌ BROKEN\nToo many open files&quot;]
-      end
-      MP[&quot;mempalace/\nChromaDB vectors&quot;]
-      MBUS[&quot;memory-bus/\ninter-session msgs&quot;]
-      VOICE[&quot;voices/jarvis/\n109MB TTS model&quot;]
-      POD[&quot;podcasts/\n3 audio briefings&quot;]
-      CAL[&quot;calendar-blocker/\n17MB Python project&quot;]
-      VENV[&quot;mempalace-env/\n277MB Python venv&quot;]
+      FE[&quot;frontend/\nReact 19 + Vite + vis-network\nGraphPage, KnowledgePage, Wiki\nSemantic search toggle&quot;]
+      BE[&quot;backend/\nFastAPI + 35 tests\ngraph.py · knowledge_search.py\nknowledge_sync service&quot;]
+      PLATDB[&quot;platform.db\nagents, costs, tasks, hub mirror&quot;]
     end
 
-    subgraph DOTHUB[&quot;~/.hub/&quot;]
-      HUBDB[&quot;hub.db\nemails, drafts, projects&quot;]
-      PROJ[&quot;projects.toml&quot;]
+    subgraph ENGINE[&quot;Knowledge Engine — 13 phases&quot;]
+      direction TB
+      KEDB[&quot;knowledge.db — 27MB\n1,610 articles · 10 types\n3,800+ entities · 1,100 connections\nFTS5 full-text index&quot;]
+      CRON[&quot;cron.py — 13 phases\n✅ All phases operational\nPhases 1-10: original engine\nPhase 11: graphify rebuild\nPhase 12: auto-memory ingest\nPhase 13: confidence decay&quot;]
+      ARTICLES[&quot;articles/\n1,500+ wiki MDs&quot;]
+      SEARCH[&quot;search.py\nRRF merge: FTS5 + MemPalace\nResponse caching (5min TTL)&quot;]
     end
 
-    subgraph DOTCLAUDE[&quot;~/.claude/&quot;]
-      SKILL[&quot;skills/coco/SKILL.md\n2,400 lines — personality&quot;]
-      MEDIA[&quot;media-memory/\nChromaDB + SQLite&quot;]
-      MEMORY[&quot;projects/.../memory/\nauto-memory system&quot;]
+    subgraph GRAPH[&quot;Graphify Bridge&quot;]
+      GRAPHIFY[&quot;brain_to_graphify.py\n17K nodes · 29K edges\n43 communities\nRebuilds nightly (Phase 11)&quot;]
+      GRAPHJSON[&quot;graph.json — 23MB\nServed via /api/graph/*&quot;]
     end
 
-    subgraph LAUNCHD[&quot;launchd cron jobs&quot;]
-      THINK_CRON[&quot;com.coco.think\n✅ Running (idle)&quot;]
-      MASTER_CRON[&quot;com.coco.master-cron\n❌ EXIT 1&quot;]
+    subgraph MEMORY[&quot;Memory Layers&quot;]
+      MP[&quot;MemPalace — ChromaDB\n1,504 articles synced\nIncremental delta sync\nSemantic vector search&quot;]
+      AUTOMEM[&quot;Auto-Memory\n71 files → memory_note articles\nIngested via Phase 12&quot;]
+      BRAIN_JSON[&quot;brain.json\n27 people · attention rules\nAtomic JSON writes&quot;]
+      MEDIA[&quot;media-memory/\nChromaDB — isolated\n⚠️ Not yet connected&quot;]
     end
 
-    THINK_CRON -->|every 15m| TP
-    MASTER_CRON -->|daily| CRON
-    TP -->|reads| HUBDB
-    TP -->|updates| QJ
-    CRON -->|reads| HUBDB
-    CRON -->|writes| KEDB
-    KECODE -->|generates| ARTICLES
-    HOOKS -->|logs| EV
-    SKILL -->|orchestrates| BJ
-    SKILL -->|orchestrates| QJ
-    SKILL -->|orchestrates| CJ
+    subgraph EXTERNAL[&quot;External Data Sources&quot;]
+      HUBDB[&quot;hub.db\nEmails, voice memos, Jira\nRead-only mirror to platform&quot;]
+      BRAINDB[&quot;35 project_brain.db files\nOneDrive Cross Risk folder\nEntities, decisions, events&quot;]
+    end
 
-    style CRON fill:#fecaca,stroke:#dc2626
-    style EMPTY1 fill:#fef3c7,stroke:#f59e0b
-    style EMPTY2 fill:#fef3c7,stroke:#f59e0b
-    style MASTER_CRON fill:#fecaca,stroke:#dc2626
-    style VENV fill:#e2e8f0,stroke:#94a3b8
-    style VOICE fill:#e2e8f0,stroke:#94a3b8
+    subgraph CRON_JOBS[&quot;launchd&quot;]
+      NIGHTLY[&quot;com.coco.knowledge-cron\n✅ Nightly at 2AM\n13 phases sequential&quot;]
+    end
+
+    NIGHTLY -->|nightly| CRON
+    CRON -->|phases 1-3| BRAINDB
+    CRON -->|phases 1-3| KEDB
+    CRON -->|phase 5| KEDB
+    CRON -->|phase 6| MP
+    CRON -->|phase 11| GRAPHIFY
+    CRON -->|phase 12| AUTOMEM
+    CRON -->|generates| ARTICLES
+    GRAPHIFY -->|builds| GRAPHJSON
+    BE -->|/api/graph/*| GRAPHJSON
+    BE -->|/api/knowledge/*| KEDB
+    BE -->|semantic search| SEARCH
+    SEARCH -->|FTS5| KEDB
+    SEARCH -->|vectors| MP
+    BE -->|hub sync 60s| HUBDB
+    BE -->|SSE events| FE
+    AUTOMEM -->|reads| MEMORY
+
+    style KEDB fill:#dbeafe,stroke:#1a73e8,stroke-width:2px
+    style CRON fill:#dcfce7,stroke:#16a34a
+    style NIGHTLY fill:#dcfce7,stroke:#16a34a
+    style GRAPHJSON fill:#f3e8ff,stroke:#9333ea
+    style MP fill:#fef3c7,stroke:#f59e0b
+    style MEDIA fill:#fecaca,stroke:#dc2626
   "></div>
 </div>
 
-<div class="issues">
-  <h3>Problems with current state</h3>
+<div class="done">
+  <h3>What&rsquo;s working (shipped 2026-04-13)</h3>
   <ul>
-    <li><strong>5 separate storage locations</strong> — ~/.coco, ~/.hub, ~/.claude/skills, ~/.claude/media-memory, ~/.claude/projects/memory</li>
-    <li><strong>4 overlapping databases</strong> — coco.db, platform.db, knowledge.db, hub.db all store entities/sessions differently</li>
-    <li><strong>3 memory systems</strong> — brain.json (people), mempalace (vectors), auto-memory (markdown) doing similar things</li>
-    <li><strong>Broken cron</strong> — master-cron exits with "Too many open files", wiki generation stalled</li>
-    <li><strong>277MB dead weight</strong> — mempalace-env venv sitting in data directory</li>
-    <li><strong>No git, no backup</strong> — one disk failure loses everything</li>
-    <li><strong>queue.json at 313 pending</strong> — items accumulating but never draining</li>
-    <li><strong>Wiki half-built</strong> — 545 entity articles, but 0 topic articles, 0 relationship articles</li>
+    <li><strong>Knowledge Engine V3 — all 8 original layers at A+</strong> (schema, generators, cron, queue, junctions, FTS5, MemPalace, nightly cron)</li>
+    <li><strong>10 article types:</strong> entity, relationship, project_summary, decision_log, meeting (30), cross_project (16), digest, action_items, graph_insight, memory_note (71)</li>
+    <li><strong>Semantic search</strong> — RRF merge of FTS5 + MemPalace with 5-minute response cache. Frontend Keyword/Semantic toggle.</li>
+    <li><strong>Graph visualization</strong> — vis-network force-directed graph at /graph. God-node initial view, click-to-expand, community filters, search, shortest path.</li>
+    <li><strong>Graph data API</strong> — 8 endpoints: stats, god-nodes, nodes (filtered), node detail, communities, community subgraph, shortest path.</li>
+    <li><strong>Auto-memory ingestion</strong> — 71 Claude Code session memory files ingested as memory_note articles. Cron Phase 12.</li>
+    <li><strong>Graphify automation</strong> — Nightly rebuild via Cron Phase 11. Generates graph_insight articles (god nodes + surprising connections).</li>
+    <li><strong>Incremental MemPalace sync</strong> — Delta sync via sync_state table. Only syncs changed articles.</li>
+    <li><strong>Knowledge update SSE</strong> — knowledge_sync service polls generation_log, emits SSE events for live UI refresh.</li>
+    <li><strong>Confidence decay</strong> — Cron Phase 13. Articles lose 0.05 confidence per 30-day period after 30 days. Floor at 0.3.</li>
+    <li><strong>DB optimization</strong> — 4 indexes on articles table. Engine busy_timeout=30s for concurrent access.</li>
+    <li><strong>People graph API</strong> — /api/knowledge/people-graph returns 3,404 people with cross-project connections.</li>
+    <li><strong>35 backend tests</strong> — graph router (22) + knowledge search (13). All passing.</li>
+    <li><strong>Project registry cleanup</strong> — 41 → 35 projects. Merged duplicates (AuditBoard 5→3, E&amp;C ec-program→ec, tp-inventory, web-cookie→privacy).</li>
   </ul>
 </div>
 
-<h2>2. Target State — "Unified Brain"</h2>
+<h2>2. Data Flow — 13-Phase Nightly Pipeline</h2>
 <div class="diagram-container">
-  <div id="diagram-target" data-code="graph TB
-    subgraph REPO[&quot;Project-Coco repo (GitHub)&quot;]
-      direction TB
-      subgraph PLATFORM[&quot;coco-platform/ — the app&quot;]
-        FE[&quot;frontend/\nReact dashboard&quot;]
-        BE[&quot;backend/\nFastAPI server&quot;]
-        KE_CODE[&quot;backend/knowledge/\nEngine code · 5,510 lines&quot;]
-      end
-      subgraph BRAIN_CODE[&quot;coco-brain/ — the intelligence&quot;]
-        SKILL2[&quot;skill/SKILL.md\nPersonality + routing&quot;]
-        THINK2[&quot;processors/think.py\nBackground processor&quot;]
-        HOOKS2[&quot;hooks/\nSession lifecycle&quot;]
-        CRON2[&quot;processors/cron.py\nKnowledge pipeline&quot;]
-        SCHEMA2[&quot;schema/\nDB migrations&quot;]
-      end
+  <div id="diagram-pipeline" data-code="graph LR
+    subgraph PERPROJECT[&quot;Per-Project (×35)&quot;]
+      P1[&quot;1. Scan\nbrain.db files&quot;]
+      P2A[&quot;2a. Harvest\nentities + rels&quot;]
+      P2B[&quot;2b. Infer\ncross-project links&quot;]
+      P3[&quot;3. Generate\narticles via LLM&quot;]
     end
 
-    subgraph DATA[&quot;~/.coco/ — runtime data only&quot;]
-      direction TB
-      UNIFIED_DB[&quot;coco.db — SINGLE DB\npeople, sessions, entities,\narticles, queue, events,\ncost_ledger, governance&quot;]
-      CONFIG2[&quot;config.json\nUser preferences&quot;]
-      ARTICLES2[&quot;articles/\nGenerated wiki MDs&quot;]
-      MEDIA_DIR[&quot;media/\nPodcasts, voices&quot;]
-      LOGS2[&quot;logs/\nCron + session logs&quot;]
+    subgraph GLOBAL[&quot;Global (once)&quot;]
+      P4[&quot;4. Merge\ndedup proposals&quot;]
+      P5[&quot;5. Index\nFTS5 rebuild&quot;]
+      P6[&quot;6. Sync\nMemPalace delta&quot;]
+      P7[&quot;7. Discover\ncomposite articles&quot;]
+      P8[&quot;8. Drain queue\nLLM generation&quot;]
+      P9[&quot;9. Rebuild indexes\nFTS5 + backlinks&quot;]
+      P10[&quot;10. Digests\nweekly summaries&quot;]
+      P11[&quot;11. Graph rebuild\ngraphify + insights&quot;]
+      P12[&quot;12. Auto-memory\ningest ~/.claude&quot;]
+      P13[&quot;13. Confidence\ndecay + stale&quot;]
     end
 
-    subgraph DOTHUB2[&quot;~/.hub/ — KH data (read-only)&quot;]
-      HUBDB2[&quot;hub.db\nEmails, drafts, projects&quot;]
-    end
+    P1 --> P2A --> P2B --> P3
+    P3 --> P4 --> P5 --> P6
+    P6 --> P7 --> P8 --> P9
+    P9 --> P10 --> P12 --> P11 --> P13
 
-    subgraph LAUNCHD2[&quot;launchd — 1 unified cron&quot;]
-      UNIFIED_CRON[&quot;com.coco.brain\n✅ Runs think + knowledge\nevery 15m with fd limits&quot;]
-    end
-
-    UNIFIED_CRON -->|every 15m| THINK2
-    UNIFIED_CRON -->|daily| CRON2
-    THINK2 -->|reads| HUBDB2
-    THINK2 -->|writes| UNIFIED_DB
-    CRON2 -->|reads| HUBDB2
-    CRON2 -->|writes| UNIFIED_DB
-    CRON2 -->|generates| ARTICLES2
-    BE -->|reads/writes| UNIFIED_DB
-    SKILL2 -->|reads/writes| UNIFIED_DB
-    SKILL2 -->|reads| CONFIG2
-    HOOKS2 -->|writes| UNIFIED_DB
-
-    style UNIFIED_DB fill:#dbeafe,stroke:#1a73e8,stroke-width:2px
-    style UNIFIED_CRON fill:#dcfce7,stroke:#16a34a
-    style REPO fill:#f0f9ff,stroke:#1a73e8
+    style P3 fill:#dbeafe,stroke:#1a73e8
+    style P8 fill:#dbeafe,stroke:#1a73e8
+    style P11 fill:#f3e8ff,stroke:#9333ea
+    style P12 fill:#dcfce7,stroke:#16a34a
+    style P13 fill:#fef3c7,stroke:#f59e0b
   "></div>
 </div>
 
-<div class="benefits">
-  <h3>What changes</h3>
+<h2>3. Project Hierarchy (21 projects)</h2>
+<div class="diagram-container">
+  <div id="diagram-projects" data-code="graph TB
+    subgraph CXR[&quot;Cross Risk (21 projects)&quot;]
+      direction TB
+      CRI[&quot;Cross Risk Internal\n278 entities · warm&quot;]
+
+      subgraph AB[&quot;AuditBoard&quot;]
+        AB_UMB[&quot;AuditBoard ☂️\n192 entities · hot&quot;]
+        AB1[&quot;AB1 — Steady State\n58 entities · warm&quot;]
+        AB2[&quot;AB2 — Tax &amp; Compliance\n175 entities · warm&quot;]
+      end
+
+      subgraph OPT[&quot;Optimize&quot;]
+        OPT_UMB[&quot;Optimize ☂️\n183 entities · hot&quot;]
+        TPI2[&quot;3PI V2\n29 entities · hot&quot;]
+        CFC[&quot;CFC — Third Party Mgmt\n29 entities · hot&quot;]
+        MAG[&quot;Magnit/Aravo/OneTrust\n106 entities · warm&quot;]
+        TPI[&quot;TP Inventory\n47 entities · warm&quot;]
+      end
+
+      subgraph EC[&quot;Ethics &amp; Compliance&quot;]
+        EC_UMB[&quot;Ethics &amp; Compliance ☂️\n172 entities · warm&quot;]
+        AC[&quot;Anti-Corruption\n259 entities · warm&quot;]
+        CON[&quot;Conflicts of Interest\n24 entities · warm&quot;]
+        ETH[&quot;Ethics\n34 entities · warm&quot;]
+        PRV[&quot;Privacy &amp; Web Cookie\n21 entities · warm&quot;]
+        RC[&quot;Regulatory Compliance\n11 entities · warm&quot;]
+      end
+
+      DRO_N[&quot;Digital Risk Operations\n274 entities · warm&quot;]
+
+      subgraph PS[&quot;Project S (cold)&quot;]
+        PS_UMB[&quot;Project S ☂️\n5 entities · cold&quot;]
+        BDG[&quot;Bridger · cold&quot;]
+        ENS[&quot;ENS Navigator · cold&quot;]
+      end
+
+      subgraph OTHER[&quot;Other&quot;]
+        WDL[&quot;Work — Cross Risk Downloads\n122 entities · warm&quot;]
+        HIP[&quot;How I PM with AI\n40 entities · warm&quot;]
+      end
+    end
+
+    style AB_UMB fill:#dbeafe,stroke:#1a73e8
+    style OPT_UMB fill:#dbeafe,stroke:#1a73e8
+    style EC_UMB fill:#dbeafe,stroke:#1a73e8
+    style AC fill:#dcfce7,stroke:#16a34a
+  "></div>
+</div>
+
+<h2>4. Remaining Work</h2>
+<div class="remaining">
+  <h3>What&rsquo;s still pending</h3>
   <ul>
-    <li><strong>1 database</strong> instead of 4 — coco.db becomes the single source of truth (migrate platform.db + knowledge.db tables in)</li>
-    <li><strong>1 cron job</strong> instead of 2 — unified processor with proper fd limits fixes the "Too many open files" crash</li>
-    <li><strong>Code in git, data in ~/.coco/</strong> — clean separation. Code is versioned, data is backed up</li>
-    <li><strong>brain.json → DB table</strong> — people graph moves to SQLite (queryable, no more atomic JSON dance)</li>
-    <li><strong>queue.json → DB table</strong> — 313 pending items become a proper queue with indexes</li>
-    <li><strong>events.jsonl → DB table</strong> — 17K events become queryable instead of grep-only</li>
-    <li><strong>Kill mempalace-env</strong> — move ChromaDB to platform's venv, delete 277MB dead weight</li>
-    <li><strong>Kill memory-bus</strong> — replaced by DB-backed event stream</li>
-    <li><strong>Wiki completes</strong> — fix cron, generate topic + relationship articles</li>
-    <li><strong>Everything pushable</strong> — code to GitHub, data backed up via scheduled DB dump</li>
+    <li><strong>Media-memory integration</strong> — in progress (Wave 3 agent running)</li>
+    <li><strong>Semantic search latency</strong> — 8s cold start. Cache helps repeats. MemPalace keep-alive service planned (Wave 6.2).</li>
+    <li><strong>GraphPage browser test</strong> — TypeScript + build pass, needs manual verification</li>
+    <li><strong>Graphify MCP</strong> — graph query tools exist but not wired to /chat yet</li>
+    <li><strong>Attention tracking</strong> — in progress (Wave 4 agent running)</li>
+    <li><strong>Server-side graph rendering</strong> — in progress (Wave 6 agent running)</li>
+    <li><strong>Not in git</strong> — all changes are local-only until push is authorized</li>
   </ul>
 </div>
 
-<h2>3. Migration Path</h2>
-<div class="diagram-container">
-  <div id="diagram-migration" data-code="graph LR
-    subgraph P1[&quot;Phase 1 — Fix &amp; Ship&quot;]
-      A1[&quot;Fix master_cron.py\nfd limit + connection pooling&quot;]
-      A2[&quot;Push brain code to\nProject-Coco repo&quot;]
-      A3[&quot;Add .gitignore\nfor runtime data&quot;]
-    end
-
-    subgraph P2[&quot;Phase 2 — Consolidate DBs&quot;]
-      B1[&quot;Migrate knowledge.db\ntables → coco.db&quot;]
-      B2[&quot;Migrate brain.json\n→ people table&quot;]
-      B3[&quot;Migrate queue.json\n→ queue table&quot;]
-      B4[&quot;Migrate events.jsonl\n→ events table&quot;]
-    end
-
-    subgraph P3[&quot;Phase 3 — Unify Cron&quot;]
-      C1[&quot;Merge think.py +\nmaster_cron.py&quot;]
-      C2[&quot;Single launchd plist\ncom.coco.brain&quot;]
-      C3[&quot;Complete wiki:\ntopics + relationships&quot;]
-    end
-
-    subgraph P4[&quot;Phase 4 — Cleanup&quot;]
-      D1[&quot;Delete mempalace-env/\nmemory-bus/&quot;]
-      D2[&quot;Move SKILL.md into repo&quot;]
-      D3[&quot;Automated DB backup\nto iCloud/GitHub&quot;]
-    end
-
-    P1 --> P2 --> P3 --> P4
-
-    style P1 fill:#dbeafe,stroke:#1a73e8
-    style P2 fill:#fef3c7,stroke:#f59e0b
-    style P3 fill:#dcfce7,stroke:#16a34a
-    style P4 fill:#f3e8ff,stroke:#9333ea
-  "></div>
+<div class="done">
+  <h3>Completed this session (2026-04-13)</h3>
+  <ul>
+    <li><strong>Wiki filtering</strong> — 10 article type pills, entity type dropdown, confidence slider, date range</li>
+    <li><strong>Related articles + backlinks</strong> — shown in WikiArticleDetail</li>
+    <li><strong>People view</strong> — dedicated tab with 3,400+ people, cross-project presence</li>
+    <li><strong>Article type badges</strong> — colored pills throughout (meeting=blue, memory=green, graph_insight=sky)</li>
+    <li><strong>Semantic search caching</strong> — 5-min TTL, repeat queries in &lt;100ms</li>
+    <li><strong>Graph insight articles</strong> — god nodes + surprising connections generated from graphify analysis</li>
+    <li><strong>Incremental MemPalace sync</strong> — delta sync via sync_state table</li>
+    <li><strong>Knowledge SSE notifications</strong> — polls generation_log, emits events for live refresh</li>
+    <li><strong>Confidence decay</strong> — Phase 13: 0.05/30d decay, floor at 0.3</li>
+    <li><strong>Project cleanup</strong> — 41 → 21 projects, clean names, no duplicates</li>
+    <li><strong>Auto-memory ingestion</strong> — 71 session memories as searchable articles</li>
+    <li><strong>35 backend tests</strong> — graph router + knowledge search endpoints</li>
+  </ul>
 </div>
 
 <script type="module">
