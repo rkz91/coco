@@ -19,21 +19,21 @@ log = structlog.get_logger()
 
 # Model mapping: our friendly names -> Anthropic model IDs
 MODEL_MAP = {
-    "sonnet": "claude-sonnet-4-20250514",
-    "opus": "claude-opus-4-20250514",
+    "sonnet": "claude-sonnet-4-6",
+    "opus": "claude-opus-4-6",
     "haiku": "claude-haiku-4-5-20251001",
 }
 
 # Fallback chain: if a model fails repeatedly, try the next one
 MODEL_FALLBACK = {
-    "claude-opus-4-20250514": "claude-sonnet-4-20250514",
-    "claude-sonnet-4-20250514": "claude-haiku-4-5-20251001",
+    "claude-opus-4-6": "claude-sonnet-4-6",
+    "claude-sonnet-4-6": "claude-haiku-4-5-20251001",
 }
 
 # Pricing per 1M tokens (input, output) in USD
 PRICING = {
-    "claude-sonnet-4-20250514": (3.0, 15.0),
-    "claude-opus-4-20250514": (15.0, 75.0),
+    "claude-sonnet-4-6": (3.0, 15.0),
+    "claude-opus-4-6": (15.0, 75.0),
     "claude-haiku-4-5-20251001": (0.80, 4.0),
 }
 

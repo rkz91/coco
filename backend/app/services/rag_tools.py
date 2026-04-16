@@ -441,7 +441,7 @@ def ultrathink_qa(
         rounds_used = round_num + 1
 
         response = client.messages.create(
-            model="claude-sonnet-4-5-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=16384,
             thinking={
                 "type": "enabled",
@@ -557,5 +557,5 @@ def ultrathink_qa(
         "rounds": rounds_used,
         "input_tokens": total_input,
         "output_tokens": total_output,
-        "model": "claude-sonnet-4-5-20250514",
+        "model": "claude-sonnet-4-6",
     }
