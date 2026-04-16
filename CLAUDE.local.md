@@ -56,3 +56,42 @@ Phase 12: Polish
 - All SQLite connections use WAL mode
 - All JSON file writes use atomic tmp+rename pattern
 - hub.db queries use explicit column names (never `SELECT *`)
+
+<!-- AUTO-GENERATED: brain-export -->
+<!-- Generated: 2026-04-16T03:25:05Z | Brain DB: 121 entities | MemPalace: 2 drawers -->
+
+## Last Session
+- 2026-04-13 (Wiki UI Im)
+- Claude (Use system)
+
+## Key People
+| Name | Role | Email |
+|------|------|-------|
+| Chris Munonye | Department Lead |  |
+| Leobardo Mora | Tech Lead |  |
+| Aude Delechat | AB2 Corporate Tax, Platform Admin |  |
+| Aaron Gagnon | Partner, Chief Audit Officer |  |
+| Rijul Kalra | owner |  |
+
+## Key Systems
+- **cleanup_orphaned_connections.py** — One-time cleanup script: deletes orphaned cross_project_connections rows. --dry-run/--execute flags, BEGIN IMMEDIATE ...
+- **DraftsPage**
+- **KnowledgeStats**
+- **BrainPage**
+- **Qwen2.5-7B 4bit**
+- **Qwen3-4B 4bit**
+- **Gemma4-31B 4bit**
+- **Gemma4-26B-MoE 4bit**
+
+## Recent Decisions
+- [Use system] Claude
+- [Use local ] Rijul Kalra
+- [Use SHA-25] Claude
+- [Use MLX ov] Rijul Kalra
+
+## Project Status
+- Entities: 121 | Decisions: 135 | Events: 71
+- Last brain sync: 2026-04-16
+- Query: `/coco brain` or `/brain context {slug}` for full context
+
+<!-- END AUTO-GENERATED -->
