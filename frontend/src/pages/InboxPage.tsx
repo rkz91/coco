@@ -478,10 +478,18 @@ export default function InboxPage() {
   // Queue items (urgent + other queue entries)
   if (queueData?.items && Array.isArray(queueData.items)) {
     for (const qi of queueData.items) {
+      // Humanize raw template summaries like "decision-log -> decisions"
+      let title = qi.summary ?? qi.title ?? 'Queue item';
+      if (title.includes(' -> ')) {
+        const [tpl, sec] = title.split(' -> ');
+        const humanTpl = tpl.replace(/[-_]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        const humanSec = sec.replace(/[-_]/g, ' ').replace(/\b\w/g, (c: string) => c.toUpperCase());
+        title = `${humanTpl} — ${humanSec}`;
+      }
       items.push({
         id: `queue-${qi.id}`,
         type: qi.type ?? (qi.priority <= 1 ? 'urgent' : 'classify'),
-        title: qi.summary ?? qi.title ?? 'Queue item',
+        title,
         subtitle: qi.project ?? qi.source ?? '',
         project: qi.project,
         source: qi.source,
@@ -494,12 +502,16 @@ export default function InboxPage() {
   // Drafts
   if (Array.isArray(draftsData)) {
     draftsData.forEach((d: Record<string, string>) => {
+      // Humanize template/section names: "meeting-notes" → "Meeting Notes"
+      const tpl = (d.target_template ?? 'draft').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const sec = (d.target_section ?? '').replace(/[-_]/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      const preview = d.content ? d.content.replace(/[|\-#\[\]]/g, '').trim().slice(0, 80) : '';
       items.push({
         id: `draft-${d.id}`,
         type: 'draft_approval',
-        title: `${d.template ?? 'Draft'} → ${d.section ?? 'update'}`,
-        subtitle: `From: ${d.source ?? 'content'}`,
-        project: d.project,
+        title: sec ? `${tpl} — ${sec}` : tpl,
+        subtitle: preview || `${d.project_id ?? 'Unknown project'}`,
+        project: d.project_id,
         timeAgo: d.created_at ? new Date(d.created_at).toLocaleDateString() : '',
         sourceId: d.id,
       });
@@ -572,7 +584,7 @@ export default function InboxPage() {
 
   const filteredItems = dedupedItems
     .filter(i => showDismissed || getReadState(i.id) !== 'dismissed')
-    .filter(i => activeTab === 'all' || i.type === activeTab || (activeTab === 'urgent' && i.type === 'overdue'));
+    .filter(i => activeTab === 'all' || i.type === activeTab || (activeTab === 'urgent' && i.type === 'overdue') || (activeTab === 'drafts' && i.type === 'draft_approval'));
 
   const handleApprove = useCallback((sourceId: string) => {
     approveMut.mutate(sourceId);
