@@ -11,8 +11,8 @@ from starlette.middleware.base import BaseHTTPMiddleware
 
 # Configuration
 RATE_LIMIT_ENABLED = os.getenv("COCO_RATE_LIMIT", "true").lower() in ("true", "1", "yes")
-RATE_LIMIT_RPM = int(os.getenv("COCO_RATE_LIMIT_RPM", "120"))  # requests per minute
-RATE_LIMIT_BURST = int(os.getenv("COCO_RATE_LIMIT_BURST", "20"))  # burst allowance
+RATE_LIMIT_RPM = int(os.getenv("COCO_RATE_LIMIT_RPM", "600"))  # requests per minute
+RATE_LIMIT_BURST = int(os.getenv("COCO_RATE_LIMIT_BURST", "60"))  # burst allowance
 
 # Paths exempt from rate limiting
 EXEMPT_PATHS = {
@@ -81,8 +81,8 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
 
         path = request.url.path
 
-        # Exempt paths
-        if path in EXEMPT_PATHS or not path.startswith("/api/"):
+        # Exempt paths (exact match or prefix match for SSE/events)
+        if path in EXEMPT_PATHS or not path.startswith("/api/") or path.startswith("/api/events"):
             return await call_next(request)
 
         client_ip = _get_client_ip(request)

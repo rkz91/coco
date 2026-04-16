@@ -278,7 +278,7 @@ textarea,
   opacity: 1;
 }
 .notif-seen {
-  opacity: 0.6;
+  opacity: 0.88;
 }
 .notif-dismissed {
   animation: notif-dismiss 300ms ease-out forwards;
@@ -339,7 +339,7 @@ textarea,
   .animate-cmd-palette-enter {
     animation: none;
   }
-  .notif-seen { opacity: 0.6; }
+  .notif-seen { opacity: 0.88; }
   .notif-dismissed { opacity: 0; max-height: 0; overflow: hidden; }
 }
 

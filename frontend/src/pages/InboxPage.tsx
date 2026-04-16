@@ -144,10 +144,13 @@ function InboxItemRow({
 }) {
   const [showPicker, setShowPicker] = useState(false);
   const [viewRef, hasBeenVisible] = useInViewport(2000);
+  const markedSeenRef = useRef(false);
 
   // Auto-transition: unread -> seen after 2s in viewport
+  // Use ref to prevent re-firing (onMarkSeen identity changes each render)
   useEffect(() => {
-    if (hasBeenVisible && readState === 'unread') {
+    if (hasBeenVisible && readState === 'unread' && !markedSeenRef.current) {
+      markedSeenRef.current = true;
       onMarkSeen(item.id);
     }
   }, [hasBeenVisible, readState, item.id, onMarkSeen]);
@@ -300,11 +303,25 @@ export default function InboxPage() {
     },
   });
 
+  // Debounced batch mark-as-seen: collect IDs, flush every 3s to avoid PATCH storm on scroll
+  const seenQueueRef = useRef<Set<string>>(new Set());
+  const seenTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flushSeenQueue = useCallback(() => {
+    const ids = Array.from(seenQueueRef.current);
+    seenQueueRef.current.clear();
+    seenTimerRef.current = null;
+    if (ids.length > 0) {
+      batchReadStateMut.mutate({ item_keys: ids, read_state: 'seen' });
+    }
+  }, [batchReadStateMut]);
+
   const handleMarkSeen = useCallback((id: string) => {
-    // Optimistic: already returned from getReadState via server
-    // but also persist to server
-    patchReadStateMut.mutate({ item_key: id, read_state: 'seen' });
-  }, [patchReadStateMut]);
+    seenQueueRef.current.add(id);
+    if (!seenTimerRef.current) {
+      seenTimerRef.current = setTimeout(flushSeenQueue, 3000);
+    }
+  }, [flushSeenQueue]);
 
   const handleDismiss = useCallback((id: string) => {
     patchReadStateMut.mutate({ item_key: id, read_state: 'dismissed' });
@@ -319,7 +336,7 @@ export default function InboxPage() {
       if (!res.ok) return { items: [] };
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const { data: draftsData } = useQuery({
@@ -334,7 +351,7 @@ export default function InboxPage() {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const { data: healthData } = useQuery({
@@ -345,7 +362,7 @@ export default function InboxPage() {
       const data = await res.json();
       return data.health ?? [];
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   const { data: unsortedData } = useQuery({
@@ -355,14 +372,14 @@ export default function InboxPage() {
       if (!res.ok) return { items: [] };
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   // Suggestions from auto-classifier
   const { data: suggestionsData, refetch: refetchSuggestions } = useQuery({
     queryKey: ['content-suggestions'],
     queryFn: () => apiFetch<{ items: SuggestionItem[]; total: number }>('/content/suggestions'),
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const suggestions: SuggestionItem[] = suggestionsData?.items ?? [];
@@ -771,7 +788,7 @@ export default function InboxPage() {
     <div className="space-y-4">
       {/* Header row with tabs + controls */}
       <div className="flex items-center justify-between border-b border-border">
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1 overflow-x-auto scrollbar-none">
           {/* Select All checkbox in tab header */}
           {selectMode && (
             <button
@@ -793,7 +810,7 @@ export default function InboxPage() {
               key={key}
               onClick={() => setActiveTab(key)}
               className={cn(
-                'flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors',
+                'flex items-center gap-1.5 px-3 py-2 text-sm border-b-2 transition-colors whitespace-nowrap',
                 activeTab === key
                   ? 'border-primary text-foreground font-medium'
                   : 'border-transparent text-muted-foreground hover:text-foreground'
@@ -815,8 +832,8 @@ export default function InboxPage() {
           ))}
         </div>
 
-        {/* Right-side controls */}
-        <div className="flex items-center gap-3 pb-2">
+        {/* Right-side controls — visually separated from filter tabs */}
+        <div className="flex items-center gap-3 pb-2 pl-3 ml-3 border-l border-border shrink-0">
           <button
             onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
             className={cn(

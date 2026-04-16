@@ -3,7 +3,7 @@ import {
   FolderKanban, Radio, MessageSquare,
   DollarSign, Settings, CheckSquare, Search, Inbox, Brain,
   Target, Activity, ChevronsUpDown, ChevronRight, Network,
-  BarChart3, Home, Sparkles, PanelLeftClose, PanelLeftOpen, Wand2,
+  BarChart3, Home, Sparkles, PanelLeftClose, PanelLeftOpen, Wand2, Workflow, FileText,
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useScope, type TreeNode } from '../../context/ScopeContext';
@@ -193,7 +193,7 @@ function useInboxCount(): number {
       if (!res.ok) return { items: [] };
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const { data: draftsData } = useQuery({
@@ -203,7 +203,7 @@ function useInboxCount(): number {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const { data: healthData } = useQuery({
@@ -214,7 +214,7 @@ function useInboxCount(): number {
       const data = await res.json();
       return data.health ?? [];
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   const { data: unsortedData } = useQuery({
@@ -224,7 +224,7 @@ function useInboxCount(): number {
       if (!res.ok) return { items: [] };
       return res.json();
     },
-    staleTime: 10_000,
+    staleTime: 60_000,
   });
 
   const { data: todosData } = useQuery({
@@ -234,7 +234,7 @@ function useInboxCount(): number {
       if (!res.ok) return [];
       return res.json();
     },
-    staleTime: 30_000,
+    staleTime: 60_000,
   });
 
   let count = 0;
@@ -287,11 +287,15 @@ export function Sidebar() {
           <NavItem to="/tree" icon={Network} label="My Portfolio" collapsed={collapsed} />
           <NavItem to="/projects" icon={FolderKanban} label="Teams" collapsed={collapsed} />
           <NavItem to="/todos" icon={CheckSquare} label="Todos" collapsed={collapsed} />
+          <NavItem to="/drafts" icon={FileText} label="Drafts" collapsed={collapsed} />
           <NavItem to="/goals" icon={Target} label="Goals" collapsed={collapsed} />
         </SidebarSection>
 
         <SidebarSection label="Intelligence" collapsed={collapsed}>
           <NavItem to="/knowledge" icon={Search} label="Knowledge" collapsed={collapsed} />
+          <NavItem to="/brain" icon={Brain} label="Brain" collapsed={collapsed} />
+          <NavItem to="/graph" icon={Network} label="Graph" collapsed={collapsed} />
+          <NavItem to="/canvas" icon={Workflow} label="Brain Map" collapsed={collapsed} />
           <NavItem to="/chat" icon={MessageSquare} label="Chat" collapsed={collapsed} />
         </SidebarSection>
 
