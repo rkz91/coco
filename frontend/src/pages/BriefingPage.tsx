@@ -137,7 +137,33 @@ export default function BriefingPage() {
     );
   }
 
+  // Safe defaults — API may return partial data depending on what daemon has generated
+  const knowledge = data.knowledge ?? { total_articles: 0, total_entities: 0, total_connections: 0, new_articles: 0 };
+  const decision_queue = data.decision_queue ?? { pending_count: 0, top_items: [] };
+  const rawAi = data.action_items ?? {};
+  const action_items = {
+    total_open: rawAi.total_open ?? 0,
+    project_count: rawAi.project_count ?? 0,
+    by_project: Array.isArray(rawAi.by_project) ? rawAi.by_project as ActionByProject[] : [],
+    high_priority: typeof rawAi.high_priority === 'number' ? rawAi.high_priority : Array.isArray(rawAi.high_priority) ? rawAi.high_priority.length : 0,
+  };
+  const rawEd = data.email_digest ?? {};
+  const email_digest = {
+    total: rawEd.total ?? 0,
+    by_project: Array.isArray(rawEd.by_project) ? rawEd.by_project as ActionByProject[] : Object.entries(rawEd.by_project ?? {}).map(([project, cnt]) => ({ project, cnt: cnt as number })),
+    action_items: rawEd.action_items ?? 0,
+    urgent: rawEd.urgent ?? 0,
+  };
+  const hot_projects = data.hot_projects ?? [];
+  const recent_decisions = data.recent_decisions ?? [];
+  const pending_todos = data.pending_todos ?? { total: 0, items: [] };
+  const pending_decisions_auto = data.pending_decisions_auto ?? { total: 0, items: [] };
+  const upcoming_deadlines = data.upcoming_deadlines ?? [];
+  const silence_alerts = data.silence_alerts ?? [];
+  const contradiction_alerts = data.contradiction_alerts ?? [];
+
   const generatedAt = data.generated_at ? timeAgo(data.generated_at) : '—';
+  const hoursLookback = data.hours_lookback ?? 24;
 
   return (
     <div className="space-y-5 max-w-4xl">
@@ -146,7 +172,7 @@ export default function BriefingPage() {
         <div>
           <h1 className="text-lg font-semibold text-foreground">Morning Briefing</h1>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Generated {generatedAt} · last {data.hours_lookback}h lookback
+            Generated {generatedAt} · last {hoursLookback}h lookback
           </p>
         </div>
         <button
@@ -165,9 +191,9 @@ export default function BriefingPage() {
         <Section title="Knowledge" icon={BookOpen} accent="border-l-accent">
           <div className="grid grid-cols-3 gap-3 text-center">
             {[
-              { label: 'Articles', value: data.knowledge.total_articles },
-              { label: 'Entities', value: data.knowledge.total_entities },
-              { label: 'Connections', value: data.knowledge.total_connections },
+              { label: 'Articles', value: knowledge.total_articles },
+              { label: 'Entities', value: knowledge.total_entities },
+              { label: 'Connections', value: knowledge.total_connections },
             ].map(({ label, value }) => (
               <div key={label}>
                 <p className="text-xl font-semibold text-foreground tabular-nums">{value.toLocaleString()}</p>
@@ -175,25 +201,25 @@ export default function BriefingPage() {
               </div>
             ))}
           </div>
-          {data.knowledge.new_articles > 0 && (
-            <p className="text-xs text-success mt-3 font-medium">+{data.knowledge.new_articles} new articles generated</p>
+          {knowledge.new_articles > 0 && (
+            <p className="text-xs text-success mt-3 font-medium">+{knowledge.new_articles} new articles generated</p>
           )}
         </Section>
 
         {/* Email Digest */}
-        <Section title="Email Digest" icon={Inbox} count={data.email_digest.total} accent="border-l-info">
-          {data.email_digest.total === 0 ? (
+        <Section title="Email Digest" icon={Inbox} count={email_digest.total} accent="border-l-info">
+          {email_digest.total === 0 ? (
             <EmptyState msg="No new emails in the lookback window." />
           ) : (
             <div className="space-y-2">
               <div className="flex gap-3 text-xs text-muted-foreground">
-                <span>{data.email_digest.action_items} action items</span>
-                {data.email_digest.urgent > 0 && (
-                  <Tag text={`${data.email_digest.urgent} urgent`} variant="danger" />
+                <span>{email_digest.action_items} action items</span>
+                {email_digest.urgent > 0 && (
+                  <Tag text={`${email_digest.urgent} urgent`} variant="danger" />
                 )}
               </div>
               <div className="space-y-1">
-                {data.email_digest.by_project.slice(0, 5).map((p) => (
+                {email_digest.by_project.slice(0, 5).map((p) => (
                   <div key={p.project} className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground truncate">{p.project}</span>
                     <span className="font-medium text-foreground">{p.cnt}</span>
@@ -205,12 +231,12 @@ export default function BriefingPage() {
         </Section>
 
         {/* Decision Queue */}
-        <Section title="Decision Queue" icon={GitMerge} count={data.decision_queue.pending_count} accent="border-l-warning">
-          {data.decision_queue.pending_count === 0 ? (
+        <Section title="Decision Queue" icon={GitMerge} count={decision_queue.pending_count} accent="border-l-warning">
+          {decision_queue.pending_count === 0 ? (
             <EmptyState msg="No pending decisions." />
           ) : (
             <div className="space-y-2">
-              {data.decision_queue.top_items.slice(0, 4).map((item, i) => (
+              {decision_queue.top_items.slice(0, 4).map((item, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <span className="text-[10px] text-muted-foreground font-mono mt-0.5">{i + 1}.</span>
                   <div className="min-w-0">
@@ -219,9 +245,9 @@ export default function BriefingPage() {
                   </div>
                 </div>
               ))}
-              {data.decision_queue.pending_count > 4 && (
+              {decision_queue.pending_count > 4 && (
                 <Link to="/inbox" className="text-xs text-accent hover:underline">
-                  +{data.decision_queue.pending_count - 4} more in inbox →
+                  +{decision_queue.pending_count - 4} more in inbox →
                 </Link>
               )}
             </div>
@@ -229,26 +255,26 @@ export default function BriefingPage() {
         </Section>
 
         {/* Action Items */}
-        <Section title="Action Items" icon={CheckSquare} count={data.action_items.total_open} accent="border-l-destructive">
-          {data.action_items.total_open === 0 ? (
+        <Section title="Action Items" icon={CheckSquare} count={action_items.total_open} accent="border-l-destructive">
+          {action_items.total_open === 0 ? (
             <EmptyState msg="No open action items." />
           ) : (
             <div className="space-y-2">
-              {data.action_items.high_priority > 0 && (
+              {action_items.high_priority > 0 && (
                 <div className="flex items-center gap-2">
-                  <Tag text={`${data.action_items.high_priority} high priority`} variant="danger" />
-                  <span className="text-xs text-muted-foreground">across {data.action_items.project_count} projects</span>
+                  <Tag text={`${action_items.high_priority} high priority`} variant="danger" />
+                  <span className="text-xs text-muted-foreground">across {action_items.project_count} projects</span>
                 </div>
               )}
               <div className="space-y-1">
-                {data.action_items.by_project.slice(0, 5).map((p) => (
+                {action_items.by_project.slice(0, 5).map((p) => (
                   <div key={p.project} className="flex items-center justify-between text-xs">
                     <span className="text-muted-foreground truncate">{p.project}</span>
                     <div className="flex items-center gap-2">
                       <div className="w-20 h-1 bg-muted rounded-full overflow-hidden">
                         <div
                           className="h-full bg-accent rounded-full"
-                          style={{ width: `${Math.min(100, (p.cnt / data.action_items.total_open) * 100 * 5)}%` }}
+                          style={{ width: `${Math.min(100, (p.cnt / action_items.total_open) * 100 * 5)}%` }}
                         />
                       </div>
                       <span className="font-medium text-foreground w-6 text-right">{p.cnt}</span>
@@ -261,12 +287,12 @@ export default function BriefingPage() {
         </Section>
 
         {/* Hot Projects */}
-        <Section title="Hot Projects" icon={Zap} count={data.hot_projects.length} accent="border-l-success">
-          {data.hot_projects.length === 0 ? (
+        <Section title="Hot Projects" icon={Zap} count={hot_projects.length} accent="border-l-success">
+          {hot_projects.length === 0 ? (
             <EmptyState msg="No hot projects." />
           ) : (
             <div className="space-y-2">
-              {data.hot_projects.slice(0, 5).map((p) => (
+              {hot_projects.slice(0, 5).map((p) => (
                 <div key={p.slug} className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-xs font-medium text-foreground">{p.slug}</p>
@@ -283,12 +309,12 @@ export default function BriefingPage() {
         </Section>
 
         {/* Upcoming Deadlines */}
-        <Section title="Upcoming Deadlines" icon={Calendar} count={data.upcoming_deadlines.length} accent="border-l-warning">
-          {data.upcoming_deadlines.length === 0 ? (
+        <Section title="Upcoming Deadlines" icon={Calendar} count={upcoming_deadlines.length} accent="border-l-warning">
+          {upcoming_deadlines.length === 0 ? (
             <EmptyState msg="No upcoming deadlines detected." />
           ) : (
             <div className="space-y-2">
-              {data.upcoming_deadlines.map((d) => (
+              {upcoming_deadlines.map((d) => (
                 <div key={d.id} className="text-xs">
                   <div className="flex items-center gap-2">
                     <Tag
@@ -306,15 +332,15 @@ export default function BriefingPage() {
         </Section>
 
         {/* Recent Decisions */}
-        <Section title="Recent Decisions" icon={GitMerge} count={data.recent_decisions.length}>
-          {data.recent_decisions.length === 0 ? (
+        <Section title="Recent Decisions" icon={GitMerge} count={recent_decisions.length}>
+          {recent_decisions.length === 0 ? (
             <EmptyState msg="No recent decisions." />
           ) : (
             <div className="space-y-2">
-              {data.recent_decisions.slice(0, 5).map((d, i) => (
+              {recent_decisions.slice(0, 5).map((d, i) => (
                 <div key={i} className="flex items-start gap-2">
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs text-foreground leading-snug">{d.text}</p>
+                    <p className="text-xs text-foreground leading-snug">{(d as Record<string, string>).text ?? (d as Record<string, string>).decision ?? ''}</p>
                     <div className="flex gap-2 mt-0.5">
                       <Tag text={d.project} />
                       {d.date && <span className="text-[10px] text-muted-foreground">{d.date.slice(0, 10)}</span>}
@@ -322,20 +348,20 @@ export default function BriefingPage() {
                   </div>
                 </div>
               ))}
-              {data.recent_decisions.length > 5 && (
-                <p className="text-[10px] text-muted-foreground">+{data.recent_decisions.length - 5} more</p>
+              {recent_decisions.length > 5 && (
+                <p className="text-[10px] text-muted-foreground">+{recent_decisions.length - 5} more</p>
               )}
             </div>
           )}
         </Section>
 
         {/* Pending Todos */}
-        <Section title="Pending Todos" icon={Clock} count={data.pending_todos.total}>
-          {data.pending_todos.total === 0 ? (
+        <Section title="Pending Todos" icon={Clock} count={pending_todos.total}>
+          {pending_todos.total === 0 ? (
             <EmptyState msg="No pending todos." />
           ) : (
             <div className="space-y-1.5">
-              {data.pending_todos.items.slice(0, 5).map((t, i) => (
+              {pending_todos.items.slice(0, 5).map((t, i) => (
                 <div key={i} className="flex items-start gap-2 text-xs">
                   <span className="text-muted-foreground mt-0.5">•</span>
                   <div className="min-w-0">
@@ -345,9 +371,9 @@ export default function BriefingPage() {
                   </div>
                 </div>
               ))}
-              {data.pending_todos.total > 5 && (
+              {pending_todos.total > 5 && (
                 <Link to="/todos" className="text-xs text-accent hover:underline">
-                  +{data.pending_todos.total - 5} more in todos →
+                  +{pending_todos.total - 5} more in todos →
                 </Link>
               )}
             </div>
@@ -355,10 +381,10 @@ export default function BriefingPage() {
         </Section>
 
         {/* Silence Alerts */}
-        {data.silence_alerts.length > 0 && (
-          <Section title="Silence Alerts" icon={Bell} count={data.silence_alerts.length} accent="border-l-warning">
+        {silence_alerts.length > 0 && (
+          <Section title="Silence Alerts" icon={Bell} count={silence_alerts.length} accent="border-l-warning">
             <div className="space-y-1.5">
-              {data.silence_alerts.map((alert, i) => (
+              {silence_alerts.map((alert, i) => (
                 <p key={i} className="text-xs text-muted-foreground leading-snug">{alert}</p>
               ))}
             </div>
@@ -366,11 +392,13 @@ export default function BriefingPage() {
         )}
 
         {/* Contradiction Alerts */}
-        {data.contradiction_alerts.length > 0 && (
-          <Section title="Contradiction Alerts" icon={AlertTriangle} count={data.contradiction_alerts.length} accent="border-l-destructive">
+        {contradiction_alerts.length > 0 && (
+          <Section title="Contradiction Alerts" icon={AlertTriangle} count={contradiction_alerts.length} accent="border-l-destructive">
             <div className="space-y-1.5">
-              {data.contradiction_alerts.map((alert, i) => (
-                <p key={i} className="text-xs text-muted-foreground leading-snug">{alert}</p>
+              {contradiction_alerts.map((alert, i) => (
+                <p key={i} className="text-xs text-muted-foreground leading-snug">
+                  {typeof alert === 'string' ? alert : (alert as Record<string, unknown>).display as string ?? JSON.stringify(alert)}
+                </p>
               ))}
             </div>
           </Section>
