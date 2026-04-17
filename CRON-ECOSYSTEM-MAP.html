@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>CoCo Cron Ecosystem Map</title>
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #0f1d3a;
+    --muted: #475569;
+    --line: #e2e8f0;
+    --accent: #1a73e8;
+    --ok: #059669;
+    --warn: #d97706;
+    --danger: #dc2626;
+    --subtle: #f8fafc;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font: 14px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    color: var(--fg); background: var(--bg); margin: 0;
+    padding: 32px 40px 80px;
+    max-width: 1400px;
+    margin-inline: auto;
+  }
+  h1 { font-size: 28px; margin: 0 0 6px; letter-spacing: -0.02em; }
+  h2 { font-size: 20px; margin: 40px 0 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; letter-spacing: -0.01em; }
+  h3 { font-size: 16px; margin: 24px 0 8px; color: var(--fg); }
+  .sub { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+  .mermaid-wrap { background: var(--subtle); border: 1px solid var(--line); border-radius: 10px; padding: 20px; margin: 14px 0 24px; overflow: auto; }
+  .mermaid-wrap svg { max-width: 100%; height: auto; }
+  table { border-collapse: collapse; width: 100%; margin: 8px 0 24px; font-size: 13px; }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { background: var(--subtle); font-weight: 600; color: var(--muted); text-transform: uppercase; font-size: 11px; letter-spacing: 0.04em; }
+  tr:hover td { background: #fafbfc; }
+  code { background: var(--subtle); padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: "SF Mono", Menlo, monospace; color: var(--accent); }
+  .pill { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 500; }
+  .pill-cron { background: #e0e7ff; color: #3730a3; }
+  .pill-daemon { background: #dcfce7; color: #14532d; }
+  .pill-interval { background: #fef3c7; color: #78350f; }
+  .pill-manual { background: #f1f5f9; color: #475569; }
+  .pill-mlx { background: #fce7f3; color: #831843; }
+  .pill-claude { background: #dbeafe; color: #1e3a8a; }
+  .pill-none { background: #f1f5f9; color: #64748b; }
+  .pill-warn { background: #fef3c7; color: #78350f; }
+  .pill-danger { background: #fee2e2; color: #991b1b; }
+  .pill-ok { background: #dcfce7; color: #14532d; }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  ul { margin: 6px 0; padding-left: 22px; }
+  li { margin-bottom: 4px; }
+  .callout { border-left: 3px solid var(--accent); background: #f0f7ff; padding: 10px 14px; border-radius: 0 6px 6px 0; margin: 12px 0; font-size: 13px; }
+  .callout-warn { border-left-color: var(--warn); background: #fffbeb; }
+  .callout-danger { border-left-color: var(--danger); background: #fef2f2; }
+  .lvl-label { display:inline-block; padding: 2px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; background: #0f1d3a; color: #fff; margin-right: 8px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<h1>CoCo Cron Ecosystem Map</h1>
+<p class="sub">11 launchd agents · 3 manual/daemon wiki services · 7 memory stores · 2 frontends · progressive drill-down · 2026-04-16</p>
+
+<div class="callout callout-warn">
+<strong>Current live state (as of run):</strong> all scheduled cron agents <strong>stopped</strong> via <code>launchctl bootout</code>. Still running: <code>pykeen-train</code> (PID 1411), <code>litestream</code> (PID 1418). Flock serialization committed in <code>e0d27b2</code>. Wiki server not running on :8888. mempalace daemon not running. Articles in knowledge.db: <strong>2,345</strong>; pending in article_generation_queue: <strong>131</strong>.
+</div>
+
+<h2><span class="lvl-label">L0</span> System macro map — the 6 buckets</h2>
+<p class="sub">How to read: follow arrows for data flow direction. Every agent, storage system, and model lives inside one of these 6 buckets. Drill into L1 diagrams below for detail.</p>
+
+<div class="mermaid-wrap">
+  <div id="l0" data-code='
+flowchart LR
+  classDef inputs fill:#fef3c7,stroke:#d97706,color:#78350f,stroke-width:2px
+  classDef agents fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b,stroke-width:2px
+  classDef models fill:#fce7f3,stroke:#be185d,color:#831843,stroke-width:2px
+  classDef memory fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:2px
+  classDef wiki fill:#ecfeff,stroke:#0891b2,color:#164e63,stroke-width:2px
+  classDef front fill:#fff7ed,stroke:#c2410c,color:#7c2d12,stroke-width:2px
+
+  INPUTS["<b>1. INPUTS</b><br/>• Outlook emails<br/>• macOS Calendar<br/>• OneDrive Wiki-Articles/<br/>• User chat (platform)"]:::inputs
+
+  AGENTS["<b>2. CRON AGENTS</b><br/>• master-cron (01/14)<br/>• email-watcher (15m)<br/>• meeting-prep (20m)<br/>• think (30m)<br/>• morning/weekly/backup<br/>• pykeen-train daemon"]:::agents
+
+  MODELS["<b>3. MODELS</b><br/>• Gemma4-26B/31B (MLX)<br/>• Qwen3-4B / 2.5-7B (MLX)<br/>• Claude Sonnet 4.6 (QB)<br/>• PyKEEN RotatE<br/>• ChromaDB embeddings"]:::models
+
+  MEMORY["<b>4. MEMORY & STATE</b><br/>• hub.db (KH, RO)<br/>• knowledge.db<br/>• coco.db / platform.db<br/>• project_brain.db (per proj)<br/>• brain.json / queue.json<br/>• mempalace vectors<br/>• media-memory vectors"]:::memory
+
+  WIKI["<b>5. WIKI</b><br/>• wiki_server.py :8888<br/>  (Wikipedia clone)<br/>• wiki_improver.py (manual)<br/>• ingest_wiki_articles.py<br/>• articles/*.md + DB"]:::wiki
+
+  FRONT["<b>6. FRONTENDS</b><br/>• CoCo Platform<br/>  React + FastAPI :8000<br/>• Wiki UI :8888<br/>• Claude Code CLI"]:::front
+
+  INPUTS -->|"ingest"| AGENTS
+  AGENTS -->|"call"| MODELS
+  MODELS -->|"generated content"| AGENTS
+  AGENTS -->|"write state"| MEMORY
+  AGENTS -->|"write articles"| WIKI
+  MEMORY -->|"read by"| FRONT
+  WIKI -->|"served to"| FRONT
+  MEMORY <-->|"query/write"| MODELS
+  FRONT -->|"direct calls"| MODELS
+  FRONT -->|"user actions update"| MEMORY
+'></div>
+</div>
+
+<h2><span class="lvl-label">L1a</span> Wiki subsystem — where articles come from, go to, and get improved</h2>
+
+<div class="mermaid-wrap">
+  <div id="l1a" data-code='
+flowchart TB
+  classDef agent fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+  classDef service fill:#ecfeff,stroke:#0891b2,color:#164e63,stroke-width:2px
+  classDef manual fill:#fef2f2,stroke:#991b1b,color:#7f1d1d,stroke-dasharray:4 4
+  classDef store fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+  classDef compute fill:#fce7f3,stroke:#be185d,color:#831843
+  classDef queue fill:#fef3c7,stroke:#d97706,color:#78350f
+  classDef front fill:#ecfeff,stroke:#0891b2,color:#164e63
+
+  %% Source inputs
+  EMAIL[(Emails<br/>via Outlook HxStore)]:::store
+  HTMLSRC["<b>Wiki-Articles/*.html</b><br/>OneDrive<br/>Cross Risk/DRO"]:::store
+
+  %% Writer agents
+  EW["email-watcher<br/>every 15m"]:::agent
+  MC["master-cron<br/>01:00 &amp; 14:00"]:::agent
+
+  %% Manual / on-demand wiki tools
+  INGEST["ingest_wiki_articles.py<br/><i>manual run</i>"]:::manual
+  IMPROVER["wiki_improver.py<br/>6-pass loop<br/><i>manual, not cron</i>"]:::manual
+
+  %% Central work queue
+  QUEUE[(article_generation_queue<br/>table in knowledge.db<br/><b>131 pending</b>)]:::queue
+
+  %% MLX gate + models
+  GATE{"<b>mlx.lock flock</b><br/>serializes subprocess"}:::compute
+  GEMMA["Gemma4-26B MoE<br/>via mlx_vlm<br/>~15 GB RSS"]:::compute
+  GEMMA31["Gemma4-31B<br/>article-rich only<br/>~20 GB RSS"]:::compute
+  CLAUDE["Claude Sonnet 4.6<br/>QB Gateway"]:::compute
+
+  %% Storage: DB + files
+  KDB[(knowledge.db · articles<br/><b>2,345 total</b><br/>• entity: 2,126<br/>• memory_note: 71<br/>• product: 45<br/>• meeting: 30<br/>• project_summary: 30<br/>• other: 43)]:::store
+  ARTMD[/articles/*.md<br/>rendered markdown/]:::store
+  FTS[(knowledge.db · FTS5 index)]:::store
+
+  %% Wiki readers
+  WIKISRV["<b>wiki_server.py</b><br/>HTTP :8888<br/>Wikipedia Vector clone<br/><i>manual launch</i>"]:::manual
+  FE["CoCo Platform<br/>FastAPI :8000 · React"]:::front
+
+  %% Users
+  USER((User))
+
+  %% ---------------- INGEST ----------------
+  EMAIL --> EW
+  EW -->|"INSERT row<br/>(entity, type, tier)"| QUEUE
+  HTMLSRC --> INGEST
+  INGEST -->|"parse HTML<br/>INSERT articles"| KDB
+
+  %% ---------------- GENERATION ----------------
+  MC -->|"phase 7:<br/>drain queue"| QUEUE
+  QUEUE -->|"each row →<br/>generate article"| MC
+  MC --> GATE
+  GATE --> GEMMA
+  GATE --> GEMMA31
+  MC -->|"fallback / high-quality"| CLAUDE
+  GEMMA -->|"body text"| MC
+  GEMMA31 -->|"body text"| MC
+  CLAUDE -->|"body text"| MC
+  MC -->|"UPSERT article"| KDB
+  MC -->|"render"| ARTMD
+  MC -->|"phase 9: rebuild"| FTS
+
+  %% ---------------- CONTINUOUS IMPROVEMENT ----------------
+  IMPROVER -->|"Pass 1: coverage gaps"| QUEUE
+  IMPROVER -->|"Pass 2: regen thin"| MC
+  IMPROVER -->|"Pass 3: cross-ref links"| KDB
+  IMPROVER -->|"Pass 4: dedup"| KDB
+  IMPROVER -->|"Pass 5: low-confidence"| MC
+  IMPROVER -->|"Pass 6: rebuild FTS"| FTS
+
+  %% ---------------- READ PATH ----------------
+  KDB -->|"article + infobox"| WIKISRV
+  FTS -->|"search"| WIKISRV
+  WIKISRV -->|"HTML Wikipedia-skin"| USER
+  KDB -->|"article browse"| FE
+  ARTMD -->|"raw markdown"| FE
+  FE -->|"HTTP"| USER
+'></div>
+</div>
+
+<div class="callout">
+<strong>Key observations:</strong>
+<ul>
+  <li><code>wiki_server.py</code> and <code>wiki_improver.py</code> have <strong>no launchd plist</strong> — they run manually. The wiki UI is only up when you start the server. The improver runs as a long manual session.</li>
+  <li><code>ingest_wiki_articles.py</code> is for a one-off import of 27 HTML articles from the OneDrive <em>Wiki-Articles/</em> folder — not part of any cron pipeline.</li>
+  <li>The "wiki" is really <strong>articles stored in knowledge.db</strong>, rendered both as markdown files and as HTML by wiki_server. Updates come from three writers: master-cron (via queue), email-watcher (enqueues), and wiki_improver (regens).</li>
+  <li><strong>131 items currently pending</strong> in <code>article_generation_queue</code> waiting for a master-cron run.</li>
+</ul>
+</div>
+
+<h3>Wiki security debt — <code>REVIEW-SECURITY-DEV.md</code></h3>
+<p class="sub">Pending findings in <code>~/.coco/knowledge/REVIEW-SECURITY-DEV.md</code>. Must be fixed before exposing <code>wiki_server.py</code> beyond localhost or wiring into the CoCo Platform frontend.</p>
+
+<table>
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Severity</th>
+      <th>Finding</th>
+      <th>Location</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>SEC-1</code></td><td><span class="pill pill-danger">high</span></td><td>Stored XSS via article content rendering — <code>wikilinks()</code>, <code>md_html()</code>, <code>page_article()</code></td><td>wiki_server.py :355–386, :1172–1197</td></tr>
+    <tr><td><code>SEC-2</code></td><td><span class="pill pill-danger">high</span></td><td>SQL injection via string interpolation in <code>q_projects()</code></td><td>wiki_server.py :187–189</td></tr>
+    <tr><td><code>SEC-3</code></td><td><span class="pill pill-warn">medium</span></td><td>FTS5 <code>MATCH</code> injection via unsanitized search queries</td><td>wiki_server.py :145 · knowledge_search.py :179, :189, :448</td></tr>
+    <tr><td><code>SEC-5</code></td><td><span class="pill pill-danger">high</span></td><td>Path traversal in <code>/file/</code> route</td><td>wiki_server.py :1627–1630, :293–327</td></tr>
+    <tr><td><code>SEC-7</code></td><td><span class="pill pill-danger">high</span></td><td>Personal document content exposed without access control</td><td>wiki_server.py :1669 (entire <code>/file/</code> route)</td></tr>
+    <tr><td><code>DEV-1</code></td><td><span class="pill pill-warn">medium</span></td><td>1,683-line monolith — split into <code>WikiHandler</code> + <code>main()</code> HTTP routing; move <code>q_*</code> functions to separate modules</td><td>wiki_server.py entire file</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-danger">
+<strong>Blast radius:</strong> current wiki runs only on localhost:8888 so external exploitation is bounded. But any integration into CoCo Platform frontend (or exposing behind a tunnel/Tailscale) inherits all 5 security bugs. <strong>Treat wiki as a localhost-only prototype until SEC-1/2/3/5/7 are closed.</strong>
+</div>
+
+<h2><span class="lvl-label">L1b</span> Memory topology — 7 stores, who writes, who reads</h2>
+
+<div class="mermaid-wrap">
+  <div id="l1b" data-code='
+flowchart LR
+  classDef agent fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+  classDef service fill:#ecfeff,stroke:#0891b2,color:#164e63
+  classDef front fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+  classDef memory fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95,stroke-width:2px
+  classDef vector fill:#fdf2f8,stroke:#be185d,color:#831843,stroke-width:2px
+  classDef external fill:#f1f5f9,stroke:#475569,color:#1e293b,stroke-dasharray:4 4
+
+  %% Writers
+  EW[email-watcher]:::agent
+  MC[master-cron]:::agent
+  TH[think]:::agent
+  MP[meeting-prep]:::agent
+  PK[pykeen-train]:::agent
+  FE["CoCo Platform<br/>FastAPI"]:::front
+  CLI["Claude Code CLI<br/>(brain-update, etc.)"]:::service
+
+  %% Memory stores
+  HUB[(<b>hub.db</b><br/>Knowledge Hub<br/>content, drafts, sync_state)]:::external
+  KDB[(<b>knowledge.db</b><br/>articles, entities<br/>cross_project_connections<br/>article_generation_queue)]:::memory
+  CDB[(<b>coco.db</b><br/>todos, decisions<br/>projects, adapters)]:::memory
+  PDB[(<b>platform.db</b><br/>CoCo Platform state<br/>Alembic-managed)]:::memory
+  PRJ[(<b>project_brain.db</b><br/>per-project SQLite<br/>entities/decisions/events/tasks<br/>~/.coco/projects/&lt;slug&gt;/)]:::memory
+  BJ[[<b>brain.json</b><br/>attention rules<br/>people · stats]]:::memory
+  QJ[[<b>queue.json</b><br/>decision queue<br/>triage state]]:::memory
+  MEMP[(<b>~/.mempalace/palace</b><br/>ChromaDB<br/>mempalace_drawers<br/>embeddings)]:::vector
+  MEDIA[(<b>~/.claude/media-memory</b><br/>ChromaDB<br/>files · screenshots · audio)]:::vector
+  AUTOMEM[[<b>~/.claude/projects/.../memory</b><br/>auto-memory files<br/>MEMORY.md index]]:::memory
+
+  %% ---- hub.db ----
+  CLI -->|"external sync"| HUB
+  HUB -->|"RO"| TH
+  HUB -->|"RO"| FE
+
+  %% ---- knowledge.db ----
+  EW -->|"INSERT pipeline_runs<br/>INSERT queue"| KDB
+  MC -->|"UPSERT articles<br/>UPSERT entities<br/>rebuild FTS"| KDB
+  PK -->|"predicted-links.json<br/>cross_project_connections"| KDB
+  KDB -->|"read articles"| FE
+
+  %% ---- coco.db ----
+  FE -->|"user actions:<br/>todos, decisions"| CDB
+  CDB -->|"overnight summary"| FE
+
+  %% ---- platform.db ----
+  FE -->|"stations, cost_ledger<br/>governance_log"| PDB
+
+  %% ---- project_brain.db ----
+  MC -->|"brain_cli scan-update<br/>entity merges"| PRJ
+  EW -->|"email_to_brain"| PRJ
+  CLI -->|"/brain-update"| PRJ
+  PRJ -->|"per-project context"| FE
+
+  %% ---- brain.json ----
+  TH -->|"atomic write<br/>stats, counters"| BJ
+  BJ -->|"attention rules"| TH
+  BJ -->|"people, rules"| FE
+  CLI -->|"brain-export auto-section"| BJ
+
+  %% ---- queue.json ----
+  TH -->|"atomic write<br/>triage items"| QJ
+  EW -->|"pending_todos<br/>pending_decisions"| QJ
+  QJ -->|"decision queue UI"| FE
+
+  %% ---- mempalace ----
+  CLI -->|"mempalace_ingest"| MEMP
+  MEMP -->|"Unix socket query<br/>/tmp/coco-mempalace.sock"| FE
+
+  %% ---- media-memory ----
+  CLI -->|"/media-memory ingest"| MEDIA
+  MEDIA -->|"semantic search"| CLI
+
+  %% ---- auto-memory ----
+  CLI -->|"session learnings"| AUTOMEM
+  AUTOMEM -->|"loaded at start"| CLI
+'></div>
+</div>
+
+<div class="callout">
+<strong>Memory store cheat-sheet:</strong>
+<ul>
+  <li><strong>Structured / relational:</strong> hub.db (KH external), knowledge.db (articles/entities), coco.db (user actions), platform.db (CoCo platform), project_brain.db (per project)</li>
+  <li><strong>JSON scratch / atomic:</strong> brain.json (global), queue.json (triage)</li>
+  <li><strong>Vector:</strong> mempalace (work knowledge), media-memory (files/screenshots)</li>
+  <li><strong>Claude conversation memory:</strong> ~/.claude/projects/.../memory/ — MEMORY.md + typed memory files (user/feedback/project/reference)</li>
+</ul>
+</div>
+
+<h2><span class="lvl-label">L1c</span> CoCo Platform integration — how the UI connects to everything</h2>
+
+<div class="mermaid-wrap">
+  <div id="l1c" data-code='
+flowchart TB
+  classDef ui fill:#fff7ed,stroke:#c2410c,color:#7c2d12,stroke-width:2px
+  classDef api fill:#ecfeff,stroke:#0891b2,color:#164e63,stroke-width:2px
+  classDef svc fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
+  classDef store fill:#f5f3ff,stroke:#7c3aed,color:#4c1d95
+  classDef model fill:#fce7f3,stroke:#be185d,color:#831843
+  classDef ext fill:#f1f5f9,stroke:#475569,color:#1e293b,stroke-dasharray:4 4
+
+  USER((User · browser))
+
+  subgraph FRONT["Frontend"]
+    REACT["React 19 + Vite 6<br/>Radix UI · Tailwind CSS 4<br/>Zustand · TanStack Query"]:::ui
+  end
+
+  subgraph BACK["CoCo Platform backend — FastAPI :8000"]
+    direction TB
+    ROUTERS["routers/<br/>/api/dashboard<br/>/api/briefing<br/>/api/decisions<br/>/api/meetings<br/>/api/chat/*<br/>/api/events/emit (SSE)"]:::api
+    SERVICES["services/<br/>local_llm_client.py<br/>cloud_llm_client.py<br/>mempalace_client.py<br/>hub_reader.py<br/>brain_reader.py"]:::svc
+    BG["Background jobs<br/>chat subprocess: claude -p<br/>SSE broadcaster"]:::svc
+  end
+
+  subgraph DATA["Data layer"]
+    direction TB
+    CDB[(coco.db<br/>RW)]:::store
+    PDB[(platform.db<br/>RW)]:::store
+    HUBRO[(hub.db<br/>RO)]:::ext
+    KDB[(knowledge.db<br/>RO)]:::store
+    PRJ[(project_brain.db<br/>RO per project)]:::store
+    BJ[[brain.json<br/>queue.json<br/>last-morning-briefing.json]]:::store
+    ART[/articles/*.md/]:::store
+    MEET[/meeting-prep/*.md/]:::store
+  end
+
+  subgraph COMPUTE["Compute gates"]
+    FLOCK{"mlx.lock<br/>flock serializer"}:::model
+    MLX["MLX subprocess<br/>mlx_lm / mlx_vlm"]:::model
+    CLAUDE["Claude Sonnet 4.6<br/>QB AI Gateway"]:::model
+    MEM["mempalace daemon<br/>Unix socket :sock"]:::svc
+  end
+
+  %% User flow
+  USER <-->|"HTTP / SSE"| REACT
+  REACT <-->|"JSON /api/*"| ROUTERS
+
+  %% Routers fan out to services
+  ROUTERS --> SERVICES
+  ROUTERS --> BG
+
+  %% Services → data
+  SERVICES -->|"SQLAlchemy Core"| CDB
+  SERVICES -->|"SQLAlchemy Core"| PDB
+  SERVICES -->|"RO connection"| HUBRO
+  SERVICES -->|"RO connection"| KDB
+  SERVICES -->|"RO per-project"| PRJ
+  SERVICES -->|"read + atomic write"| BJ
+  SERVICES -->|"glob + read"| ART
+  SERVICES -->|"read"| MEET
+
+  %% Services → compute
+  SERVICES -->|"local_llm_client<br/>acquires"| FLOCK
+  FLOCK --> MLX
+  SERVICES -->|"cloud_llm_client<br/>direct HTTP"| CLAUDE
+  SERVICES -->|"HTTP over socket"| MEM
+
+  %% Background chat
+  BG -->|"spawn subprocess<br/>claude -p --stream-json"| CLAUDE
+  BG -->|"broadcast tokens"| ROUTERS
+
+  %% Cron agents populate these upstream (out of scope here)
+  CRON["(cron agents<br/>populate DB + files<br/>see L1a/L1b)"]:::svc
+  CRON -.->|"writes"| KDB
+  CRON -.->|"writes"| BJ
+  CRON -.->|"writes"| ART
+  CRON -.->|"writes"| MEET
+'></div>
+</div>
+
+<div class="callout">
+<strong>Critical constraint:</strong> anything in the backend that calls <code>LocalLLMClient.quick_command()</code> must acquire the <code>mlx.lock</code> flock first (committed in <code>e0d27b2</code>). Cron agents that spawn MLX (master-cron, wiki_improver, scripts) must too. <strong>pykeen-train does NOT hold this lock</strong> — so PyKEEN and a master-cron MLX call can still co-exist and push memory to the edge.
+</div>
+
+<h2><span class="lvl-label">L2</span> Email → article pipeline (detailed)</h2>
+<p class="sub">Drill-down of the hottest flow. 14 distinct steps across 2 agents, 5 storage writes, 0–3 model calls per email bundle.</p>
+
+<div class="mermaid-wrap">
+  <div id="l2" data-code='
+flowchart LR
+  classDef step fill:#e0e7ff,stroke:#4338ca,color:#1e1b4b
+  classDef store fill:#fff7ed,stroke:#c2410c,color:#7c2d12
+  classDef compute fill:#fce7f3,stroke:#be185d,color:#831843
+  classDef front fill:#ecfeff,stroke:#0891b2,color:#164e63
+
+  %% Sources
+  OL[(Outlook HxStore)]:::store
+
+  %% email-watcher pipeline
+  EX[email_export.py<br/>1. extract bundle]:::step
+  PR[email_processor.py<br/>2. parse + classify]:::step
+  PI[pii_scrub.py<br/>3. redact PII]:::step
+  ROUTE[ProjectRouter<br/>4. inverse-freq entity match]:::step
+  BR[email_to_brain.py<br/>5. register entities<br/>in project_brain.db]:::step
+  AR[action_router.py<br/>6. extract action items]:::step
+  URG[urgency_scorer.py<br/>7. score urgency]:::step
+  DEC[decision_detector.py<br/>8. flag decisions]:::step
+  CRS[cross_project_detector.py<br/>9. multi-project impact]:::step
+  DL[deadline_tracker.py<br/>10. extract deadlines]:::step
+  EN[11. enqueue to<br/>article_generation_queue]:::step
+
+  %% Storage writes
+  EVID[/email-evidence/*.json/]:::store
+  PRJ[(project_brain.db)]:::store
+  QJ[[queue.json]]:::store
+  QUEUE[(article_generation_queue)]:::store
+  STATE[.email-watcher-state.json]:::store
+
+  %% SSE
+  SSE["POST /api/events/emit<br/>SSE broadcast"]:::front
+
+  %% master-cron leg
+  MC[master-cron phase 7<br/>12. drain queue]:::step
+  GATE{"mlx.lock"}:::compute
+  GEMMA[Gemma4-26B MoE]:::compute
+  KDB[(knowledge.db · articles)]:::store
+  ARTMD[/articles/*.md/]:::store
+  FE[CoCo Platform UI]:::front
+
+  %% Flow
+  OL --> EX
+  EX --> PR
+  PR --> PI
+  PI --> ROUTE
+  ROUTE --> BR
+  BR --> PRJ
+  BR --> AR
+  AR --> URG
+  URG --> DEC
+  DEC --> CRS
+  CRS --> DL
+  DL --> EN
+  AR --> QJ
+  DEC --> QJ
+  PR --> EVID
+  EN --> QUEUE
+  EN --> STATE
+  EN --> SSE
+  SSE --> FE
+
+  QUEUE --> MC
+  MC --> GATE
+  GATE --> GEMMA
+  GEMMA --> MC
+  MC --> KDB
+  MC --> ARTMD
+  KDB --> FE
+  ARTMD --> FE
+'></div>
+</div>
+
+<h2>Agent-by-agent breakdown</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Agent</th>
+      <th>When</th>
+      <th>Kind</th>
+      <th>Purpose</th>
+      <th>Models</th>
+      <th>Touches</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td><code>master-cron</code></td><td>01:00 &amp; 14:00 daily</td><td><span class="pill pill-cron">cron</span></td><td>Knowledge pipeline — 10 phases (scan, harvest, infer, generate, merge, FTS, queue-drain, digest)</td><td><span class="pill pill-mlx">Gemma4-26B/31B</span> <span class="pill pill-claude">Sonnet 4.6</span></td><td>knowledge.db, project_brain.db, articles/, last-cron-result.json</td></tr>
+    <tr><td><code>email-watcher</code></td><td>every 15 min</td><td><span class="pill pill-interval">interval</span></td><td>Email → project route → entity register → action items (14-step chain)</td><td><span class="pill pill-none">none</span></td><td>knowledge.db (W), email-evidence/, queue.json, FastAPI /events/emit</td></tr>
+    <tr><td><code>meeting-prep</code></td><td>every 20 min</td><td><span class="pill pill-interval">interval</span></td><td>Upcoming meeting briefings — attendee context + project notes</td><td><span class="pill pill-none">none</span></td><td>Calendar (osascript), knowledge.db (R), meeting-prep/</td></tr>
+    <tr><td><code>morning-briefing</code></td><td>06:00 daily</td><td><span class="pill pill-cron">cron</span></td><td>Overnight summary: new articles, decisions, cron results, adapter health</td><td><span class="pill pill-none">none</span></td><td>coco.db, project_brain.db, grokking_state.json, last-morning-briefing.json</td></tr>
+    <tr><td><code>think</code></td><td>every 30 min</td><td><span class="pill pill-interval">interval</span></td><td>Triage: read KH, apply attention rules, populate queue.json</td><td><span class="pill pill-none">none</span></td><td>hub.db (RO), brain.json, queue.json</td></tr>
+    <tr><td><code>weekly-report</code></td><td>Fri 16:00</td><td><span class="pill pill-cron">cron</span></td><td>Per-project Mon–Sun activity: emails, articles, decisions</td><td><span class="pill pill-none">none</span></td><td>knowledge.db (R), project_brain.db (R), reports/weekly/</td></tr>
+    <tr><td><code>pykeen-train</code></td><td>KeepAlive</td><td><span class="pill pill-daemon">daemon</span></td><td>Train RotatE KG embeddings · grokking detection · link prediction</td><td><span class="pill pill-none">PyKEEN (CPU)</span></td><td>knowledge.db (R), pykeen-model/, grokking_state.json, predicted-links.json</td></tr>
+    <tr><td><code>mempalace</code></td><td>KeepAlive</td><td><span class="pill pill-daemon">daemon</span></td><td>ChromaDB vector-search server · Unix socket on /tmp/coco-mempalace.sock</td><td><span class="pill pill-none">embeddings only</span></td><td>~/.mempalace/palace/, /tmp/coco-mempalace.sock</td></tr>
+    <tr><td><code>litestream</code></td><td>KeepAlive</td><td><span class="pill pill-daemon">daemon</span></td><td>Continuous SQLite WAL replication → filesystem (60s/300s)</td><td><span class="pill pill-none">none</span></td><td>knowledge.db (R), platform.db (R), backups/litestream/</td></tr>
+    <tr><td><code>backup</code></td><td>Sun 03:00</td><td><span class="pill pill-cron">cron</span></td><td>Weekly SQLite <code>.backup</code> snapshot of 4 DBs, 30d rotation</td><td><span class="pill pill-none">none</span></td><td>coco.db, platform.db, knowledge.db, hub.db → backups/{date}/</td></tr>
+    <tr><td><code>log-rotate</code></td><td>Sun 04:00</td><td><span class="pill pill-cron">cron</span></td><td>Rotate logs &gt;10 MB, keep 2 backups</td><td><span class="pill pill-none">none</span></td><td>~/.coco/logs/, ~/.coco/knowledge/*.log, /tmp/pykeen-grok.log</td></tr>
+    <tr><td><code>wiki_server.py</code></td><td>on demand :8888</td><td><span class="pill pill-manual">manual</span></td><td>HTTP wiki UI — Wikipedia Vector skin — reads knowledge.db</td><td><span class="pill pill-none">none</span></td><td>knowledge.db (R), FTS5 search</td></tr>
+    <tr><td><code>wiki_improver.py</code></td><td>on demand</td><td><span class="pill pill-manual">manual</span></td><td>6-pass loop: coverage → depth → cross-refs → dedup → quality → index</td><td><span class="pill pill-mlx">Gemma4-26B</span> <span class="pill pill-claude">Sonnet 4.6</span></td><td>knowledge.db (RW), wiki-improve.log, acquires mlx.lock via master-cron path</td></tr>
+    <tr><td><code>ingest_wiki_articles.py</code></td><td>one-off</td><td><span class="pill pill-manual">manual</span></td><td>Parse 27 HTML articles from OneDrive → knowledge.db</td><td><span class="pill pill-none">none</span></td><td>OneDrive Wiki-Articles/, knowledge.db (W)</td></tr>
+  </tbody>
+</table>
+
+<h2>Model matrix — RAM · speed · callers</h2>
+
+<table>
+  <thead>
+    <tr>
+      <th>Task type</th>
+      <th>Model</th>
+      <th>Framework</th>
+      <th>RAM (loaded)</th>
+      <th>Speed</th>
+      <th>Callers</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>classification</td><td>Qwen3-4B 4-bit</td><td>mlx_lm</td><td>~2.3 GB</td><td>~32s cold / ~3s warm</td><td>platform · email triage</td></tr>
+    <tr><td>rag-lightning</td><td>Qwen2.5-7B 4-bit</td><td>mlx_lm</td><td>~4.7 GB</td><td>~7s</td><td>platform · short-context Q&amp;A</td></tr>
+    <tr><td>extraction</td><td>Qwen2.5-7B 4-bit</td><td>mlx_lm</td><td>~4.7 GB</td><td>~7s</td><td>platform · entity/JSON extraction</td></tr>
+    <tr><td>summarization</td><td>Gemma4-26B MoE 4-bit</td><td>mlx_vlm</td><td>~15 GB</td><td>~30–60s</td><td>master-cron · wiki_improver</td></tr>
+    <tr><td>briefing</td><td>Gemma4-26B MoE 4-bit</td><td>mlx_vlm</td><td>~15 GB</td><td>~30–60s</td><td>platform briefings</td></tr>
+    <tr><td>meeting-notes</td><td>Gemma4-E4B 4-bit</td><td>mlx_vlm</td><td>~3 GB</td><td>~15s</td><td>platform · audio transcription</td></tr>
+    <tr><td>article-stub / standard</td><td>Gemma4-26B MoE 4-bit</td><td>mlx_vlm</td><td>~15 GB</td><td>~30s</td><td>master-cron · wiki_improver</td></tr>
+    <tr><td>article-rich</td><td>Gemma4-31B 4-bit</td><td>mlx_vlm</td><td>~18–20 GB</td><td>batch only</td><td>master-cron (top-quality)</td></tr>
+    <tr><td>cloud fallback / review</td><td>Claude Sonnet 4.6</td><td>QB AI Gateway HTTP</td><td>0 (cloud)</td><td>~2–5s</td><td>master-cron · platform · wiki_improver</td></tr>
+    <tr><td>KG embedding training</td><td>PyKEEN RotatE 128-d</td><td>PyTorch CPU</td><td>~300 MB sustained</td><td>hours–days (grokking)</td><td>pykeen-train</td></tr>
+    <tr><td>vector search</td><td>all-MiniLM-L6-v2</td><td>ChromaDB</td><td>~1–2 GB</td><td>ms</td><td>mempalace · media-memory</td></tr>
+  </tbody>
+</table>
+
+<div class="callout callout-danger">
+<strong>OOM math recap:</strong> jetsam today at 12:28 captured 5 Python × ~3.8 GB = ~19 GB. Flock caps this at 1 MLX subprocess. But base footprint (mempalace ChromaDB 1–2 GB + pykeen PyTorch 300 MB + OS + Chrome + platform + Claude Code) is already 8–12 GB. Add Gemma4-26B load (~15 GB) and you're at 23–27 GB. On a 32 GB machine that's tight. <strong>Avoid running wiki_improver and master-cron concurrently</strong> — both spawn MLX, both serialize via flock, but the wait itself can stack pressure via the other holding GPU-adjacent buffers.
+</div>
+
+<h2>Overlap &amp; improvement candidates</h2>
+
+<h3>Consolidation</h3>
+<ul>
+  <li><strong>morning-briefing × weekly-report × last-cron-result.json</strong> — three reports, same query sources. Share a <code>reporting_core.py</code>; each picks a time window.</li>
+  <li><strong>email-watcher 14-step subprocess chain</strong> — 6–10 <code>subprocess.run</code> calls per bundle, each cold-imports Python. Collapse to in-process functions → 4–8× faster, far less fork storm at boot.</li>
+  <li><strong>think × email-watcher split-brain queue</strong> — think writes <code>queue.json</code>, email-watcher writes <code>pending_todos.json</code> + <code>pending_decisions.json</code>. Platform has to merge. Unify to one queue (SQLite table or single JSON).</li>
+  <li><strong>backup × litestream</strong> — litestream already gives 30d incremental replication. Weekly <code>.backup</code> is redundant unless you want a fully-independent snapshot.</li>
+  <li><strong>wiki_improver runs outside cron</strong> — it's advertised as a continuous-improvement loop but needs a human to start it. Either wrap in a plist with <code>StartInterval=21600</code> (6h) gated by an idle-check + flock, or delete and fold its passes into master-cron phase 11.</li>
+</ul>
+
+<h3>Risks the flock doesn't cover</h3>
+<ul>
+  <li><strong>mempalace + pykeen-train co-residency</strong> — both hold RAM continuously; neither takes the flock. Worst-case memory = base (mempalace 1.5 GB + pykeen 0.3 GB + platform 0.5 GB) + Gemma4-26B (15 GB) + other apps — easily &gt;24 GB.</li>
+  <li><strong>pykeen Adam state not checkpointed</strong> — every restart resets optimizer second-moment estimates. Every crash resets grokking progress. One-line fix.</li>
+  <li><strong>MLX × PyKEEN contention</strong> — flock only serializes MLX×MLX. Consider extending the flock wrapper: "skip this run if pykeen CPU &gt;100%".</li>
+  <li><strong>Not all plists cleaned up</strong> — litestream, backup, log-rotate, morning-briefing, weekly-report still have default Nice/ProcessType (STABILITY-PLAN Group C2 deferred).</li>
+</ul>
+
+<h3>Suggested improvement sequence</h3>
+<ol>
+  <li><strong>Wiki security fixes</strong> — close SEC-1 (XSS), SEC-2 (SQLi), SEC-3 (FTS5 inj), SEC-5 (path traversal), SEC-7 (access control) in <code>wiki_server.py</code>. Correctness/security bugs take priority over perf.</li>
+  <li>Re-enable <code>master-cron</code> only; observe 24h for jetsam (validate flock).</li>
+  <li>Group C2 pass on the 5 untreated plists (cosmetic, same pattern).</li>
+  <li>pykeen Adam checkpoint (one line).</li>
+  <li>Decide wiki_improver strategy: fold-in, or cron-ify with idle gate.</li>
+  <li><strong>Split wiki_server.py monolith</strong> (DEV-1) — handler + routing module + q_* modules; opens the door to wiring wiki into CoCo Platform frontend.</li>
+  <li>Collapse email-watcher subprocess chain.</li>
+  <li>Unify queue.json + pending_*.json.</li>
+  <li>Remove weekly backup if litestream covers your recovery scenarios.</li>
+</ol>
+
+<script type="module">
+import { renderMermaidSVGAsync } from "https://esm.sh/beautiful-mermaid@1.1.3";
+const theme = { bg: "#ffffff", fg: "#0f1d3a", line: "#475569", accent: "#1a73e8" };
+async function render() {
+  const nodes = document.querySelectorAll("[data-code]");
+  for (const el of nodes) {
+    const code = el.getAttribute("data-code");
+    try {
+      const svg = await renderMermaidSVGAsync(code, { theme });
+      el.innerHTML = svg;
+    } catch (e) {
+      el.innerHTML = "<pre style='color:#dc2626'>render failed: " + e.message + "</pre>";
+      console.error(e);
+    }
+    await new Promise(r => requestAnimationFrame(r));
+  }
+}
+render();
+</script>
+
+</body>
+</html>
