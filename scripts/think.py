@@ -188,6 +188,63 @@ def should_auto_handle(item: dict, config: dict, brain: dict) -> tuple[bool, str
     return False, ""
 
 
+def sweep_stale_items(queue: dict, config: dict) -> list[dict]:
+    """Expire old pending items that were never handled.
+
+    Returns list of auto-handled entries for the session log.
+    Configurable via config.auto_handle.stale_after_days (default 7).
+    """
+    auto_config = config.get("auto_handle", {})
+    stale_days = auto_config.get("stale_after_days", 7)
+    now = datetime.now(timezone.utc)
+    cutoff = now - timedelta(days=stale_days)
+    cutoff_hard = now - timedelta(days=stale_days * 2)
+
+    swept = []
+    remaining = []
+
+    for item in queue.get("items", []):
+        if item.get("status") != "pending":
+            remaining.append(item)
+            continue
+
+        created_str = item.get("created_at", "")
+        try:
+            created_dt = datetime.fromisoformat(created_str)
+        except (ValueError, TypeError):
+            remaining.append(item)
+            continue
+
+        priority = item.get("priority", 4)
+        person = item.get("person")
+
+        # P1/P2 from known people — never auto-expire
+        if priority <= 2 and person:
+            remaining.append(item)
+            continue
+
+        # P4 unknown after stale_days, P3 unknown after 2x stale_days
+        if priority >= 4 and created_dt < cutoff:
+            pass  # falls through to sweep
+        elif priority >= 3 and not person and created_dt < cutoff_hard:
+            pass  # falls through to sweep
+        else:
+            remaining.append(item)
+            continue
+
+        age = (now - created_dt).days
+        swept.append({
+            "action": "stale_expired",
+            "summary": item.get("summary", "Unknown"),
+            "source_id": item.get("source_id"),
+            "original_priority": priority,
+            "age_days": age,
+        })
+
+    queue["items"] = remaining
+    return swept
+
+
 def age_deferred(queue: dict) -> None:
     """Check deferred items and resurface if due."""
     now = datetime.now(timezone.utc)
@@ -306,6 +363,12 @@ def think():
         # 5. Age deferred items
         age_deferred(queue)
 
+        # 5b. Sweep stale pending items
+        stale_swept = sweep_stale_items(queue, config)
+        if stale_swept:
+            auto_handled.extend(stale_swept)
+            log(f"Swept {len(stale_swept)} stale items from queue")
+
         # 6. Merge into queue (avoid duplicates by source_id)
         existing_ids = {i.get("source_id") for i in queue.get("items", []) if i.get("source_id")}
         for item in queued:
@@ -328,7 +391,8 @@ def think():
         brain["stats"]["items_auto_handled"] = brain["stats"].get("items_auto_handled", 0) + len(auto_handled)
         atomic_write_json(BRAIN_PATH, brain)
 
-        log(f"Think pass complete: {len(auto_handled)} auto-handled, {len(queued)} queued, {len(new_drafts)} new drafts")
+        stale_count = len(stale_swept) if stale_swept else 0
+        log(f"Think pass complete: {len(auto_handled)} auto-handled ({stale_count} stale expired), {len(queued)} queued, {len(new_drafts)} new drafts")
 
     finally:
         conn.close()
