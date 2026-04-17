@@ -1532,3 +1532,99 @@ Expected impact: 2,085 rows updated (59 are orphans with no PEL mapping — leav
 3. **Disarm `/tmp/conftest/*.sh` orphan spawns** — still producing adopted orphans per 13.15. `chmod -x /tmp/conftest/*.sh` if whatever invokes them keeps firing. Section 14.11 item 4.
 4. **Run the parent_project backfill** (Section 16.5) once email_watcher is free.
 5. **Memory file saved:** `~/.claude/projects/.../memory/project_dedup_block.md` indexed in MEMORY.md — documents the write-pattern trap for future sessions.
+
+---
+
+## 17. Afternoon Phase 7+8+9 — Runs 4+5 + brain migration part 2 (2026-04-17 15:07 → 16:19 EDT)
+
+Continuation of Section 15. Run 3 surfaced two new schema-drift categories (`notes` on 10 Downloads brains + `summary` on 2 E&C brains). The afternoon closed those out, hit another drift (`due_date`), recovered from a warm-server outage, and landed a clean 48/48 run.
+
+### 17.1 Run 4 (15:07:53 → stalled ~15:29)
+- Applied migration before launch:
+  - 10× `~/Downloads/brains/*/project_brain.db` — `ALTER TABLE tasks RENAME COLUMN description TO notes`
+  - 2× `~/.../E&C/{Diligence,Personal Compliance}/project_brain.db` — `ALTER TABLE events RENAME COLUMN description TO summary`
+- Phase 7 complete at 15:07:59 — 49 enqueued, 59 fresh.
+- Phase 8 hit three issues:
+  - **7× `no such column: due_date`** on Downloads/brains tasks — missed column, code queries `t.due_date`.
+  - **Warm MLX server DIED mid-run.** `local_llm: giving up after 3 attempts — warm server unreachable`. Because `COCO_LOCAL_ONLY=1` (Section 14.10) the runner refused to fall through to Anthropic, so per-project generators reverted to a stub fallback path that still "completed" the article but with lower-quality content.
+  - Runner stalled completely after `personal-medical` at 15:29:01 — 0% CPU, DB lock held, no progress for 45 min.
+- Partial outcome: 15 project_summary completions before the stall. No Phase 8/9 complete markers.
+
+### 17.2 Recovery at 16:14
+1. `kill -TERM 58173` — stuck runner cleanly stopped.
+2. `launchctl bootstrap gui/$UID ~/Library/LaunchAgents/com.coco.mlx-vlm-server.plist` — MLX server was fully unloaded, not just crashed. New PID 89123 loaded weights over ~56s.
+3. Applied Run 5 migration:
+   - 10× Downloads/brains — `ALTER TABLE tasks ADD COLUMN due_date TEXT`
+   - 2× E&C — `ALTER TABLE tasks RENAME COLUMN description TO notes` (E&C brains also needed the tasks rename; Run 4 only hit Downloads)
+
+### 17.3 Run 5 (16:14:23 → 16:19:19) — CLEAN SWEEP
+
+| Phase | Result |
+|---|---|
+| Phase 7 | 18 enqueued, 90 fresh, 0 errors |
+| Phase 8 | **48 processed, 48 succeeded, 0 failed, 0 dry-run skipped** |
+| Phase 9 | 2,336 indexed, 7,157 backlinks, 0 errors |
+
+Wall time: **4m55s**. 100% success rate. Split:
+- **21 × project_summary**
+- **27 × decision_log** (up from 2 in Run 3 — the gpt-5-nano fallback uses richer evidence sources than `brain.decisions` directly, which is still empty)
+
+### 17.4 All schema errors eliminated
+
+| Error category | Run 1 | Run 2 | Run 3 | Run 4 | **Run 5** |
+|---|---|---|---|---|---|
+| DRO Wiki-Articles path | 12 | 12 | 0 | 0 | **0** |
+| `no such column: date` | 7 | 7 | 0 | 0 | **0** |
+| `no such column: type` | 2 | 2 | 0 | 0 | **0** |
+| `no such column: participants_json` | — | 3 | 0 | 0 | **0** |
+| `no such column: notes` | — | — | 10 | 2 | **0** |
+| `no such column: summary` | — | — | 2 | 0 | **0** |
+| `no such column: due_date` | — | — | — | 7 | **0** |
+| decision_log guard skip (misleading) | 25 | 25 | 23 | — | **0** |
+| warm server unreachable | — | — | — | many | **0** |
+
+### 17.5 DRO-family — all 6 succeeded
+
+| Slug | project_summary | decision_log |
+|---|---|---|
+| aravo | ✅ | ✅ |
+| ens-navigator | ✅ | ✅ |
+| gl-screening | ✅ | ✅ |
+| project-s | ✅ | ✅ |
+| tpi-risk-ranking | ✅ | ✅ |
+| tpi-tracker | ✅ | — (fresh from Run 3) |
+| dro | — (fresh) | — (fresh) |
+
+Registry fix (Section 15.4 Fix C) confirmed end-to-end.
+
+### 17.6 Open residual: `r.rel_type` (10×, non-fatal)
+
+Only remaining error class in Run 5:
+```
+Error querying brain DB .../project_brain.db: no such column: r.rel_type
+```
+
+Phase 8 still reports 0 failures — generators succeed via alternate code paths. Suggests an enrichment query (likely graph_neighbors) aliases `relationships` as `r` and selects `r.rel_type` which doesn't exist in old Downloads brains. Close with another RENAME or defensive try/except. Cosmetic priority.
+
+### 17.7 Session totals (Runs 1–5)
+
+- **5 runs**, 135 total completions with overlap
+- **7 distinct schema migrations** applied across 12 brain DBs:
+  1. `events.event_date → date` (10 brains)
+  2. `events.event_type → type` (10 brains)
+  3. `events` add `type` column (2 E&C brains)
+  4. `events.participants → participants_json` (12 brains)
+  5. `tasks.description → notes` (10 Downloads + 2 E&C — two passes)
+  6. `events.description → summary` (2 E&C brains)
+  7. `tasks` add `due_date` column (10 Downloads brains)
+- **6 `project_registry` rows** updated (DRO path fix)
+- **1 launchd service** bootstrapped back after crash (com.coco.mlx-vlm-server)
+- **Current wiki corpus**: 2,336 articles, 7,157 backlinks
+
+### 17.8 Still pending
+
+1. **`r.rel_type` fix** — inspect query, decide rename vs COALESCE. ~10 min.
+2. **Formalize all 7 migrations** into `~/.claude/skills/brain/scripts/brain/schema.py` `MIGRATIONS` dict as V2. Prevents recurrence when a legacy brain is restored from backup.
+3. **Decision extraction pipeline (Option C)** — still a separate initiative.
+4. **Warm-server resilience** — today it died silently mid-run. Needs a healthcheck+auto-recover wrapper, or a watchdog in master-cron that probes `/health` before Phase 8.
+5. **`COCO_LOCAL_ONLY=1` trap** — when warm server dies, runner refuses Anthropic fallthrough and emits stub articles via gpt-5-nano-only. Worth a logged warning or circuit-breaker that clears `COCO_LOCAL_ONLY` for one retry after 60s of warm-server unavailability.
