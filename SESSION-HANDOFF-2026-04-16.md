@@ -22,17 +22,19 @@ The knowledge-dashboard on port 9876 was rebuilt from a passive status page into
 - **Known issues at stop** (Section 13.15): `COCO_LOCAL_ONLY=1` + warm-server-busy = articles fall back to conf=0.30 stubs and get rejected by the 0.95 floor → nothing lands in DB even though the cron "succeeded". QB gateway showed ReadTimeouts during the session. `/tmp/conftest/*.sh` scripts keep re-spawning conflicts orphans outside the queue.
 
 1. **Verify no overnight jetsam:** `find /Library/Logs/DiagnosticReports -name 'JetsamEvent-*' -newermt '2026-04-16 18:00:00'` → must be empty.
-2. ~~Restart pykeen~~ **DONE 20:44 EDT** (Section 2.14). PID 1411 → **57376**, Adam checkpoint kwargs now active. Just verify still running: `ps -p $(pgrep -f '[p]ython.*pykeen_bridge\.py') -o pid,etime,%cpu,rss`.
+2. ~~Restart pykeen~~ **DONE 20:44 EDT** (Section 2.14). Adam checkpoint kwargs now active. Verify still running (PID drifts across restarts — rely on `pgrep`): `ps -p $(pgrep -f '[p]ython.*pykeen_bridge\.py' | head -1) -o pid,etime,%cpu,rss`.
 3. **Verify pykeen checkpoint file appeared:** `ls -la ~/.coco/knowledge/pykeen-model/pykeen_training_checkpoint.pt` should exist (>10 min since restart).
 4. **Confirm master-cron behaved correctly at Fri 01:00:** `tail -5 ~/.coco/knowledge/master-cron.stdout.log` should show "pykeen_bridge.py is active, yielding machine." Section 11.2 resolved the 18:22 "bypass" as the deliberate flock-validation test — guard is fine, just confirm still firing.
 5. **Close the 12:00 fire unknown:** `launchctl print gui/$UID/com.coco.master-cron | grep -A8 'calendar interval'` — plist says 01:00+14:00 but 12:00 fired today.
 6. **Check email-watcher + think have been firing:** `ls -la ~/.coco/knowledge/.last-cron-run`, plus recent entries in `~/.coco/logs/email-watcher.log`.
 7. ~~**Fix stale Haiku model IDs** before re-enabling digests — Section 11.3.~~ ✅ Fixed in Section 2.14.
-8. **Confirm gpt-5-nano is live in production (NEW, Section 2.17):** after Fri 01:00 fire, `grep "gpt-5-nano done" ~/.coco/knowledge/master-cron.stderr.log | tail -10` should show per-article cost lines. If it's silent → gateway down or key issue, Gemma fallback should still be generating articles (check `grep "warm_llm done"`).
+8. **Confirm gpt-5.4-nano-2026-03-17 is live (Section 14.3 locked the model):** after the next natural master-cron fire, `grep "gpt-5" ~/.coco/knowledge/master-cron.stderr.log | tail -10` should show `model=gpt-5.4-nano-2026-03-17` lines. If it's silent → QB gateway down or key issue; Gemma warm-pool is the fallback (`grep "warm_llm done"`). Dashboard pills at http://localhost:9876 should also show the new label (§16.6 #2).
 9. **🆕 Verify dashboard survived the night** (Section 13): open `http://localhost:9876/knowledge-dashboard.html`, confirm Rerun Queue renders, stop any unwanted adopted orphans. Check `~/.coco/knowledge/queue-state.json` exists + parses. Tail `~/.coco/knowledge/queue-jobs/` — should have per-job logs from overnight runs.
-10. **🆕 Investigate the 0-article-landed mystery** (Section 13.13 + 13.15): if tonight's runs produced 0 new rows in `articles`, the cause is likely `COCO_LOCAL_ONLY=1` + warm-server timeouts forcing the bare-bones (conf=0.30) fallback which `article_writer` then rejects. Either (a) verify gpt-5-nano primary path is actually taking (`grep "gpt-5-nano" ~/.coco/knowledge/queue-jobs/*.log`), (b) debug the warm-server `/v1/chat/completions` timeout pattern, or (c) accept that the floor will drop stub articles and move on.
+10. ~~**🆕 Investigate the 0-article-landed mystery**~~ ✅ **RESOLVED — Section 16.** Root cause was `ArticleWriter` dedup shadowing writes (not COCO_LOCAL_ONLY / warm-server issue). Fixed in commit `eff2b97` via `force` plumbing through `generate_articles → _write_article → ArticleWriter.write`. Live repro landed 92 conflicts articles. **Follow-up:** run the parent_project backfill (Section 16.5) once email_watcher is free; scale-verify on audit-board (Section 16.6).
 11. **🆕 Disarm rogue test scripts**: `ls -la /tmp/conftest/*.sh` — two scripts kept respawning `conflicts` crons outside the queue during the session. If something's still invoking them: `chmod -x /tmp/conftest/*.sh` stops the spawns.
-12. Then pick from Section 6 priorities.
+12. **🆕 Run parent_project backfill (§16.5)** — 1,946 rows have blank `parent_project` and poison non-force cron dedup. Run the UPDATE SQL in §16.5 via `schema.knowledge_db_lock()` ONLY after confirming email_watcher isn't holding the DB write path (`pgrep -f email_watcher` and check elapsed time + CPU).
+13. **🆕 Scale-verify the dedup fix (§16.6 #1)**: run `audit-board` (2,766 entities, ~$5.60 cost on gpt-5.4-nano-2026-03-17). Watch http://localhost:8888 populate. Confirm dashboard pills at http://localhost:9876 show `gpt-5.4-nano-2026-03-17` (not stale `claude-sonnet-4-6`).
+14. Then pick from Section 6 priorities.
 
 ---
 
@@ -554,54 +556,38 @@ Ordered by recommended priority. Each has enough context to resume cold.
 - ❌ **Adam checkpoint kwargs NOT active on PID 1411** — Python import cache means the running process never saw the edit. **Action (in TL;DR #2): `launchctl kickstart -k gui/$UID/com.coco.pykeen-train`.** Adam state loss is negligible since MRR=0.0 means we're nowhere near grokking. (Section 2.9)
 - ⏰ **master-cron yield:** next scheduled fire is Fri 01:00; log shows a clean 18:14 yield as precedent. **But Section 11.2 flags a 18:22 run that bypassed the guard** — root cause not yet identified, verify Fri 01:00 behaves correctly.
 
+### Priority 1a — Post-§16 follow-ups (lifted from §15.8 + §16.6)
+These are the highest-priority actionable items from the late-night / morning sessions. Kept separate from the original Priority 1 (flock validation) because they're qualitatively different work.
+
+- **🆕 parent_project backfill (§16.5)** — 1,946 rows have blank `parent_project` and poison non-force cron dedup. Run the UPDATE SQL once email_watcher has released the knowledge.db write path. Use `schema.knowledge_db_lock()`. Expected: 2,085 rows updated.
+- **🆕 Scale-verify dedup fix (§16.6 #1)** — run `audit-board` (2,766 entities, ~$5.60 on gpt-5.4-nano-2026-03-17) to prove the fix holds beyond the 241-entity conflicts repro.
+- **🆕 Dashboard label verification (§16.6 #2)** — confirm http://localhost:9876 pills show `gpt-5.4-nano-2026-03-17` instead of `claude-sonnet-4-6`.
+- **🆕 Disarm `/tmp/conftest/*.sh` (§16.6 #3)** — `chmod -x /tmp/conftest/*.sh` if anything is still invoking them.
+- **🆕 Codify brain schema migrations (§15.8 #2)** — move the ad-hoc `/tmp/migrate_brain_events_columns.py` (event_date/type rename, type-add, participants_json rename) into `schema.py` `MIGRATIONS` dict so legacy brains restored from backup don't break again. *(Agent workstream in flight — see session summary.)*
+- **Stakeholder_pulse timeout/instrumentation (§15.8 #4)** — ✅ **added 2026-04-17** via timeout budget + circuit breaker + progress logging. Env vars: `STAKEHOLDER_PULSE_TIMEOUT_SEC` (default 600), `STAKEHOLDER_PULSE_MAX_CONTRADICTIONS` (default 10000). Watch next natural email_watcher cycle for the 7h wedge to not recur.
+- **Decision extraction pipeline (§15.8 #1)** — separate initiative; needed to populate `brain.decisions` so Phase 8 decision_log composites can generate. Scope it before committing.
+- **Misleading Phase 8 "error" on skip-by-guard (§15.8 #3)** — `decision_log_generator` returns None; driver reports as failure. Return a sentinel `{"skipped": True}` or raise a typed exception.
+- **12:00 master-cron fire unknown (§15.8 #5, §0 #5)** — `launchctl print gui/$UID/com.coco.master-cron | grep -A8 'calendar interval'`. One command away.
+
 ### Priority 2 — MLX warm-pool fix — ✅ SHIPPED (see Section 2.13)
-**Phase 2 shipped this session.** Warm server live as `com.coco.mlx-vlm-server` (PID 55642), 16 GB Gemma4-26B-A4B held in RAM, `base_generator._call_local_llm` routes through `/v1/chat/completions` with subprocess fallback. Measured −36% wall time (67.3s → 43.0s) and eliminates the cold-load pathway that produced the 83% MLX timeout rate. Phase 1 (stats tracker) and Phase 3 (idle unload) are no longer needed — see Section 2.13 for rationale.
+**Phase 2 shipped this session.** Warm server live as `com.coco.mlx-vlm-server`, Gemma4-26B-A4B held in RAM (~16 GB), `_call_local_llm` routes through `/v1/chat/completions`. Measured −36% wall time (67.3s → 43.0s). Phase 1 (tracker) and Phase 3 (idle unload) not needed on 64 GB. Only residual: `_LOCAL_MODEL_REGISTRY` still uses `mlx_vlm` framework for text-only tasks — Section 11.4 suggests switching to `mlx_lm` for 2-3× speedup + lower RAM. Open decision §7 #9.
 
-The original plan below is preserved for reference / context.
+*(Archived original phase 1/2/3 plan removed as obsolete — if needed, `git show <this-commit>^:SESSION-HANDOFF-2026-04-16.md` restores it.)*
 
----
+### Priority 3 — Wiki security fixes — ✅ LARGELY CLOSED (re-verified 2026-04-17)
 
-**Phase 1 — Track (1 day, low risk)**
-- Build a small script that parses `~/.coco/knowledge/master-cron.stderr.log` after each run, appends row to `~/.coco/knowledge/mlx-stats.csv`: `[date, mlx_calls, mlx_successes, mlx_timeouts, cloud_fallbacks, total_articles, est_cloud_cost_usd]`
-- Surface in morning-briefing (`~/.coco/knowledge/morning_briefing.py`)
-- Goal: per-day numbers instead of lifetime aggregates
+Re-verified against current `~/.coco/knowledge/wiki_server.py` (a `/team review` on this handoff surfaced that `REVIEW-SECURITY-DEV.md` dated 2026-04-13 had stale line numbers; wiki was patched since):
 
-**Phase 2 — Warm-pool MLX server (3–5 days, medium risk)**
-- New launchd daemon `com.coco.mlx-vlm-server`, running `python -m mlx_vlm.server --model mlx-community/gemma-4-26b-a4b-it-4bit --port 8088`
-- Refactor `~/.coco/knowledge/base_generator.py:495-560` (`_call_local_llm`) to use `httpx.post('http://localhost:8088/v1/chat/completions', ...)` instead of `subprocess.run([..., 'mlx_vlm', 'generate', ...])`
-- Same change in `backend/app/services/local_llm_client.py:195-303`
-- Same change in `scripts/generate_product_articles.py:226-309`
-- Remove `_mlx_exclusive()` flock from MLX path (server serializes internally)
-- Keep cloud fallback for safety
-
-**Memory trade-off (corrected after Section 2.10):** On **64 GB** M4 Max (not 32 GB), warm 26B-A4B (~15.6 GB) leaves ~31 GB free headroom with pykeen + mempalace running. Dual warm 26B+31B (~33 GB) leaves ~16 GB free — tight but workable. The "switch to Qwen2.5-7B" fallback is obsolete; stay on Gemma.
-
-**Urgency increased by Section 2.12 timing data:** 31B cold-load + inference under pykeen contention hit 281s per article. That's **7× slower than 26B-A4B** for 73% more quality. Warm-pool is no longer optional if 31B becomes the `article-rich` escalation model.
-
-**Phase 3 — Idle unload (optional polish)**
-- Wrap server with idle-timeout: if no `/v1/chat/completions` request in 30 min, call `POST /unload` on the server to free model
-- First request after idle takes the cold-load hit
-- Cuts steady-state memory back down when idle
-
-**Decision needed:** not memory-bound on 64 GB (Section 2.10). Phase 3 idle-unload is polish, not required. Per Section 2.12 final verdict, **single warm lane = Gemma4-26B-A4B only**; 31B is cold-load on-demand. The earlier "swap to Qwen2.5-7B" fallback is obsolete.
-
-**Prerequisite work before Phase 2** (surfaced in Section 11):
-- Framework for `article-*` tasks in `_LOCAL_MODEL_REGISTRY` is `mlx_vlm` — wrong for text-only Gemma usage. Switch to `mlx_lm` (or run `mlx_lm.server` instead of `mlx_vlm.server`). Estimated 2–3× speedup and less RAM for same model.
-- `_call_local_llm` `timeout=180s` with `--max-tokens=5000` is under-sized at ~25 tok/s; 5000 tokens needs ~200s just for generation. Raise to 360s, or lower max-tokens. Likely cause of half the 72 MLX timeouts.
-
-### Priority 3 — Wiki security fixes (5 findings, blocks any external exposure)
-Pending in `~/.coco/knowledge/REVIEW-SECURITY-DEV.md`:
-
-| ID | Severity | Finding | Location |
+| ID | Original Severity | Current Status | Evidence |
 |---|---|---|---|
-| SEC-1 | high | Stored XSS via article content rendering | `wiki_server.py` :355–386, :1172–1197 |
-| SEC-2 | high | SQL injection via string interpolation in `q_projects()` | `wiki_server.py` :187–189 |
-| SEC-3 | medium | FTS5 MATCH injection via unsanitized search queries | `wiki_server.py` :145, `knowledge_search.py` :179, :189, :448 |
-| SEC-5 | high | Path traversal in `/file/` route | `wiki_server.py` :1627–1630, :293–327 |
-| SEC-7 | high | Personal document content exposed without access control | `wiki_server.py` :1669 (entire `/file/` route) |
-| DEV-1 | medium | 1,683-line monolith — split | `wiki_server.py` entire file |
+| SEC-1 | high Stored XSS | **✅ MITIGATED** | `md_html` calls `escape(text)` first; infobox values wrapped with `escape(...)`; error handler uses `escape(str(e))`. |
+| SEC-2 | high SQLi in `q_projects()` | **✅ MITIGATED** (~lines 219-221 now) | Interpolated value is drawn from hardcoded `PERSONAL_SLUGS` constant — not user input. Code-smell only. |
+| SEC-3 | medium FTS5 MATCH injection | **✅ MITIGATED** | `sanitize_fts5_query` (~line 90) wraps tokens in quotes; `sanitize_like_input` (~line 103) escapes `%`/`_`. Applied at q_search. Cited `knowledge_search.py` does not exist at that path. |
+| SEC-5 | high Path traversal `/file/` | **✅ MITIGATED** | `q_personal_file_detail` (~line 327) gates with `if brain_slug not in PERSONAL_SLUGS: return None`; `entity_id` cast via `int()`. No filesystem traversal possible. |
+| SEC-7 | high Personal doc content without auth | **✅ FIXED 2026-04-17** (commit pending in `~/.coco`) | Token gate added: `/file/` now requires `?t=<token>` or `X-Wiki-Token` header. Token at `~/.coco/.wiki-token` (chmod 600), `hmac.compare_digest` comparison, 403 + logged on mismatch, `Cache-Control: no-store` + `X-Content-Type-Options: nosniff` on responses. File-browser UI link updated to include token. **Restart wiki process** (`pkill -f 'python.*wiki_server.py' && ~/.coco/knowledge/start-wiki.sh`, or however the user starts it) so the new code takes effect. |
+| DEV-1 | medium 1,683→~2,100 line monolith | **📋 OPEN** | Still a big file. Refactor is nice-to-have, not a blocker. |
 
-**Blast radius:** wiki currently runs only on localhost:8888 so external exploit is bounded. But any integration into the CoCo Platform frontend (or Tailscale exposure) inherits all 5 bugs. Treat as localhost-only prototype until SEC-1/2/3/5/7 are closed.
+**Net:** Priority 3 is effectively closed. Only residual work: (a) restart the running wiki PID 51149 so the SEC-7 token gate takes effect, (b) DEV-1 refactor is polish. The localhost-only constraint still applies until a broader auth layer lands.
 
 ### Priority 4 — Group C2 plist cleanup (deferred)
 The 5 plists not yet treated with the Background/Nice/LowPriorityIO/RunAtLoad-removed pattern:
@@ -745,27 +731,44 @@ From `CRON-ECOSYSTEM-MAP.html` improvement section:
 # 1. Sanity checks
 cd ~/projects/coco-platform
 date
-find /Library/Logs/DiagnosticReports -name 'JetsamEvent-*' -newermt '2026-04-16 18:00:00'   # MUST be empty
+find /Library/Logs/DiagnosticReports -name 'JetsamEvent-*' -newermt "$(date -v-24H '+%Y-%m-%d %H:%M:%S')"   # MUST be empty
 pgrep -f '[p]ython.*pykeen_bridge\.py' | head -1 | xargs -I{} ps -p {} -o pid,etime,%cpu,rss
 cat ~/.coco/knowledge/pykeen-model/grokking_state.json
-ls -la ~/.coco/knowledge/pykeen-model/pykeen_training_checkpoint.pt   # NEW file from Adam fix
+ls -la ~/.coco/knowledge/pykeen-model/pykeen_training_checkpoint.pt   # Adam checkpoint file
 
 # 2. Confirm cron behavior overnight
 launchctl list | grep com.coco
 tail -20 ~/.coco/knowledge/master-cron.stdout.log
 ls -la ~/.coco/knowledge/.last-cron-run
 
-# 3. MLX fallback rate (run after re-running master-cron once if you want delta)
+# 3. Model + fallback rate — confirm gpt-5.4-nano-2026-03-17 is the taking path (§14.3)
 LOG=~/.coco/knowledge/master-cron.stderr.log
-echo "MLX done:    $(grep -c 'local_llm done' $LOG)"
-echo "MLX timeout: $(grep -c 'local_llm timed out' $LOG)"
-echo "via Sonnet:  $(grep -c 'model=claude-sonnet-4-6' $LOG)"
+echo "gpt-5.4-nano: $(grep -c 'model=gpt-5.4-nano-2026-03-17' $LOG)"
+echo "via Sonnet  : $(grep -c 'model=claude-sonnet-4-6' $LOG)     # should be 0 or near-0 post-§14.6"
+echo "warm_llm    : $(grep -c 'warm_llm done' $LOG)               # fallback path"
+echo "warm timeout: $(grep -c 'warm_llm unreachable' $LOG)"
 
-# 4. Open the map in browser
+# 4. Verify §16 dedup fix still landing articles (counts should be climbing across days)
+sqlite3 ~/.coco/knowledge/knowledge.db "
+  SELECT parent_project, COUNT(*) AS n,
+         MAX(datetime(updated_at)) AS latest
+  FROM articles
+  WHERE updated_at > datetime('now','-24 hours')
+  GROUP BY parent_project ORDER BY n DESC LIMIT 10;"
+
+# 5. Dashboard + wiki health
+curl -s -o /dev/null -w 'dashboard: %{http_code}\n' http://localhost:9876/knowledge-dashboard.html
+curl -s -o /dev/null -w 'wiki:      %{http_code}\n' http://localhost:8888/
+# SEC-7 smoke: /file/ should 403 without token after wiki restart
+TOKEN=$(cat ~/.coco/.wiki-token 2>/dev/null)
+curl -s -o /dev/null -w 'file no-token: %{http_code} (expect 403)\n' http://localhost:8888/file/personal-immigration/1
+curl -s -o /dev/null -w 'file w/ token: %{http_code}\n' "http://localhost:8888/file/personal-immigration/1?t=$TOKEN"
+
+# 6. Open the map in browser
 open CRON-ECOSYSTEM-MAP.html
 ```
 
-Then pick from Section 6 priorities.
+Then pick from Section 6 priorities (1a is newest, lifted from §15.8 + §16.6).
 
 ---
 
@@ -1075,7 +1078,7 @@ Each invocation runs `cron.py --project conflicts --phases 2,3 --force` outside 
 3. **Warm MLX `/v1/chat/completions` times out under load** even when `/health` is fine. Server is single-flight; multiple concurrent Phase 3 callers pile up. The 20s retry backoff papers over it but throughput is low.
 4. **`/tmp/conftest/*.sh` keep spawning orphans.** Source not identified. Either disarm the scripts (`chmod -x`) or find what's invoking them.
 5. **Platform `local_llm_client.py` subprocess fallback restored externally.** If the intent is strict-local-only on the platform too, that needs re-applying.
-6. **Article generator still emits `model=claude-sonnet-4-6`** on successful generations observed in the test — the gpt-5-nano primary path isn't taking. Either the routing check is mis-evaluating, or gpt-5-nano is failing silently and the cascade falls through to Claude even with `COCO_LOCAL_ONLY`. Needs instrumentation inside `_call_gpt5_nano` specifically.
+6. ~~**Article generator still emits `model=claude-sonnet-4-6`** on successful generations observed in the test — the gpt-5-nano primary path isn't taking.~~ ✅ **FIXED in §14.6** (`call_claude()` sets `self._last_backend` on every path; `generate()` now reads it). Verified live in §16.3 (label = `gpt-5.4-nano-2026-03-17`).
 7. **Per-card "last run" in the dashboard** — now reads from the queue history overlay (not just master-cron.log). Works for manual queue jobs; falls back to master-cron's `Done:` lines for stuff the daily sweep runs.
 
 ### 13.16 Dashboard is now the single control surface
@@ -1182,7 +1185,7 @@ count  conf
   1    0.69, 0.66, 0.62, 0.58, 0.52
 ```
 
-**None reached 0.95.** Every single entity article was silently rejected at [article_writer.py:86](https://example.invalid) (`if confidence < 0.95: return False`). The only articles landing were `action_items` which hardcode `confidence=1.0`.
+**None reached 0.95.** Every single entity article was silently rejected at `article_writer.py:86` (`if confidence < 0.95: return False`). The only articles landing were `action_items` which hardcode `confidence=1.0`.
 
 **Why confidences are low:**
 `BaseArticleGenerator.score_confidence()` formula used the **LLM's self-reported confidence** as base (`article["confidence"]`). Modern LLMs self-deflate — Claude and gpt-5-nano typically report 0.3-0.7 on their own output; Gemma inflates to 1.00. Evidence modifiers (+0.2 for emails, +0.2 for decisions, +0.1 for 200+ words, +0.1 for 2+ projects) only added up to +0.6, capping at ~0.88 for Claude/gpt-5-nano.
@@ -1224,11 +1227,11 @@ Per user (explicit confirmation this session): **gpt-5.4-nano-2026-03-17 is now 
 3. Cost delta is ~$12/milestone — negligible vs engineering time spent debugging local stack.
 4. Keep Gemma warm server loaded as fallback for gateway outages; accept the 15 GB RAM cost.
 
-**Default set in code**: [base_generator.py:129](https://example.invalid) → `_GPT5_NANO_MODEL = os.environ.get("COCO_GPT5_NANO_MODEL", "gpt-5.4-nano-2026-03-17")`.
+**Default set in code**: `base_generator.py` `_GPT5_NANO_MODEL` (grep for `_GPT5_NANO_MODEL` — line may drift) → `_GPT5_NANO_MODEL = os.environ.get("COCO_GPT5_NANO_MODEL", "gpt-5.4-nano-2026-03-17")`.
 
 ### 14.4 Fix A — Deterministic confidence scoring
 
-Replaced the LLM-self-confidence-based formula with evidence-based signals in [base_generator.py:score_confidence()](https://example.invalid). Gated by `COCO_SCORE_DETERMINISTIC` env var, **default ON**. Legacy formula preserved behind `COCO_SCORE_DETERMINISTIC=0` for instant revert.
+Replaced the LLM-self-confidence-based formula with evidence-based signals in `base_generator.py:score_confidence()`. Gated by `COCO_SCORE_DETERMINISTIC` env var, **default ON**. Legacy formula preserved behind `COCO_SCORE_DETERMINISTIC=0` for instant revert.
 
 New formula:
 ```
@@ -1261,8 +1264,8 @@ conf=0.42:  1 ──┘
 ### 14.5 Fix B — Confidence floor 0.95 → 0.90
 
 Two locations both lowered to 0.90 via env override:
-- [article_writer.py:86](https://example.invalid) now reads `COCO_CONFIDENCE_FLOOR` (default 0.90)
-- [engine.py:50](https://example.invalid) `MIN_ARTICLE_CONFIDENCE` now reads same env var
+- `article_writer.py:86` now reads `COCO_CONFIDENCE_FLOOR` (default 0.90)
+- `engine.py:50` `MIN_ARTICLE_CONFIDENCE` now reads same env var
 
 Rationale: deterministic formula tops at ~0.96 even for rich entities. 0.95 would still reject most. 0.90 passes the healthy ~60-70% and rejects the stubs + truly thin entities.
 
@@ -1270,7 +1273,7 @@ Rationale: deterministic formula tops at ~0.96 even for rich entities. 0.95 woul
 
 ### 14.6 Fix C — Model label reflects actual backend
 
-[article_generator.py](https://example.invalid) hardcoded `model_used = MODEL_DRAFT` (always `"claude-sonnet-4-6"`) regardless of which path served the request. This made all benchmarks, logs, cost attribution lie.
+`article_generator.py` hardcoded `model_used = MODEL_DRAFT` (always `"claude-sonnet-4-6"`) regardless of which path served the request. This made all benchmarks, logs, cost attribution lie.
 
 Now `BaseArticleGenerator.call_claude()` sets `self._last_backend = {"backend": "...", "model": "..."}` on each path (gpt-5-nano / local-mlx / claude-sdk / claude-cli). `article_generator.generate()` reads it:
 ```python
@@ -1282,16 +1285,18 @@ Verified — test logs now show `model=gpt-5.4-nano-2026-03-17` (real) instead o
 
 ### 14.7 Fix D — Streaming writes via `stream_articles_parallel`
 
-Under the original `generate_articles_parallel` ([article_generator.py:783](https://example.invalid)), the function accumulated all results in a list and returned only after the ThreadPoolExecutor completed every future. For 241-entity projects, **no article landed in DB for ~30 minutes** (the whole batch had to finish first) — bad UX and invisible progress on the wiki.
+Under the original `generate_articles_parallel` (in `article_generator.py`), the function accumulated all results in a list and returned only after the ThreadPoolExecutor completed every future. For 241-entity projects, **no article landed in DB for ~30 minutes** (the whole batch had to finish first) — bad UX and invisible progress on the wiki.
 
 Shipped:
 - New `stream_articles_parallel` generator — `yield (item, article_dict)` as each future completes.
 - Legacy `generate_articles_parallel` kept as `list(stream_articles_parallel(...))` wrapper for backward compat (test_integration.py etc.).
-- `engine.py` ([line 1048-1062](https://example.invalid)) prefers the streaming variant, falls back to legacy if import fails.
+- `engine.py` (grep for `stream_articles_parallel`) prefers the streaming variant, falls back to legacy if import fails.
 
 Net effect: articles now land in the DB every ~5-15 seconds (one per completed cloud call) instead of all-at-once at batch end.
 
 ### 14.8 Outstanding — articles-not-landing investigation (14:00 UTC / 10:00 EDT)
+
+> **⚠️ SUPERSEDED BY §16.** None of the 4 hypotheses below matched. Root cause was `ArticleWriter` `source_hash+confidence≥0.95` dedup silently shadowing writes for gids with stale Gemma 1.00-confidence rows. Fixed in commit `eff2b97` by plumbing `force=True` through `engine._write_article` → `article_writer.write()`. See §16.1–16.3. The "next debug step" and repro recipe below are historical; only the env-var list at the end of §14 still applies.
 
 Even with streaming + 0.90 floor + deterministic scoring, the verification test on `conflicts` generated **112 articles** but **0 landed for `parent_project='conflicts'`** in the DB over 19 minutes. Earlier test (before streaming) showed 5 had landed briefly, then disappeared / queries gave 0 — may have been a measurement artifact.
 
@@ -1436,3 +1441,94 @@ Launched `python3 cron.py --run --phases 7,8,9` again post-fixes. In flight at d
 3. **Misleading Phase 8 error for skip-by-guard** — `decision_log_generator` returns None for "not enough data"; driver treats as failure. Worth either returning a sentinel dict with `skipped=True` or exposing a typed exception.
 4. **Stakeholder_pulse 7h hang** — email_watcher ate 7 hours in Step 15 after a 123K-contradictions scan. Needs instrumentation/timeout. Watch next natural cycle.
 5. **12:00 master-cron fire** — still unexplained vs plist 01:00+14:00 schedule. One `launchctl print` check away.
+
+---
+
+## 16. Articles-not-landing RCA + fix (2026-04-17 09:00 → 10:40 EDT)
+
+Closes Section 14.8 / 14.11 items 1–2. The "0 articles landing" symptom was NOT a write-path bug — it was the `ArticleWriter` `source_hash+confidence` dedup silently shadowing every new write.
+
+### 16.1 Root cause
+
+`article_writer.py:107` dedup:
+
+```python
+if row and row["source_hash"] == source_hash and row["confidence"] >= 0.95:
+    return False    # silent
+```
+
+Pre-fix blank-`parent_project` rows (from the 13.7 bug) carry Gemma's self-reported 1.00 confidence. Every `--force` rerun for the same gid trips the dedup, returns False, and since `engine._write_article` doesn't inspect the writer's return value, `summary["generated"]` increments while the DB never changes.
+
+Blast radius check:
+```
+project-s: 996 | optimize: 622 | ec: 530 | cross-risk-internal: 515 | tp-inventory: 465
+audit-board: 413 | dro: 269 | ethics: 217 | conflicts: 189 | ab2: 160 | ...
+```
+**3,976 entities across 10+ projects silently blocked.** None of the 4 hypotheses in 14.8 matched — it was dedup all along.
+
+### 16.2 Fix
+
+Two-line semantic change:
+
+1. `~/.coco/knowledge/article_writer.py` — added `force: bool = False` to `write()`. Dedup becomes `if source_hash and not force:`.
+2. `~/.coco/knowledge/engine.py` — `_write_article()` accepts + forwards `force`. Both Phase 2 call sites (streaming parallel at :1103 and sequential fallback at :1147) pass `force=force` from the enclosing `generate_articles(force=...)` flag.
+
+Incremental-update path at engine.py:1377 left alone — `is_article_stale` already guarantees source_hash differs when it reaches there, so dedup can't fire.
+
+### 16.3 Live verification — conflicts 241-entity repro
+
+Launched `cron.py --run --project conflicts --phases 2,3 --force` via `/tmp/run-verify.sh` (per 14.8 recipe).
+
+| Metric | Result |
+|---|---|
+| Wall | 40 min (40 min 15 s) |
+| Entities processed | 241 / 241 |
+| `ArticleWriter: wrote` | 155 (incl. version bumps for existing gids) |
+| **Articles landed for `parent_project='conflicts'`** | **92 new** (baseline was 1) |
+| Rejected at 0.90 floor | 66 |
+| Thin/no evidence (pre-generation skip) | 14 |
+| Errors / tracebacks | 0 |
+| Cost | $0.4594 on `gpt-5.4-nano-2026-03-17` |
+| Model label emitted | `model=gpt-5.4-nano-2026-03-17` (real — 14.6 working) |
+| Confidence distribution landed | 0.98 × 90, 0.96 × 1, 1.00 × 1 (deterministic scoring tops at ~0.98) |
+
+All four Section 14 behaviors confirmed live end-to-end: streaming writes (articles landing every few s, not batched), deterministic scoring, 0.90 floor, real model label, **+ the new dedup bypass.**
+
+### 16.4 Commit
+
+`~/.coco` `main` → **`eff2b97 fix: unblock article writes — force-bypass dedup, streaming, deterministic scoring`**
+
+Scoped surgically:
+- `knowledge/article_writer.py` — new tracked file (whitelist addition)
+- `knowledge/engine.py` — force plumbing + the 14.4/14.7 env-gated scoring + streaming already sitting in working tree
+- `knowledge/article_generator.py` — 14.6/14.7 streaming + model-label already in working tree
+
+Not included (out of scope — separate perf/obs work still uncommitted):
+- `knowledge/cron.py` (+353) — Phase 14/15 + O(n²)→O(n) doc/email prescan + rotating logs
+- `knowledge/master_cron.py` (+105) — RLIMIT_NOFILE 4096 + JSONFormatter + rotating logs
+- `knowledge/schema.py` (+51) — `'product'` entity type + `pipeline_runs` table
+
+### 16.5 Deferred: parent_project backfill
+
+1,946 rows remain with blank `parent_project` + confidence ≥ 0.95. They poison future **non-force** cron runs for any gid they cover — the next natural daily fire will re-hit the dedup for anything that isn't `--force`d.
+
+Backfill SQL (from `project_entity_links`):
+```sql
+UPDATE articles SET parent_project = (
+  SELECT pel.project_slug FROM project_entity_links pel
+  WHERE pel.gid = articles.gid ORDER BY pel.linked_at DESC LIMIT 1)
+WHERE (parent_project IS NULL OR parent_project = '')
+  AND EXISTS (SELECT 1 FROM project_entity_links pel WHERE pel.gid = articles.gid);
+```
+
+Blocked during this session by email_watcher PID 38456 holding the knowledge.db write path (47% CPU, 14h elapsed — same hung process that Section 15 killed earlier for composite refresh). If that watcher is killed/exits before the next cron fire, run the UPDATE via `schema.knowledge_db_lock()` + `schema.get_knowledge_db()` so WAL mode locks are respected.
+
+Expected impact: 2,085 rows updated (59 are orphans with no PEL mapping — leave blank). Eliminates the dedup-poisoning for non-force runs and fixes dashboard counter accuracy for 10 projects.
+
+### 16.6 Still pending after Sections 14.8 + 14.11
+
+1. **Scale verification on larger projects** — run audit-board (2,766 entities, ~$5.60 cost at gpt-5.4-nano rates). Watch wiki @ http://localhost:8888 populate. Section 14.11 item 3.
+2. **Dashboard label verification** — confirm http://localhost:9876 queue pills now show `gpt-5.4-nano-2026-03-17` instead of the stale `claude-sonnet-4-6` label. Section 14.11 item 5.
+3. **Disarm `/tmp/conftest/*.sh` orphan spawns** — still producing adopted orphans per 13.15. `chmod -x /tmp/conftest/*.sh` if whatever invokes them keeps firing. Section 14.11 item 4.
+4. **Run the parent_project backfill** (Section 16.5) once email_watcher is free.
+5. **Memory file saved:** `~/.claude/projects/.../memory/project_dedup_block.md` indexed in MEMORY.md — documents the write-pattern trap for future sessions.
