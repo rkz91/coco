@@ -223,16 +223,102 @@ def _mlx_exclusive():
         os.close(fd)
 
 
+# ---------------------------------------------------------------------------
+# Warm MLX server (com.coco.mlx-vlm-server launchd agent)
+# ---------------------------------------------------------------------------
+# Mirrors the integration in ~/.coco/knowledge/base_generator.py and
+# backend/app/services/local_llm_client.py. When the warm server has the
+# requested model loaded, route through it and skip cold-load entirely.
+# ---------------------------------------------------------------------------
+
+_MLX_SERVER_URL = os.environ.get("MLX_SERVER_URL", "http://127.0.0.1:8088")
+_MLX_SERVER_HEALTH_CACHE: dict = {"model": None, "checked_at": 0.0, "ok": False}
+
+
+def _warm_server_model() -> str | None:
+    """Loaded model in the warm MLX server, or None if unreachable. 60s cache."""
+    import time as _time
+    now = _time.time()
+    if now - _MLX_SERVER_HEALTH_CACHE["checked_at"] < 60:
+        return _MLX_SERVER_HEALTH_CACHE["model"] if _MLX_SERVER_HEALTH_CACHE["ok"] else None
+    try:
+        import httpx  # noqa: PLC0415
+        r = httpx.get(f"{_MLX_SERVER_URL}/health", timeout=2.0)
+        r.raise_for_status()
+        data = r.json()
+        _MLX_SERVER_HEALTH_CACHE.update({
+            "model": data.get("loaded_model"),
+            "checked_at": now,
+            "ok": True,
+        })
+        return data.get("loaded_model")
+    except Exception:
+        _MLX_SERVER_HEALTH_CACHE.update({"model": None, "checked_at": now, "ok": False})
+        return None
+
+
+def _call_warm_server_raw(
+    model_id: str, prompt: str, max_tokens: int, timeout: int,
+) -> str | None:
+    """POST prompt to warm server's /v1/chat/completions. Returns raw content
+    text, or None on any failure. Batch script has no separate system_prompt
+    parameter so we send the prompt as a single user message."""
+    try:
+        import httpx  # noqa: PLC0415
+    except ImportError:
+        return None
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(float(timeout), connect=5.0)) as client:
+            r = client.post(
+                f"{_MLX_SERVER_URL}/v1/chat/completions",
+                json={
+                    "model": model_id,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "max_tokens": max_tokens,
+                },
+            )
+            r.raise_for_status()
+            data = r.json()
+        return data["choices"][0]["message"]["content"]
+    except Exception as exc:
+        log.info("warm_llm unreachable/failed: %s", exc)
+        return None
+
+
 def _call_local_llm(
     prompt: str, task_type: str = "article-stub", timeout: int = 180
 ) -> dict | None:
     """Call local MLX model for article generation.
 
-    Uses Gemma4 26B MoE for stub/standard tiers. Falls back gracefully on
-    any subprocess or parse failure (caller is responsible for fallback to
-    Claude CLI).
+    Uses the warm MLX server (com.coco.mlx-vlm-server) when available and
+    the loaded model matches the requested one — inference drops from
+    ~40-280s to ~10-25s. Falls back to cold-load subprocess path otherwise.
+    Never raises: returns None on failure so the caller can fall through to
+    Claude CLI.
     """
     model_id = _MODEL_FOR_TIER.get(task_type, _MODEL_FOR_TIER["article-stub"])
+
+    # ---- Fast path: warm server ----------------------------------------
+    warm_model = _warm_server_model()
+    if warm_model and warm_model == model_id:
+        log.info("  Calling local MLX model %s (warm server) ...", model_id)
+        content = _call_warm_server_raw(model_id, prompt, max_tokens=5000, timeout=timeout)
+        if content is not None:
+            raw = content.strip()
+            # Strip any MLX stats footer if it leaked through
+            if "==========" in raw:
+                raw = raw.split("==========")[0].strip()
+            article = _extract_json_from_text(raw)
+            if article is None:
+                log.error(
+                    "Could not extract JSON article from warm-server response (%d chars)",
+                    len(raw),
+                )
+            return article
+        log.info("  Warm server failed, falling back to subprocess cold-load")
+
+    # ---- Slow path: cold-load subprocess (original behaviour) ----------
     log.info("  Calling local MLX model %s (waiting for mlx lock) ...", model_id)
 
     try:

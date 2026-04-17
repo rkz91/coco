@@ -125,6 +125,97 @@ _TASK_ROUTING: dict[str, str] = {
 # Haiku pricing used for cost-savings estimate (USD per 1M tokens)
 _HAIKU_OUTPUT_PRICE_PER_M = 4.0  # $4.00 / 1M output tokens
 
+# ---------------------------------------------------------------------------
+# Warm MLX server (com.coco.mlx-vlm-server launchd agent)
+# ---------------------------------------------------------------------------
+# Mirrors the warm-pool integration in ~/.coco/knowledge/base_generator.py.
+# When the loaded model matches the requested one we hit the HTTP server and
+# skip cold-load entirely (inference drops from 40-280s to ~10-25s). Falls
+# back to the subprocess path below when the server is down or serves a
+# different model — preserving all existing behaviour.
+_MLX_SERVER_URL = os.environ.get("MLX_SERVER_URL", "http://127.0.0.1:8088")
+_MLX_SERVER_HEALTH_CACHE: dict = {"model": None, "checked_at": 0.0, "ok": False}
+
+
+def _warm_server_model() -> str | None:
+    """Return the model currently loaded in the warm MLX server, or None if
+    unreachable. Cached 60s to avoid hammering /health per call."""
+    import time as _time
+    now = _time.time()
+    if now - _MLX_SERVER_HEALTH_CACHE["checked_at"] < 60:
+        return _MLX_SERVER_HEALTH_CACHE["model"] if _MLX_SERVER_HEALTH_CACHE["ok"] else None
+    try:
+        import httpx  # noqa: PLC0415
+        r = httpx.get(f"{_MLX_SERVER_URL}/health", timeout=2.0)
+        r.raise_for_status()
+        data = r.json()
+        _MLX_SERVER_HEALTH_CACHE.update({
+            "model": data.get("loaded_model"),
+            "checked_at": now,
+            "ok": True,
+        })
+        return data.get("loaded_model")
+    except Exception:
+        _MLX_SERVER_HEALTH_CACHE.update({"model": None, "checked_at": now, "ok": False})
+        return None
+
+
+def _call_warm_server(
+    model_id: str,
+    prompt: str,
+    system: str | None,
+    max_tokens: int,
+    timeout: int,
+) -> dict | None:
+    """POST to the warm server's OpenAI-compatible chat endpoint.
+
+    Returns {"content": str, "output_tokens": int} on success, None on any
+    failure (connection refused, HTTP error, timeout, malformed body). The
+    caller is expected to fall back to the subprocess path."""
+    try:
+        import httpx  # noqa: PLC0415
+    except ImportError:
+        return None
+
+    messages: list[dict[str, str]] = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(float(timeout), connect=5.0)) as client:
+            r = client.post(
+                f"{_MLX_SERVER_URL}/v1/chat/completions",
+                json={"model": model_id, "messages": messages, "max_tokens": max_tokens},
+            )
+            r.raise_for_status()
+            data = r.json()
+    except httpx.HTTPStatusError as exc:
+        log.warning(
+            "warm_llm_http_error",
+            status=exc.response.status_code,
+            body=exc.response.text[:200],
+        )
+        return None
+    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+        log.info("warm_llm_unreachable", error_type=type(exc).__name__)
+        return None
+    except Exception as exc:  # noqa: BLE001
+        log.warning("warm_llm_unexpected", error=str(exc))
+        return None
+
+    try:
+        content = data["choices"][0]["message"]["content"]
+        usage = data.get("usage") or {}
+        return {
+            "content": content,
+            "output_tokens": int(usage.get("completion_tokens") or usage.get("output_tokens") or 0),
+            "generation_tps": float(usage.get("generation_tps") or 0.0),
+        }
+    except (KeyError, IndexError, TypeError) as exc:
+        log.warning("warm_llm_malformed", error=str(exc))
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Error type
@@ -214,6 +305,41 @@ class LocalLLMClient:
 
         model_id, framework = self.get_model_for_task(task_type)
         timeout: int = LOCAL_LLM_TIMEOUT
+
+        # ---- Fast path: warm MLX server ------------------------------------
+        # When the com.coco.mlx-vlm-server launchd agent is running and has
+        # the requested model loaded, route the call through its OpenAI-
+        # compatible endpoint. Inference is ~2-7× faster because the 15 GB
+        # model stays resident instead of cold-loading per call.
+        warm_model = _warm_server_model()
+        if warm_model and warm_model == model_id:
+            log.info(
+                "local_llm_call",
+                task_type=task_type,
+                model=model_id,
+                framework=framework,
+                max_tokens=max_tokens,
+                path="warm_server",
+            )
+            warm_result = _call_warm_server(model_id, prompt, system, max_tokens, timeout)
+            if warm_result is not None:
+                log.info(
+                    "local_llm_done",
+                    task_type=task_type,
+                    model=model_id,
+                    output_tokens=warm_result["output_tokens"],
+                    generation_tps=warm_result.get("generation_tps", 0.0),
+                    path="warm_server",
+                )
+                return {
+                    "content": warm_result["content"],
+                    "input_tokens": 0,
+                    "output_tokens": warm_result["output_tokens"],
+                    "model": model_id,
+                    "local": True,
+                }
+            log.info("warm_llm_fallback_to_subprocess", model=model_id)
+        # ---- Slow path: cold-load subprocess (original behaviour) ----------
 
         # Build prompt text — prepend system message as a plain prefix when
         # the CLI has no dedicated --system flag (both mlx_lm and mlx_vlm
