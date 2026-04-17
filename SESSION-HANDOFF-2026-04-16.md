@@ -1,7 +1,7 @@
 # Session Handoff — 2026-04-16
 
 > Stop point for the day. Resume from this file. Everything you need is here.
-> Companion docs: `STABILITY-PLAN.md`, `CRON-ECOSYSTEM-MAP.html`.
+> Companion docs: `STABILITY-PLAN.md`, `CRON-ECOSYSTEM-MAP.html`, `VERSION-CONTROL-PLAN.md` (4-phase plan to bring `~/.coco/` under git — Phase 0 snapshot is the safety net to run before tomorrow).
 
 ---
 
