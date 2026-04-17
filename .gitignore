@@ -12,3 +12,20 @@ CLAUDE.local.md
 *.db-wal
 *.db-shm
 .planning/
+
+# Generated platform analysis renders (PLATFORM-ANALYSIS.md is the source)
+PLATFORM-ANALYSIS-*.pdf
+PLATFORM-ANALYSIS-rendered*.svg
+PLATFORM-ANALYSIS-rendered.md
+
+# Playwright debug scratch (one-off investigations)
+frontend/pw-*.cjs
+
+# Website/design clones (keep out of version control)
+Screenshots-clone/
+backend/Screenshots-clone/
+lovable-clone.html
+
+# Backups
+*.bak-*
+*.backup-*
