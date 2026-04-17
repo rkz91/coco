@@ -33,22 +33,45 @@ That's roughly 1,500-2,000 lines of code from today alone, not recoverable from 
 
 Take a tarball snapshot of everything code-shaped in `~/.coco/` and stash it where Time Machine + iCloud already protect things. Pure safety net — buys time to do the rest properly.
 
+**Use the whitelist version below — NOT a blacklist.** Initial draft of this plan used `tar --exclude=...` patterns and produced a broken 304 MB tarball because `~/.coco/` contains 1.5 GB of venvs (`graphrag-env/`, `mempalace-env/`, `graphify-env/`), 737 MB of backups, 109 MB of voice memos, etc. that the exclude patterns missed. Whitelist via `find` is the only safe approach.
+
 ```bash
-# Snapshot only code/config files, skip the heavy data
-SNAP="$HOME/Library/Mobile Documents/com~apple~CloudDocs/coco-snapshots/coco-$(date +%Y%m%d-%H%M).tar.gz"
+SNAP="$HOME/Library/Mobile Documents/com~apple~CloudDocs/coco-snapshots/coco-code-$(date +%Y%m%d-%H%M).tar.gz"
 mkdir -p "$(dirname "$SNAP")"
-tar --exclude='*.db' --exclude='*.db-wal' --exclude='*.db-shm' \
-    --exclude='*.log' --exclude='__pycache__' --exclude='*.pyc' \
-    --exclude='articles/*' --exclude='email-evidence/*' \
-    --exclude='product_evidence/*' --exclude='pykeen-model/*' \
-    --exclude='sessions/*' \
-    -czf "$SNAP" \
-    -C "$HOME" .coco \
-    -C "$HOME/Library/LaunchAgents" $(ls "$HOME/Library/LaunchAgents/" | grep '^com\.coco\.')
+
+# Build a whitelist of code-only files via find, then tar from the manifest.
+MANIFEST=$(mktemp)
+{
+    find ~/.coco -maxdepth 3 \
+        \( -name '*.py' -o -name '*.sh' -o -name '*.md' \) \
+        -not -path '*/graphrag-env/*' \
+        -not -path '*/mempalace-env/*' \
+        -not -path '*/graphify-env/*' \
+        -not -path '*/node_modules/*' \
+        -not -path '*/__pycache__/*' \
+        -not -path '*/backups/*' \
+        -not -path '*/articles/*' \
+        -not -path '*/email-evidence/*' \
+        -not -path '*/product_evidence/*' \
+        -not -path '*/pykeen-model/*' \
+        -not -path '*/voices/*' \
+        -not -path '*/podcasts/*' \
+        -not -path '*/session-summaries/*' \
+        -not -path '*/sessions/*' \
+        -not -path '*/calendar-blocker/*' \
+        -not -path '*/logs/*' \
+        -not -path '*/.git/*'
+    find ~/Library/LaunchAgents -maxdepth 1 -name 'com.coco.*.plist'
+} | sort -u > "$MANIFEST"
+
+tar -czf "$SNAP" -T "$MANIFEST"
+rm -f "$MANIFEST"
 ls -lh "$SNAP"
 ```
 
-This goes to iCloud Drive and rides Time Machine. Costs ~5-20 MB. Takes 30 seconds. Repeat at end of any session that edits these files until Phase 2 lands.
+This goes to iCloud Drive and rides Time Machine. **Validated 2026-04-16: produces ~650 KB tarball with 145 files** (all 9 today's-edits + new launchd plist confirmed present). Repeat at end of any session that edits these files until Phase 2 lands.
+
+**One-shot copy-paste for end-of-session habit:** save as `~/.coco/snapshot.sh` and run after each session.
 
 ---
 
