@@ -1,0 +1,1077 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path C — The Stream | CoCo Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0C0F17;
+      --fg: #E8ECF4;
+      --fg-secondary: #7A839A;
+      --accent: #4F7BF7;
+      --surface: #151923;
+      --border: #1E2533;
+      --border-light: #2A3548;
+      --success: #34D399;
+      --warning: #FBBF24;
+      --danger: #F87171;
+      --purple: #A78BFA;
+      --cyan: #22D3EE;
+      --radius: 16px;
+      --radius-sm: 12px;
+      --radius-xs: 8px;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ── Hero ─────────────────────────────────────── */
+    .hero {
+      padding: 6rem 2rem 5rem;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+      border-bottom: 1px solid var(--border);
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -40%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 1000px;
+      height: 1000px;
+      background: radial-gradient(circle, rgba(79,123,247,0.12) 0%, rgba(79,123,247,0.04) 30%, transparent 60%);
+      pointer-events: none;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,123,247,0.3), transparent);
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(79,123,247,0.08);
+      border: 1px solid rgba(79,123,247,0.2);
+      color: var(--accent);
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      padding: 0.4rem 1.4rem;
+      border-radius: 100px;
+      margin-bottom: 2rem;
+    }
+    .hero h1 {
+      font-size: 3.75rem;
+      font-weight: 900;
+      color: #ffffff;
+      letter-spacing: -0.045em;
+      margin-bottom: 1.25rem;
+      line-height: 1.05;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero .tagline {
+      font-size: 1.4rem;
+      color: var(--fg-secondary);
+      max-width: 580px;
+      margin: 0 auto 1rem;
+      font-weight: 300;
+      letter-spacing: -0.01em;
+      line-height: 1.5;
+    }
+    .hero .tagline em {
+      font-style: italic;
+      color: var(--fg);
+      font-weight: 400;
+    }
+    .hero .sub {
+      font-size: 0.88rem;
+      color: var(--fg-secondary);
+      max-width: 520px;
+      margin: 0 auto;
+      opacity: 0.7;
+    }
+
+    /* ── Layout ───────────────────────────────────── */
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      padding: 3rem 1.5rem 5rem;
+    }
+
+    /* ── Glass Panels ─────────────────────────────── */
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 2.75rem;
+      margin-bottom: 2.25rem;
+      position: relative;
+      overflow: hidden;
+    }
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255,255,255,0.015) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* ── Section Numbers ──────────────────────────── */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      background: rgba(79,123,247,0.1);
+      border: 1px solid rgba(79,123,247,0.2);
+      border-radius: 10px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h2 {
+      font-size: 1.75rem;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 0.75rem;
+      letter-spacing: -0.035em;
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--fg);
+      margin-bottom: 0.75rem;
+    }
+    p { margin-bottom: 0.75rem; color: var(--fg-secondary); }
+    p:last-child { margin-bottom: 0; }
+    strong { color: var(--fg); font-weight: 600; }
+
+    /* ── Section 1: Philosophy ────────────────────── */
+    .philosophy-quote {
+      background: rgba(79,123,247,0.04);
+      border: 1px solid rgba(79,123,247,0.12);
+      border-radius: var(--radius-sm);
+      padding: 2rem 2.5rem;
+      text-align: center;
+      margin: 1.5rem 0 2rem;
+    }
+    .philosophy-quote .quote {
+      font-size: 1.65rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.025em;
+      line-height: 1.3;
+      font-style: italic;
+    }
+    .philosophy-quote .quote span { color: var(--accent); font-style: normal; }
+
+    .principle-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.5rem;
+    }
+    .principle-card {
+      background: rgba(12,15,23,0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 1.5rem;
+      transition: border-color 0.2s ease;
+    }
+    .principle-card:hover {
+      border-color: var(--border-light);
+    }
+    .principle-card .label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .principle-card h4 {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: 0.5rem;
+      letter-spacing: -0.01em;
+    }
+    .principle-card p {
+      font-size: 0.82rem;
+      color: var(--fg-secondary);
+      line-height: 1.55;
+    }
+
+    /* ── Diagram Containers ───────────────────────── */
+    .diagram-wrap {
+      background: rgba(12,15,23,0.5);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 2rem;
+      margin-top: 1.25rem;
+      overflow-x: auto;
+    }
+    .diagram-wrap svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .diagram-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg-secondary);
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── User Flow Section ────────────────────────── */
+    .flow-comparison {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .flow-comparison .diagram-wrap { margin-top: 0; }
+    .flow-label {
+      display: inline-block;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.25rem 0.75rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .flow-label.primary {
+      background: rgba(79,123,247,0.1);
+      color: var(--accent);
+      border: 1px solid rgba(79,123,247,0.2);
+    }
+    .flow-label.secondary {
+      background: rgba(167,139,250,0.1);
+      color: var(--purple);
+      border: 1px solid rgba(167,139,250,0.2);
+    }
+
+    /* ── Table ────────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 1.25rem;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 700;
+      color: var(--fg-secondary);
+      font-size: 0.65rem;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 1rem 1.15rem;
+      border-bottom: 1px solid var(--border);
+      background: rgba(12,15,23,0.8);
+      font-family: 'JetBrains Mono', monospace;
+    }
+    thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+    thead th:last-child { border-radius: 0 var(--radius-sm) 0 0; }
+    thead th.highlight { color: var(--accent); }
+    tbody td {
+      padding: 0.85rem 1.15rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--fg);
+      vertical-align: middle;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: rgba(79,123,247,0.02); }
+    .badge-cell {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+    }
+    .badge-cell.fast {
+      background: rgba(52,211,153,0.08);
+      color: var(--success);
+      border: 1px solid rgba(52,211,153,0.15);
+    }
+    .badge-cell.medium {
+      background: rgba(251,191,36,0.08);
+      color: var(--warning);
+      border: 1px solid rgba(251,191,36,0.15);
+    }
+    .badge-cell.slow {
+      background: rgba(248,113,113,0.06);
+      color: var(--danger);
+      border: 1px solid rgba(248,113,113,0.12);
+    }
+    .badge-cell.winner {
+      background: rgba(79,123,247,0.08);
+      color: var(--accent);
+      border: 1px solid rgba(79,123,247,0.15);
+    }
+
+    /* ── Replacement Grid ─────────────────────────── */
+    .replacement-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0;
+      margin-top: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      overflow: hidden;
+    }
+    .replacement-row {
+      display: grid;
+      grid-template-columns: 200px 32px 1fr;
+      align-items: center;
+      padding: 0.85rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.15s ease;
+    }
+    .replacement-row:last-child { border-bottom: none; }
+    .replacement-row:hover { background: rgba(79,123,247,0.02); }
+    .replacement-old {
+      font-size: 0.85rem;
+      color: var(--danger);
+      text-decoration: line-through;
+      opacity: 0.7;
+      font-weight: 500;
+    }
+    .replacement-arrow {
+      color: var(--fg-secondary);
+      text-align: center;
+      font-size: 0.75rem;
+    }
+    .replacement-new {
+      font-size: 0.85rem;
+      color: var(--success);
+      font-weight: 500;
+    }
+    .replacement-new .detail {
+      color: var(--fg-secondary);
+      font-weight: 400;
+      font-size: 0.78rem;
+      margin-left: 0.5rem;
+    }
+
+    /* ── Design System Showcase ───────────────────── */
+    .ds-colors {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      margin: 1.25rem 0;
+    }
+    .ds-swatch {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .ds-swatch .color {
+      width: 64px;
+      height: 64px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+    }
+    .ds-swatch .name {
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--fg);
+      text-align: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ds-swatch .hex {
+      font-size: 0.6rem;
+      color: var(--fg-secondary);
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: -0.25rem;
+    }
+
+    .ds-type-scale {
+      margin: 1.5rem 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .ds-type-row {
+      display: flex;
+      align-items: baseline;
+      gap: 1.25rem;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .ds-type-row:last-child { border-bottom: none; }
+    .ds-type-label {
+      min-width: 80px;
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--fg-secondary);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .ds-card-samples {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin: 1.25rem 0;
+    }
+    .ds-card-sample {
+      border-radius: var(--radius-sm);
+      padding: 1.25rem;
+      position: relative;
+    }
+    .ds-card-sample .card-label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .ds-card-sample p {
+      font-size: 0.78rem;
+      line-height: 1.5;
+    }
+    .ds-card-default {
+      background: var(--surface);
+      border: 1px solid var(--border);
+    }
+    .ds-card-default .card-label { color: var(--fg-secondary); }
+    .ds-card-glass {
+      background: rgba(21,25,35,0.6);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border-light);
+    }
+    .ds-card-glass .card-label { color: var(--accent); }
+    .ds-card-accent {
+      background: rgba(79,123,247,0.06);
+      border: 1px solid rgba(79,123,247,0.15);
+    }
+    .ds-card-accent .card-label { color: var(--accent); }
+
+    /* ── Pros & Cons ──────────────────────────────── */
+    .proscons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+    .proscons-card {
+      background: rgba(12,15,23,0.5);
+      border-radius: var(--radius-sm);
+      padding: 1.75rem;
+    }
+    .proscons-card.pros { border: 1px solid rgba(52,211,153,0.15); }
+    .proscons-card.cons { border: 1px solid rgba(248,113,113,0.15); }
+    .proscons-card h4 {
+      font-size: 0.65rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 1rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .proscons-card.pros h4 { color: var(--success); }
+    .proscons-card.cons h4 { color: var(--danger); }
+    .proscons-card ul { list-style: none; padding: 0; }
+    .proscons-card li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.65rem;
+      font-size: 0.85rem;
+      color: var(--fg);
+      line-height: 1.55;
+    }
+    .proscons-card li:last-child { margin-bottom: 0; }
+    .proscons-card.pros li::before {
+      content: '+';
+      position: absolute;
+      left: 0;
+      color: var(--success);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .proscons-card.cons li::before {
+      content: '-';
+      position: absolute;
+      left: 0;
+      color: var(--danger);
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ── Why Section ──────────────────────────────── */
+    .why-quote {
+      background: rgba(79,123,247,0.04);
+      border: 1px solid rgba(79,123,247,0.12);
+      border-radius: var(--radius-sm);
+      padding: 2.5rem;
+      margin-top: 1.25rem;
+      position: relative;
+    }
+    .why-quote::before {
+      content: '"';
+      position: absolute;
+      top: 0.75rem;
+      left: 1.5rem;
+      font-size: 4rem;
+      color: rgba(79,123,247,0.15);
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .why-quote p {
+      font-size: 1.05rem;
+      color: var(--fg);
+      line-height: 1.7;
+      position: relative;
+      z-index: 1;
+    }
+    .why-quote p span { color: var(--accent); font-weight: 600; }
+
+    /* ── Footer ───────────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 3.5rem 2rem;
+      border-top: 1px solid var(--border);
+      position: relative;
+    }
+    footer::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(79,123,247,0.2), transparent);
+    }
+    footer .logo {
+      font-weight: 800;
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+    footer p {
+      color: var(--fg-secondary);
+      font-size: 0.78rem;
+    }
+
+    /* ── Responsive ───────────────────────────────── */
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 2.5rem; }
+      .hero { padding: 4rem 1.5rem 3.5rem; }
+      .panel { padding: 2rem 1.5rem; }
+      .principle-grid { grid-template-columns: 1fr; }
+      .proscons-grid { grid-template-columns: 1fr; }
+      .flow-comparison { grid-template-columns: 1fr; }
+      .ds-card-samples { grid-template-columns: 1fr; }
+      .replacement-row { grid-template-columns: 140px 28px 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ═══ Hero ═══ -->
+  <header class="hero">
+    <div class="badge">Path C &mdash; The Stream</div>
+    <h1>One Stream.<br><span>Zero Pages.</span></h1>
+    <p class="tagline">A PM brain that feels like a <em>luxury instrument.</em></p>
+    <p class="sub">Rijul is one person managing 13 teams. He doesn't need 17 pages. He needs one stream that shows what matters and lets him act instantly.</p>
+  </header>
+
+  <main class="container">
+
+    <!-- ═══ 1. Design Philosophy ═══ -->
+    <section class="panel">
+      <div class="section-num">1</div>
+      <h2>Design Philosophy</h2>
+      <div class="philosophy-quote">
+        <div class="quote">A PM brain that feels like a <span>luxury instrument.</span></div>
+      </div>
+      <div class="principle-grid">
+        <div class="principle-card">
+          <div class="label">Principle 01</div>
+          <h4>Command-First</h4>
+          <p>Type what you need, don't hunt for it. No sidebar, no menu hierarchy. Press <code>/</code> and the entire platform is at your fingertips.</p>
+        </div>
+        <div class="principle-card">
+          <div class="label">Principle 02</div>
+          <h4>Cards with Depth</h4>
+          <p>Every item shows context, not just a title. Status, owner, age, urgency &mdash; all visible at glance. Expand for the full story.</p>
+        </div>
+        <div class="principle-card">
+          <div class="label">Principle 03</div>
+          <h4>Keyboard Native</h4>
+          <p>3 keystrokes max for any action. <code>j/k</code> to navigate, <code>Enter</code> to expand, <code>x</code> to act. Mouse is optional, never required.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 2. Architecture ═══ -->
+    <section class="panel">
+      <div class="section-num">2</div>
+      <h2>Architecture</h2>
+      <p>The radical simplification: one component tree, no router. The entire UI is five primitives connected in a straight line.</p>
+      <div class="diagram-wrap">
+        <div class="diagram-label">Component Tree</div>
+        <div id="diagram-arch"></div>
+      </div>
+    </section>
+
+    <!-- ═══ 3. User Flow ═══ -->
+    <section class="panel">
+      <div class="section-num">3</div>
+      <h2>User Flow</h2>
+      <p>Two interaction loops. Both converge on action in under 3 keystrokes.</p>
+      <div class="flow-comparison">
+        <div>
+          <span class="flow-label primary">Primary &mdash; Stream Mode</span>
+          <div class="diagram-wrap">
+            <div id="diagram-flow-primary"></div>
+          </div>
+        </div>
+        <div>
+          <span class="flow-label secondary">Secondary &mdash; Command Mode</span>
+          <div class="diagram-wrap">
+            <div id="diagram-flow-secondary"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 4. Keystroke Comparison ═══ -->
+    <section class="panel">
+      <div class="section-num">4</div>
+      <h2>Keystroke Comparison</h2>
+      <p>Every action, every path. Path C wins on every single row.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Action</th>
+              <th>Current (17 pages)</th>
+              <th>Path A</th>
+              <th>Path B</th>
+              <th class="highlight">Path C</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Approve a draft</td>
+              <td><span class="badge-cell slow">5 clicks</span></td>
+              <td><span class="badge-cell slow">3 clicks</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell winner">1 key &mdash; x</span></td>
+            </tr>
+            <tr>
+              <td>Spawn an agent</td>
+              <td><span class="badge-cell slow">4 clicks + form</span></td>
+              <td><span class="badge-cell slow">3 clicks + form</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell winner">/ + type + Enter</span></td>
+            </tr>
+            <tr>
+              <td>Complete a todo</td>
+              <td><span class="badge-cell slow">3 clicks</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell medium">1 click</span></td>
+              <td><span class="badge-cell winner">1 key &mdash; x</span></td>
+            </tr>
+            <tr>
+              <td>View agent output</td>
+              <td><span class="badge-cell slow">2 clicks + page load</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell winner">1 key &mdash; Enter</span></td>
+            </tr>
+            <tr>
+              <td>Chat about an item</td>
+              <td><span class="badge-cell slow">4 clicks + navigate</span></td>
+              <td><span class="badge-cell slow">3 clicks</span></td>
+              <td><span class="badge-cell medium">2 clicks</span></td>
+              <td><span class="badge-cell winner">1 key &mdash; c</span></td>
+            </tr>
+            <tr>
+              <td>Search anything</td>
+              <td><span class="badge-cell slow">click + type + filter</span></td>
+              <td><span class="badge-cell medium">click + type</span></td>
+              <td><span class="badge-cell medium">click + type</span></td>
+              <td><span class="badge-cell winner">/ + type</span></td>
+            </tr>
+            <tr>
+              <td>Check cost budget</td>
+              <td><span class="badge-cell slow">3 clicks</span></td>
+              <td><span class="badge-cell slow">2 clicks</span></td>
+              <td><span class="badge-cell medium">1 click</span></td>
+              <td><span class="badge-cell winner">Always visible in footer</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ 5. What Gets Replaced ═══ -->
+    <section class="panel">
+      <div class="section-num">5</div>
+      <h2>What Gets Replaced</h2>
+      <p>17 pages condensed into one stream. Every page maps to a stream section or command.</p>
+      <div class="replacement-grid">
+        <div class="replacement-row">
+          <div class="replacement-old">Home / Dashboard</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream "What Needs You" section</div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Inbox</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream urgent + draft cards <span class="detail">(auto-prioritized)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Todos</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream todo cards <span class="detail">(x to complete)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Agents</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream agent cards <span class="detail">+ "show agents" command</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Chat Page</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Inline chat <span class="detail">(c on any card)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Knowledge Base</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream knowledge cards <span class="detail">+ "search kb" command</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Decisions / Queue</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream decision cards <span class="detail">(highest priority)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">People / Org Chart</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">"show people" / "show tree" command</div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Cost Dashboard</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Status footer <span class="detail">(always visible)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Settings</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">"settings" command</div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Activity Feed</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Stream event cards <span class="detail">(chronological)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Sidebar Navigation</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Command bar <span class="detail">(/ to open)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Modals / Slide-overs</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Inline expansion <span class="detail">(Enter to expand, Esc to close)</span></div>
+        </div>
+        <div class="replacement-row">
+          <div class="replacement-old">Tabs</div>
+          <div class="replacement-arrow">&rarr;</div>
+          <div class="replacement-new">Command bar filters <span class="detail">("show agents", "show todos")</span></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 6. The Design System ═══ -->
+    <section class="panel">
+      <div class="section-num">6</div>
+      <h2>The Design System</h2>
+      <p>A dark, focused palette designed for extended use. Every color has a purpose.</p>
+
+      <h3 style="margin-top: 1.5rem;">Color Palette</h3>
+      <div class="ds-colors">
+        <div class="ds-swatch">
+          <div class="color" style="background: #0C0F17;"></div>
+          <div class="name">Background</div>
+          <div class="hex">#0C0F17</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #151923;"></div>
+          <div class="name">Surface</div>
+          <div class="hex">#151923</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #1E2533;"></div>
+          <div class="name">Border</div>
+          <div class="hex">#1E2533</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #4F7BF7;"></div>
+          <div class="name">Accent</div>
+          <div class="hex">#4F7BF7</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #E8ECF4;"></div>
+          <div class="name">Primary</div>
+          <div class="hex">#E8ECF4</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #7A839A;"></div>
+          <div class="name">Secondary</div>
+          <div class="hex">#7A839A</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #34D399;"></div>
+          <div class="name">Success</div>
+          <div class="hex">#34D399</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #FBBF24;"></div>
+          <div class="name">Warning</div>
+          <div class="hex">#FBBF24</div>
+        </div>
+        <div class="ds-swatch">
+          <div class="color" style="background: #F87171;"></div>
+          <div class="name">Danger</div>
+          <div class="hex">#F87171</div>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">Typography Scale</h3>
+      <div class="ds-type-scale">
+        <div class="ds-type-row">
+          <span class="ds-type-label">Display</span>
+          <span style="font-size: 2.25rem; font-weight: 900; color: #fff; letter-spacing: -0.04em;">The Stream</span>
+        </div>
+        <div class="ds-type-row">
+          <span class="ds-type-label">Heading</span>
+          <span style="font-size: 1.75rem; font-weight: 800; color: #fff; letter-spacing: -0.035em;">Section Title</span>
+        </div>
+        <div class="ds-type-row">
+          <span class="ds-type-label">Subhead</span>
+          <span style="font-size: 1.1rem; font-weight: 600; color: var(--fg);">Card Title</span>
+        </div>
+        <div class="ds-type-row">
+          <span class="ds-type-label">Body</span>
+          <span style="font-size: 0.88rem; color: var(--fg-secondary);">Stream items, descriptions, and context text.</span>
+        </div>
+        <div class="ds-type-row">
+          <span class="ds-type-label">Caption</span>
+          <span style="font-size: 0.75rem; color: var(--fg-secondary); font-family: 'JetBrains Mono', monospace;">LABELS, BADGES, METADATA</span>
+        </div>
+        <div class="ds-type-row">
+          <span class="ds-type-label">Mono</span>
+          <span style="font-size: 0.82rem; color: var(--accent); font-family: 'JetBrains Mono', monospace;">keystrokes, commands, code</span>
+        </div>
+      </div>
+
+      <h3 style="margin-top: 2rem;">Card Styles</h3>
+      <div class="ds-card-samples">
+        <div class="ds-card-sample ds-card-default">
+          <div class="card-label">Default Card</div>
+          <p style="color: var(--fg);">Solid surface background with subtle border. Used for stream items and content cards.</p>
+        </div>
+        <div class="ds-card-sample ds-card-glass">
+          <div class="card-label">Glass Card</div>
+          <p style="color: var(--fg);">Backdrop blur with translucent fill. Used for floating panels and overlays.</p>
+        </div>
+        <div class="ds-card-sample ds-card-accent">
+          <div class="card-label">Accent Card</div>
+          <p style="color: var(--fg);">Accent-tinted background. Used for highlights, callouts, and active states.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 7. Pros & Cons ═══ -->
+    <section class="panel">
+      <div class="section-num">7</div>
+      <h2>Pros &amp; Cons</h2>
+      <div class="proscons-grid">
+        <div class="proscons-card pros">
+          <h4>Strengths</h4>
+          <ul>
+            <li>Fastest possible interaction &mdash; keyboard-first, zero navigation</li>
+            <li>Minimal learning curve: it's a list you scroll and act on</li>
+            <li>Works like email/todo apps people already know (Superhuman, Linear)</li>
+            <li>Ultra-lightweight frontend &mdash; could be under 500 LOC</li>
+            <li>One mental model: everything is a card in the stream</li>
+            <li>No state management complexity &mdash; the stream IS the state</li>
+          </ul>
+        </div>
+        <div class="proscons-card cons">
+          <h4>Trade-offs</h4>
+          <ul>
+            <li>No visual portfolio overview (tree/hierarchy not visible by default)</li>
+            <li>Deep content (knowledge base, long docs) can feel cramped inline</li>
+            <li>Org chart and agent hierarchy require explicit command to view</li>
+            <li>Self-improve cycle workflow doesn't map naturally to flat stream</li>
+            <li>Requires keyboard comfort &mdash; not mouse-friendly by design</li>
+            <li>Unfamiliar pattern for users expecting traditional dashboards</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══ 8. Why This Approach ═══ -->
+    <section class="panel">
+      <div class="section-num">8</div>
+      <h2>Why This Approach</h2>
+      <div class="why-quote">
+        <p>
+          CoCo Platform started as a dashboard for everything. 17 pages, sidebar navigation, modals, slide-overs, tabs &mdash; the works. But Rijul is <span>one person</span>. He doesn't need an enterprise dashboard. He doesn't need 17 pages to manage 13 teams.
+        </p>
+        <p style="margin-top: 1rem;">
+          He needs <span>one stream</span> that shows what matters and lets him act instantly. Open the app, see the most urgent thing, press a key, done. That's it. That's the entire product.
+        </p>
+        <p style="margin-top: 1rem;">
+          This is that stream, wrapped in <span>craft</span>. Every pixel, every interaction, every keystroke has been considered. Not because complexity was added &mdash; because everything unnecessary was <span>removed</span>.
+        </p>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="logo">CoCo Platform</div>
+    <p>Path C &mdash; The Stream &middot; Design Rationale &middot; April 2026</p>
+  </footer>
+
+  <script type="module">
+    import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+    const theme = {
+      bg: '#151923',
+      fg: '#E8ECF4',
+      accent: '#4F7BF7',
+      muted: '#7A839A',
+      surface: '#1A2030',
+      border: '#2A3548',
+      transparent: true
+    }
+
+    async function render(elementId, diagram) {
+      const el = document.getElementById(elementId)
+      try {
+        const svg = await renderMermaidSVGAsync(diagram, { theme })
+        if (typeof svg === 'string') {
+          el.innerHTML = svg
+        } else if (svg instanceof SVGElement || svg instanceof HTMLElement) {
+          el.appendChild(svg)
+        } else if (svg?.outerHTML) {
+          el.innerHTML = svg.outerHTML
+        }
+      } catch (err) {
+        el.innerHTML = `<pre style="color:#F87171;font-size:0.8rem;">Diagram render error: ${err.message}</pre>`
+        console.error(`Error rendering ${elementId}:`, err)
+      }
+    }
+
+    // 2. Architecture — The simplification
+    const archDiagram = `graph LR
+  CB["Command Bar\n/ to open"] --> Stream["Stream\nprioritized feed"]
+  Stream --> Cards["Cards\ncontext at a glance"]
+  Cards --> Expand["Inline Expansion\nEnter to open"]
+  Expand --> Chat["Inline Chat\nc to open"]
+
+  style CB fill:#1A2030,stroke:#A78BFA,color:#E8ECF4,stroke-width:2px
+  style Stream fill:#1A2030,stroke:#4F7BF7,color:#E8ECF4,stroke-width:2px
+  style Cards fill:#1A2030,stroke:#4F7BF7,color:#E8ECF4
+  style Expand fill:#1A2030,stroke:#4F7BF7,color:#E8ECF4
+  style Chat fill:#1A2030,stroke:#A78BFA,color:#E8ECF4`
+
+    // 3a. Primary flow — Stream mode
+    const flowPrimary = `flowchart TD
+  A["Open CoCo"] --> B["See stream\n'What Needs You'"]
+  B --> C["j / k\nnavigate cards"]
+  C --> D["Enter\nexpand card"]
+  D --> E{"Action"}
+  E -->|"x = act"| F["Done"]
+  E -->|"c = chat"| G["Inline chat"]
+  E -->|"Esc"| B
+  F --> B
+  G --> B
+
+  style A fill:#1A2030,stroke:#4F7BF7,color:#E8ECF4,stroke-width:2px
+  style B fill:#1A2030,stroke:#4F7BF7,color:#E8ECF4,stroke-width:2px
+  style C fill:#1A2030,stroke:#2A3548,color:#E8ECF4
+  style D fill:#1A2030,stroke:#2A3548,color:#E8ECF4
+  style E fill:#1A2030,stroke:#A78BFA,color:#E8ECF4
+  style F fill:#1A2030,stroke:#34D399,color:#34D399,stroke-width:2px
+  style G fill:#1A2030,stroke:#A78BFA,color:#A78BFA`
+
+    // 3b. Secondary flow — Command mode
+    const flowSecondary = `flowchart TD
+  A2["Press /"] --> B2["Command bar opens"]
+  B2 --> C2["Type command"]
+  C2 --> D2["Results appear"]
+  D2 --> E2["Enter to select"]
+  E2 --> F2["Done"]
+
+  style A2 fill:#1A2030,stroke:#A78BFA,color:#E8ECF4,stroke-width:2px
+  style B2 fill:#1A2030,stroke:#A78BFA,color:#E8ECF4,stroke-width:2px
+  style C2 fill:#1A2030,stroke:#2A3548,color:#E8ECF4
+  style D2 fill:#1A2030,stroke:#2A3548,color:#E8ECF4
+  style E2 fill:#1A2030,stroke:#2A3548,color:#E8ECF4
+  style F2 fill:#1A2030,stroke:#34D399,color:#34D399,stroke-width:2px`
+
+    // Render all diagrams
+    await Promise.all([
+      render('diagram-arch', archDiagram),
+      render('diagram-flow-primary', flowPrimary),
+      render('diagram-flow-secondary', flowSecondary)
+    ])
+  </script>
+
+</body>
+</html>

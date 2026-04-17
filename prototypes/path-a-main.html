@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Path A: Patch</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #263348;
+  --bg-elevated: #334155;
+  --border: #334155;
+  --border-subtle: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.12);
+  --yellow: #eab308;
+  --yellow-bg: rgba(234,179,8,0.12);
+  --orange: #f97316;
+  --purple: #a855f7;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --transition: 200ms ease;
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 56px;
+  --glass: rgba(30,41,59,0.7);
+  --glass-border: rgba(148,163,184,0.08);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --sidebar-collapsed: 0px;
+  }
+  .sidebar { display: none; }
+  .home-grid { grid-template-columns: 1fr; }
+  .health-grid { grid-template-columns: repeat(2, 1fr); }
+  .quick-stats { grid-template-columns: repeat(2, 1fr); }
+  .agents-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width var(--transition);
+}
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+.sidebar-header {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-weight: 600; font-size: 16px; white-space: nowrap;
+  overflow: hidden; transition: opacity var(--transition);
+}
+.sidebar.collapsed .sidebar-title { opacity: 0; width: 0; }
+.sidebar-collapse-btn {
+  margin-left: auto;
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover { color: var(--text); background: var(--bg-elevated); }
+.sidebar.collapsed .sidebar-collapse-btn { margin-left: 0; }
+
+.sidebar-nav {
+  flex: 1; padding: 12px 8px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px;
+  cursor: pointer; color: var(--text-muted);
+  transition: all var(--transition);
+  white-space: nowrap; position: relative;
+}
+.nav-item:hover { background: var(--bg-elevated); color: var(--text); }
+.nav-item.active { background: rgba(59,130,246,0.12); color: var(--accent); }
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-item span {
+  overflow: hidden; transition: opacity var(--transition);
+}
+.sidebar.collapsed .nav-item span { opacity: 0; width: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--red);
+  color: #fff; font-size: 11px; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px; flex-shrink: 0;
+}
+.sidebar.collapsed .nav-badge {
+  position: absolute; top: 4px; right: 4px;
+  padding: 0 5px; font-size: 10px;
+}
+.nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+
+/* ── Top Bar ── */
+.topbar {
+  position: fixed;
+  top: 0; right: 0;
+  left: var(--sidebar-width);
+  height: var(--topbar-height);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px;
+  z-index: 90;
+  transition: left var(--transition);
+}
+.sidebar.collapsed ~ .topbar { left: var(--sidebar-collapsed); }
+
+.search-box {
+  display: flex; align-items: center; gap: 8px;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 10px; padding: 8px 14px;
+  cursor: pointer; transition: all var(--transition);
+  min-width: 240px;
+}
+.search-box:hover { border-color: var(--accent); }
+.search-box svg { width: 16px; height: 16px; color: var(--text-dim); }
+.search-box span { color: var(--text-dim); font-size: 13px; }
+.search-kbd {
+  margin-left: auto;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: 5px; padding: 2px 6px;
+  font-size: 11px; color: var(--text-dim); font-family: inherit;
+}
+
+.scope-indicator {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--bg-elevated); border: 1px solid var(--border);
+  border-radius: 10px; padding: 7px 14px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  transition: all var(--transition); position: relative;
+}
+.scope-indicator:hover { border-color: var(--accent); }
+.scope-indicator svg { width: 14px; height: 14px; color: var(--text-muted); }
+.scope-dropdown {
+  display: none; position: absolute; top: calc(100% + 6px); left: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 6px; min-width: 220px;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.4); z-index: 200;
+}
+.scope-dropdown.open { display: block; }
+.scope-option {
+  padding: 8px 12px; border-radius: 8px; font-size: 13px;
+  cursor: pointer; transition: all var(--transition);
+}
+.scope-option:hover { background: var(--bg-elevated); }
+.scope-option.active { color: var(--accent); }
+
+.topbar-spacer { flex: 1; }
+.topbar-btn {
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 8px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition); position: relative;
+}
+.topbar-btn:hover { color: var(--text); background: var(--bg-elevated); }
+.notif-dot {
+  position: absolute; top: 6px; right: 6px;
+  width: 8px; height: 8px; background: var(--red);
+  border-radius: 50%; border: 2px solid var(--bg);
+}
+
+/* ── Main Content ── */
+.main {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  overflow-y: auto;
+  transition: margin-left var(--transition);
+  padding: 24px;
+}
+.sidebar.collapsed ~ .main { margin-left: var(--sidebar-collapsed); }
+
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── Cards ── */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all var(--transition);
+}
+.card:hover { border-color: var(--glass-border); background: var(--bg-card-hover); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title { font-weight: 600; font-size: 15px; }
+.card-subtitle { color: var(--text-muted); font-size: 13px; margin-top: 2px; }
+
+/* ── Home Page ── */
+.home-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+.home-grid-full {
+  grid-column: 1 / -1;
+}
+
+.briefing-card {
+  background: linear-gradient(135deg, rgba(59,130,246,0.15), rgba(168,85,247,0.1));
+  border-color: rgba(59,130,246,0.2);
+}
+.briefing-card .briefing-count {
+  font-size: 32px; font-weight: 700;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+.briefing-card .briefing-label {
+  color: var(--text-muted); font-size: 14px; margin-top: 4px;
+}
+
+.health-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.health-item {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex; align-items: center; gap: 10px;
+}
+.health-dot {
+  width: 10px; height: 10px; border-radius: 50%;
+  flex-shrink: 0;
+}
+.health-dot.green { background: var(--green); box-shadow: 0 0 8px rgba(34,197,94,0.4); }
+.health-label { font-size: 13px; font-weight: 500; }
+.health-sublabel { font-size: 11px; color: var(--text-dim); }
+
+.quick-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+}
+.stat-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px; text-align: center;
+}
+.stat-value { font-size: 28px; font-weight: 700; }
+.stat-label { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+
+/* Action Cards */
+.action-cards { display: flex; flex-direction: column; gap: 12px; }
+.action-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  transition: all var(--transition);
+}
+.action-card:hover { border-color: rgba(148,163,184,0.15); }
+.action-card-icon {
+  width: 36px; height: 36px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 16px;
+}
+.action-card-content { flex: 1; min-width: 0; }
+.action-card-title { font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.action-card-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.action-card-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+.priority-badge {
+  font-size: 11px; font-weight: 600; padding: 2px 8px;
+  border-radius: 6px; text-transform: uppercase; flex-shrink: 0;
+}
+.priority-high { background: var(--red-bg); color: var(--red); }
+.priority-medium { background: var(--yellow-bg); color: var(--yellow); }
+.priority-low { background: var(--green-bg); color: var(--green); }
+
+/* Buttons */
+.btn {
+  padding: 6px 12px; border-radius: 8px; border: none;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: all var(--transition);
+  display: inline-flex; align-items: center; gap: 4px;
+  white-space: nowrap;
+}
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+.btn-success { background: var(--green-bg); color: var(--green); border: 1px solid rgba(34,197,94,0.2); }
+.btn-success:hover { background: rgba(34,197,94,0.2); }
+.btn-danger { background: var(--red-bg); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
+.btn-danger:hover { background: rgba(239,68,68,0.2); }
+.btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+.btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+
+.checkbox {
+  width: 18px; height: 18px; border-radius: 5px;
+  border: 2px solid var(--text-dim); cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; transition: all var(--transition);
+}
+.checkbox:hover { border-color: var(--accent); }
+.checkbox.checked {
+  background: var(--green); border-color: var(--green);
+}
+.checkbox.checked::after {
+  content: ''; width: 6px; height: 10px;
+  border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg); margin-bottom: 2px;
+}
+
+/* Status badges */
+.status-badge {
+  font-size: 11px; font-weight: 500; padding: 3px 10px;
+  border-radius: 20px; display: inline-flex; align-items: center; gap: 5px;
+}
+.status-running { background: rgba(59,130,246,0.12); color: var(--accent); }
+.status-running::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: pulse 1.5s infinite;
+}
+.status-completed { background: var(--green-bg); color: var(--green); }
+.status-idle { background: rgba(100,116,139,0.15); color: var(--text-dim); }
+.status-pending { background: var(--yellow-bg); color: var(--yellow); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+/* ── Inbox Page ── */
+.tabs {
+  display: flex; gap: 4px; margin-bottom: 20px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px;
+  width: fit-content;
+}
+.tab {
+  padding: 8px 16px; border-radius: 10px;
+  cursor: pointer; font-size: 13px; font-weight: 500;
+  color: var(--text-muted); transition: all var(--transition);
+  display: flex; align-items: center; gap: 6px;
+}
+.tab:hover { color: var(--text); }
+.tab.active { background: var(--bg-elevated); color: var(--text); }
+.tab-badge {
+  font-size: 11px; font-weight: 600; padding: 1px 7px;
+  border-radius: 10px;
+}
+.tab-badge.red { background: var(--red); color: #fff; }
+.tab-badge.blue { background: var(--accent); color: #fff; }
+.tab-badge.gray { background: var(--bg-elevated); color: var(--text-muted); }
+
+.inbox-list { display: flex; flex-direction: column; gap: 8px; }
+.inbox-item {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 16px 20px;
+  display: flex; align-items: center; gap: 14px;
+  transition: all var(--transition);
+}
+.inbox-item:hover { border-color: rgba(148,163,184,0.15); background: var(--bg-card-hover); }
+.inbox-type-icon {
+  width: 40px; height: 40px; border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0; font-size: 18px;
+}
+.inbox-content { flex: 1; min-width: 0; }
+.inbox-title { font-size: 14px; font-weight: 500; }
+.inbox-meta { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.inbox-actions { display: flex; gap: 6px; flex-shrink: 0; }
+
+/* Classify dropdown */
+.classify-wrap { position: relative; }
+.classify-dropdown {
+  display: none; position: absolute; top: calc(100% + 4px); right: 0;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 4px;
+  box-shadow: 0 12px 36px rgba(0,0,0,0.4); z-index: 50;
+  min-width: 140px;
+}
+.classify-dropdown.open { display: block; }
+.classify-option {
+  padding: 7px 12px; border-radius: 8px; font-size: 13px;
+  cursor: pointer; transition: all var(--transition);
+}
+.classify-option:hover { background: var(--bg-elevated); }
+
+/* ── Agents Page ── */
+.agents-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.agent-card {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 20px;
+  transition: all var(--transition);
+}
+.agent-card:hover { border-color: rgba(148,163,184,0.15); background: var(--bg-card-hover); }
+.agent-card-header { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.agent-avatar {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.agent-name { font-size: 15px; font-weight: 600; }
+.agent-team { font-size: 12px; color: var(--text-dim); }
+.agent-cost {
+  margin-left: auto; font-size: 14px; font-weight: 600;
+  color: var(--green); font-variant-numeric: tabular-nums;
+}
+.agent-progress { margin-bottom: 12px; }
+.progress-bar {
+  height: 4px; background: var(--bg-elevated); border-radius: 2px;
+  overflow: hidden; margin-top: 6px;
+}
+.progress-fill {
+  height: 100%; border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), var(--purple));
+  transition: width 1s ease;
+}
+.progress-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); }
+.agent-summary {
+  background: var(--bg-elevated); border-radius: 8px;
+  padding: 10px 12px; font-size: 13px; color: var(--text-muted);
+  line-height: 1.5; margin-bottom: 12px;
+  border-left: 3px solid var(--green);
+}
+.agent-actions { display: flex; gap: 8px; }
+
+/* ── Focus List ── */
+.focus-list { display: flex; flex-direction: column; gap: 8px; }
+.focus-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 14px; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: var(--radius);
+  transition: all var(--transition);
+}
+.focus-item:hover { border-color: rgba(148,163,184,0.15); }
+.focus-rank {
+  font-size: 12px; font-weight: 700; color: var(--text-dim);
+  width: 24px; text-align: center; flex-shrink: 0;
+}
+.focus-content { flex: 1; min-width: 0; }
+.focus-title { font-size: 13px; font-weight: 500; }
+.focus-meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+/* ── Floating Orb ── */
+.orb-container {
+  position: fixed; bottom: 24px; right: 24px; z-index: 200;
+}
+.orb {
+  width: 56px; height: 56px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 32px rgba(59,130,246,0.3);
+  transition: all var(--transition);
+}
+.orb:hover {
+  transform: scale(1.08);
+  box-shadow: 0 12px 40px rgba(59,130,246,0.4);
+}
+.orb svg { width: 24px; height: 24px; color: #fff; }
+.orb-input-wrap {
+  display: none; position: absolute; bottom: 68px; right: 0;
+  width: 340px;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.orb-input-wrap.open { display: block; }
+.orb-input-label { font-size: 13px; font-weight: 500; margin-bottom: 10px; color: var(--text-muted); }
+.orb-input {
+  width: 100%; background: var(--bg-elevated);
+  border: 1px solid var(--border); border-radius: 10px;
+  padding: 10px 14px; color: var(--text); font-family: inherit;
+  font-size: 14px; outline: none;
+  transition: border-color var(--transition);
+}
+.orb-input:focus { border-color: var(--accent); }
+.orb-input::placeholder { color: var(--text-dim); }
+.orb-submit {
+  margin-top: 10px; width: 100%;
+  padding: 9px; border-radius: 10px; border: none;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  color: #fff; font-weight: 600; font-size: 13px;
+  cursor: pointer; font-family: inherit;
+  transition: all var(--transition);
+}
+.orb-submit:hover { opacity: 0.9; }
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed; top: 72px; right: 24px; z-index: 300;
+  display: flex; flex-direction: column; gap: 8px;
+}
+.toast {
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 12px 18px;
+  font-size: 13px; font-weight: 500;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.4);
+  display: flex; align-items: center; gap: 8px;
+  animation: toastIn 300ms ease, toastOut 300ms ease 2700ms forwards;
+  min-width: 220px;
+}
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+@keyframes toastIn { from { opacity: 0; transform: translateX(20px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+
+/* ── Placeholder pages ── */
+.placeholder-page {
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  height: 60vh; color: var(--text-dim);
+}
+.placeholder-page svg { width: 64px; height: 64px; margin-bottom: 16px; opacity: 0.3; }
+.placeholder-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 6px; color: var(--text-muted); }
+.placeholder-page p { font-size: 14px; }
+
+/* Section headers */
+.section-header {
+  font-size: 13px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.05em; color: var(--text-dim); margin-bottom: 14px;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">C</div>
+    <div class="sidebar-title">CoCo</div>
+    <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item active" data-page="home" onclick="navigate('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" data-page="inbox" onclick="navigate('inbox')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+      <span>Inbox</span>
+      <div class="nav-badge">8</div>
+    </div>
+    <div class="nav-item" data-page="todos" onclick="navigate('todos')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Todos</span>
+      <div class="nav-badge">3</div>
+    </div>
+    <div class="nav-item" data-page="agents" onclick="navigate('agents')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Agents</span>
+    </div>
+    <div class="nav-item" data-page="projects" onclick="navigate('projects')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <span>Projects</span>
+    </div>
+    <div class="nav-item" data-page="knowledge" onclick="navigate('knowledge')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      <span>Knowledge</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item" data-page="costs" onclick="navigate('costs')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span>Costs</span>
+    </div>
+    <div class="nav-item" data-page="chat" onclick="navigate('chat')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>Chat</span>
+    </div>
+    <div class="nav-item" data-page="settings" onclick="navigate('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Settings</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <div class="search-box" onclick="showToast('Search', 'Cmd+K search coming soon')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span>Search anything...</span>
+    <kbd class="search-kbd">&#8984;K</kbd>
+  </div>
+
+  <div class="scope-indicator" id="scopeIndicator" onclick="toggleScope()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+    <span id="scopeLabel">All Projects</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px"><polyline points="6 9 12 15 18 9"/></svg>
+    <div class="scope-dropdown" id="scopeDropdown">
+      <div class="scope-option active" onclick="setScope('All Projects', event)">All Projects</div>
+      <div class="scope-option" onclick="setScope('Anti-Corruption (ACC)', event)">Anti-Corruption (ACC)</div>
+      <div class="scope-option" onclick="setScope('AuditBoard (AB1)', event)">AuditBoard (AB1)</div>
+      <div class="scope-option" onclick="setScope('AuditBoard Tax (AB2)', event)">AuditBoard Tax (AB2)</div>
+      <div class="scope-option" onclick="setScope('3PI V2', event)">3PI V2</div>
+      <div class="scope-option" onclick="setScope('Cross Risk Tools', event)">Cross Risk Tools</div>
+    </div>
+  </div>
+
+  <div class="topbar-spacer"></div>
+
+  <button class="topbar-btn" onclick="showToast('Notifications', '3 unread notifications')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg>
+    <div class="notif-dot"></div>
+  </button>
+  <button class="topbar-btn" onclick="showToast('Theme', 'Dark mode active')">
+    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
+  </button>
+</header>
+
+<!-- ── Main Content ── -->
+<div class="main" id="main">
+
+  <!-- HOME PAGE -->
+  <div class="page active" id="page-home">
+
+    <!-- Briefing + Health -->
+    <div class="home-grid" style="margin-bottom:20px">
+      <div class="card briefing-card">
+        <div class="briefing-count">5</div>
+        <div class="briefing-label">items need your attention</div>
+        <div style="margin-top:12px;font-size:13px;color:var(--text-muted)">2 drafts pending approval, 1 agent completed, 2 high-priority todos</div>
+      </div>
+      <div class="card">
+        <div class="card-title" style="margin-bottom:14px">System Health</div>
+        <div class="health-grid">
+          <div class="health-item">
+            <div class="health-dot green"></div>
+            <div><div class="health-label">Platform</div><div class="health-sublabel">All systems go</div></div>
+          </div>
+          <div class="health-item">
+            <div class="health-dot green"></div>
+            <div><div class="health-label">Hub DB</div><div class="health-sublabel">302 entries</div></div>
+          </div>
+          <div class="health-item">
+            <div class="health-dot green"></div>
+            <div><div class="health-label">Brain</div><div class="health-sublabel">Synced</div></div>
+          </div>
+          <div class="health-item">
+            <div class="health-dot green"></div>
+            <div><div class="health-label">Queue</div><div class="health-sublabel">0 pending</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="quick-stats" style="margin-bottom:24px">
+      <div class="stat-card"><div class="stat-value">13</div><div class="stat-label">Teams</div></div>
+      <div class="stat-card"><div class="stat-value">50</div><div class="stat-label">Todos</div></div>
+      <div class="stat-card"><div class="stat-value">302</div><div class="stat-label">Agents</div></div>
+      <div class="stat-card"><div class="stat-value" style="color:var(--green)">$2.40</div><div class="stat-label">Spend Today</div></div>
+    </div>
+
+    <!-- Action Cards + Focus List -->
+    <div class="home-grid">
+      <!-- Action Cards -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Action Items</div>
+            <div class="card-subtitle">Inline actions for quick triage</div>
+          </div>
+        </div>
+        <div class="action-cards">
+          <!-- Todo -->
+          <div class="action-card" id="todo-1">
+            <div class="checkbox" onclick="completeTodo('todo-1', 'Review GitGuardian incident')"></div>
+            <div class="action-card-icon" style="background:var(--red-bg)">&#128680;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">Review GitGuardian incident #29214721</div>
+              <div class="action-card-meta">ACC &middot; Due today</div>
+            </div>
+            <span class="priority-badge priority-high">High</span>
+          </div>
+          <!-- Draft -->
+          <div class="action-card" id="draft-1">
+            <div class="action-card-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">ACC Phase 2 Status Update</div>
+              <div class="action-card-meta">Draft &middot; Created 2h ago</div>
+            </div>
+            <div class="action-card-actions">
+              <button class="btn btn-success" onclick="approveDraft('draft-1', 'ACC Phase 2 Status Update')">Approve</button>
+              <button class="btn btn-danger" onclick="rejectDraft('draft-1', 'ACC Phase 2 Status Update')">Reject</button>
+            </div>
+          </div>
+          <!-- Agent completed -->
+          <div class="action-card">
+            <div class="action-card-icon" style="background:var(--green-bg)">&#129302;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">Technical Architect</div>
+              <div class="action-card-meta">Completed 15m ago &middot; $0.24</div>
+            </div>
+            <span class="status-badge status-completed">Completed</span>
+            <button class="btn btn-primary" onclick="showToast('Agent Output', 'Opening Technical Architect output...')">View Output</button>
+          </div>
+          <!-- Todo 2 -->
+          <div class="action-card" id="todo-2">
+            <div class="checkbox" onclick="completeTodo('todo-2', 'Update Aravo API docs')"></div>
+            <div class="action-card-icon" style="background:var(--yellow-bg)">&#128221;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">Update Aravo API docs</div>
+              <div class="action-card-meta">AuditBoard &middot; Due Apr 8</div>
+            </div>
+            <span class="priority-badge priority-medium">Medium</span>
+          </div>
+          <!-- Draft 2 -->
+          <div class="action-card" id="draft-2">
+            <div class="action-card-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">AuditBoard Config Migration Plan</div>
+              <div class="action-card-meta">Draft &middot; Created 4h ago</div>
+            </div>
+            <div class="action-card-actions">
+              <button class="btn btn-success" onclick="approveDraft('draft-2', 'AuditBoard Config Migration Plan')">Approve</button>
+              <button class="btn btn-danger" onclick="rejectDraft('draft-2', 'AuditBoard Config Migration Plan')">Reject</button>
+            </div>
+          </div>
+          <!-- Inbox item -->
+          <div class="action-card">
+            <div class="action-card-icon" style="background:rgba(168,85,247,0.12)">&#128233;</div>
+            <div class="action-card-content">
+              <div class="action-card-title">New Confluence update: 3PI V2 architecture</div>
+              <div class="action-card-meta">Unsorted &middot; 1h ago</div>
+            </div>
+            <div class="action-card-actions">
+              <div class="classify-wrap">
+                <button class="btn btn-ghost" onclick="toggleClassify(this, event)">Classify</button>
+                <div class="classify-dropdown">
+                  <div class="classify-option" onclick="classifyItem('Knowledge', event)">Knowledge</div>
+                  <div class="classify-option" onclick="classifyItem('Todo', event)">Todo</div>
+                  <div class="classify-option" onclick="classifyItem('Reference', event)">Reference</div>
+                </div>
+              </div>
+              <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Item removed from inbox')">Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Focus List -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Focus List</div>
+            <div class="card-subtitle">Top 5 priorities across all teams</div>
+          </div>
+        </div>
+        <div class="focus-list">
+          <div class="focus-item">
+            <div class="focus-rank">1</div>
+            <div class="focus-content">
+              <div class="focus-title">Review GitGuardian incident #29214721</div>
+              <div class="focus-meta">ACC &middot; Security &middot; Due today</div>
+            </div>
+            <span class="priority-badge priority-high">High</span>
+            <div class="checkbox" onclick="completeTodo(null, 'GitGuardian incident')"></div>
+          </div>
+          <div class="focus-item">
+            <div class="focus-rank">2</div>
+            <div class="focus-content">
+              <div class="focus-title">Approve ACC Phase 2 Status Update</div>
+              <div class="focus-meta">ACC &middot; Draft &middot; 2h ago</div>
+            </div>
+            <span class="priority-badge priority-high">High</span>
+            <button class="btn btn-success" onclick="showToast('Approved', 'ACC Phase 2 Status Update approved')">Approve</button>
+          </div>
+          <div class="focus-item">
+            <div class="focus-rank">3</div>
+            <div class="focus-content">
+              <div class="focus-title">Prep Q2 risk report</div>
+              <div class="focus-meta">Cross Risk &middot; Reporting &middot; Due Apr 10</div>
+            </div>
+            <span class="priority-badge priority-high">High</span>
+            <div class="checkbox" onclick="completeTodo(null, 'Q2 risk report')"></div>
+          </div>
+          <div class="focus-item">
+            <div class="focus-rank">4</div>
+            <div class="focus-content">
+              <div class="focus-title">Review Technical Architect output</div>
+              <div class="focus-meta">3PI V2 &middot; Agent &middot; Completed</div>
+            </div>
+            <span class="status-badge status-completed">Done</span>
+            <button class="btn btn-ghost" onclick="showToast('Output', 'Opening agent output...')">View</button>
+          </div>
+          <div class="focus-item">
+            <div class="focus-rank">5</div>
+            <div class="focus-content">
+              <div class="focus-title">Update Aravo API docs</div>
+              <div class="focus-meta">AuditBoard &middot; Documentation &middot; Due Apr 8</div>
+            </div>
+            <span class="priority-badge priority-medium">Med</span>
+            <div class="checkbox" onclick="completeTodo(null, 'Aravo API docs')"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- INBOX PAGE -->
+  <div class="page" id="page-inbox">
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:20px">Inbox</h1>
+    <div class="tabs">
+      <div class="tab active" data-tab="urgent" onclick="switchTab(this)">Urgent <span class="tab-badge red">3</span></div>
+      <div class="tab" data-tab="drafts" onclick="switchTab(this)">Drafts <span class="tab-badge blue">5</span></div>
+      <div class="tab" data-tab="all" onclick="switchTab(this)">All <span class="tab-badge gray">21</span></div>
+    </div>
+
+    <!-- Urgent tab -->
+    <div class="inbox-tab-content active" id="tab-urgent">
+      <div class="inbox-list">
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:var(--red-bg)">&#128680;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">GitGuardian: Secret detected in ACC repo</div>
+            <div class="inbox-meta">Security alert &middot; 30 minutes ago &middot; Incident #29214721</div>
+          </div>
+          <span class="priority-badge priority-high">Urgent</span>
+          <div class="inbox-actions">
+            <button class="btn btn-primary" onclick="showToast('Acknowledged', 'Incident acknowledged and assigned')">Acknowledge</button>
+            <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Alert dismissed')">Dismiss</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:var(--red-bg)">&#9888;&#65039;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">AuditBoard staging deployment failed</div>
+            <div class="inbox-meta">CI/CD &middot; 1 hour ago &middot; Pipeline #4891</div>
+          </div>
+          <span class="priority-badge priority-high">Urgent</span>
+          <div class="inbox-actions">
+            <button class="btn btn-primary" onclick="showToast('Investigating', 'Opened pipeline logs')">Investigate</button>
+            <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Alert dismissed')">Dismiss</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:var(--yellow-bg)">&#128276;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Q2 risk report deadline in 4 days</div>
+            <div class="inbox-meta">Reminder &middot; Cross Risk &middot; Due Apr 10</div>
+          </div>
+          <span class="priority-badge priority-high">Urgent</span>
+          <div class="inbox-actions">
+            <button class="btn btn-ghost" onclick="showToast('Snoozed', 'Reminder snoozed until Apr 9')">Snooze</button>
+            <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Reminder dismissed')">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drafts tab -->
+    <div class="inbox-tab-content" id="tab-drafts" style="display:none">
+      <div class="inbox-list">
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">ACC Phase 2 Status Update</div>
+            <div class="inbox-meta">Draft &middot; Created 2h ago &middot; Anti-Corruption</div>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+          <div class="inbox-actions">
+            <button class="btn btn-success" onclick="showToast('Approved', 'ACC Phase 2 Status Update published')">Approve</button>
+            <button class="btn btn-danger" onclick="showToast('Rejected', 'Draft sent back for revision')">Reject</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">AuditBoard Config Migration Plan</div>
+            <div class="inbox-meta">Draft &middot; Created 4h ago &middot; AuditBoard</div>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+          <div class="inbox-actions">
+            <button class="btn btn-success" onclick="showToast('Approved', 'Migration Plan published')">Approve</button>
+            <button class="btn btn-danger" onclick="showToast('Rejected', 'Draft sent back for revision')">Reject</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">3PI V2 Architecture Overview</div>
+            <div class="inbox-meta">Draft &middot; Created 6h ago &middot; 3PI V2</div>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+          <div class="inbox-actions">
+            <button class="btn btn-success" onclick="showToast('Approved', '3PI V2 Architecture published')">Approve</button>
+            <button class="btn btn-danger" onclick="showToast('Rejected', 'Draft rejected')">Reject</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Cross Risk Q1 Retrospective</div>
+            <div class="inbox-meta">Draft &middot; Created 1d ago &middot; Cross Risk Tools</div>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+          <div class="inbox-actions">
+            <button class="btn btn-success" onclick="showToast('Approved', 'Retrospective published')">Approve</button>
+            <button class="btn btn-danger" onclick="showToast('Rejected', 'Draft rejected')">Reject</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(59,130,246,0.12)">&#128196;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Aravo Integration Test Report</div>
+            <div class="inbox-meta">Draft &middot; Created 1d ago &middot; AuditBoard Tax</div>
+          </div>
+          <span class="status-badge status-pending">Pending</span>
+          <div class="inbox-actions">
+            <button class="btn btn-success" onclick="showToast('Approved', 'Test Report published')">Approve</button>
+            <button class="btn btn-danger" onclick="showToast('Rejected', 'Draft rejected')">Reject</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- All tab -->
+    <div class="inbox-tab-content" id="tab-all" style="display:none">
+      <div class="inbox-list">
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(168,85,247,0.12)">&#128233;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Confluence update: 3PI V2 architecture diagrams</div>
+            <div class="inbox-meta">Unsorted &middot; 1h ago</div>
+          </div>
+          <div class="inbox-actions">
+            <div class="classify-wrap">
+              <button class="btn btn-ghost" onclick="toggleClassify(this, event)">Classify</button>
+              <div class="classify-dropdown">
+                <div class="classify-option" onclick="classifyItem('Knowledge', event)">Knowledge</div>
+                <div class="classify-option" onclick="classifyItem('Todo', event)">Todo</div>
+                <div class="classify-option" onclick="classifyItem('Reference', event)">Reference</div>
+              </div>
+            </div>
+            <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Item removed')">Dismiss</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:var(--green-bg)">&#129302;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Agent completed: Technical Architect (3PI V2)</div>
+            <div class="inbox-meta">Agent &middot; 15m ago &middot; Cost: $0.24</div>
+          </div>
+          <div class="inbox-actions">
+            <button class="btn btn-primary" onclick="showToast('Output', 'Opening agent output...')">View Output</button>
+            <button class="btn btn-ghost" onclick="showToast('Archived', 'Notification archived')">Archive</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(234,179,8,0.12)">&#128340;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Scheduled: Weekly sync with ACC team</div>
+            <div class="inbox-meta">Calendar &middot; Tomorrow 10:00 AM</div>
+          </div>
+          <div class="inbox-actions">
+            <button class="btn btn-ghost" onclick="showToast('Acknowledged', 'Reminder set')">Acknowledge</button>
+          </div>
+        </div>
+        <div class="inbox-item">
+          <div class="inbox-type-icon" style="background:rgba(168,85,247,0.12)">&#128233;</div>
+          <div class="inbox-content">
+            <div class="inbox-title">Jira: AB1-342 moved to In Review</div>
+            <div class="inbox-meta">Jira &middot; 3h ago &middot; AuditBoard</div>
+          </div>
+          <div class="inbox-actions">
+            <button class="btn btn-ghost" onclick="showToast('Opened', 'Opening Jira ticket...')">Open</button>
+            <button class="btn btn-ghost" onclick="showToast('Dismissed', 'Item removed')">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AGENTS PAGE -->
+  <div class="page" id="page-agents">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
+      <h1 style="font-size:22px;font-weight:700">Agents</h1>
+      <button class="btn btn-primary" onclick="showToast('Spawning', 'New agent spawning...')" style="padding:8px 16px">
+        + New Agent
+      </button>
+    </div>
+    <div class="agents-grid">
+      <!-- Developer - Running -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:rgba(59,130,246,0.15)">&#128187;</div>
+          <div>
+            <div class="agent-name">Developer</div>
+            <div class="agent-team">AuditBoard (AB1)</div>
+          </div>
+          <div class="agent-cost">$0.08</div>
+        </div>
+        <div class="agent-progress">
+          <div class="progress-meta">
+            <span><span class="status-badge status-running">Running</span></span>
+            <span>2m 14s elapsed</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:45%"></div></div>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-ghost" onclick="showToast('Watching', 'Live streaming agent output...')">Watch Live</button>
+          <button class="btn btn-danger" onclick="showToast('Cancelled', 'Developer agent cancelled')">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Technical Architect - Completed -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:var(--green-bg)">&#127959;&#65039;</div>
+          <div>
+            <div class="agent-name">Technical Architect</div>
+            <div class="agent-team">3PI V2</div>
+          </div>
+          <div class="agent-cost">$0.24</div>
+        </div>
+        <div class="agent-summary">
+          Analyzed 3PI V2 architecture: recommended event-driven pattern with EventBridge + SQS for async processing. Identified 3 coupling risks in current design. Full report generated with Mermaid diagrams.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="status-badge status-completed">Completed</span>
+          <span style="font-size:12px;color:var(--text-dim)">Ran 4m 32s &middot; 15m ago</span>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-primary" onclick="showToast('Output', 'Opening full output...')">View Full Output</button>
+          <button class="btn btn-ghost" onclick="showToast('Copied', 'Summary copied to clipboard')">Copy Summary</button>
+        </div>
+      </div>
+
+      <!-- Product Manager - Idle -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:rgba(168,85,247,0.12)">&#128188;</div>
+          <div>
+            <div class="agent-name">Product Manager</div>
+            <div class="agent-team">Cross Risk Tools</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="status-badge status-idle">Idle</span>
+          <span style="font-size:12px;color:var(--text-dim)">Last run 2h ago &middot; $0.18 total</span>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-primary" onclick="showToast('Spawning', 'Product Manager agent starting...')">Run Again</button>
+          <button class="btn btn-ghost" onclick="showToast('History', 'Opening run history...')">History</button>
+        </div>
+      </div>
+
+      <!-- QA Reviewer - Idle -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:rgba(234,179,8,0.12)">&#128270;</div>
+          <div>
+            <div class="agent-name">QA Reviewer</div>
+            <div class="agent-team">AuditBoard Tax (AB2)</div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="status-badge status-idle">Idle</span>
+          <span style="font-size:12px;color:var(--text-dim)">Last run 5h ago &middot; $0.09 total</span>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-primary" onclick="showToast('Spawning', 'QA Reviewer agent starting...')">Run Again</button>
+          <button class="btn btn-ghost" onclick="showToast('History', 'Opening run history...')">History</button>
+        </div>
+      </div>
+
+      <!-- Security Scanner - Running -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:rgba(239,68,68,0.12)">&#128274;</div>
+          <div>
+            <div class="agent-name">Security Scanner</div>
+            <div class="agent-team">Anti-Corruption (ACC)</div>
+          </div>
+          <div class="agent-cost">$0.12</div>
+        </div>
+        <div class="agent-progress">
+          <div class="progress-meta">
+            <span><span class="status-badge status-running">Running</span></span>
+            <span>3m 48s elapsed</span>
+          </div>
+          <div class="progress-bar"><div class="progress-fill" style="width:72%"></div></div>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-ghost" onclick="showToast('Watching', 'Live streaming agent output...')">Watch Live</button>
+          <button class="btn btn-danger" onclick="showToast('Cancelled', 'Security Scanner cancelled')">Cancel</button>
+        </div>
+      </div>
+
+      <!-- Doc Writer - Completed -->
+      <div class="agent-card">
+        <div class="agent-card-header">
+          <div class="agent-avatar" style="background:var(--green-bg)">&#128214;</div>
+          <div>
+            <div class="agent-name">Doc Writer</div>
+            <div class="agent-team">AuditBoard (AB1)</div>
+          </div>
+          <div class="agent-cost">$0.06</div>
+        </div>
+        <div class="agent-summary">
+          Updated Aravo API integration docs: added 12 new endpoints for tax module, corrected authentication flow diagram, added rate limiting section. Confluence page updated automatically.
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span class="status-badge status-completed">Completed</span>
+          <span style="font-size:12px;color:var(--text-dim)">Ran 1m 52s &middot; 3h ago</span>
+        </div>
+        <div class="agent-actions">
+          <button class="btn btn-primary" onclick="showToast('Output', 'Opening full output...')">View Full Output</button>
+          <button class="btn btn-ghost" onclick="showToast('Copied', 'Summary copied to clipboard')">Copy Summary</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TODOS PAGE -->
+  <div class="page" id="page-todos">
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:20px">Todos</h1>
+    <div class="action-cards">
+      <div class="action-card" id="todo-page-1">
+        <div class="checkbox" onclick="completeTodo('todo-page-1', 'Review GitGuardian incident')"></div>
+        <div class="action-card-icon" style="background:var(--red-bg)">&#128680;</div>
+        <div class="action-card-content">
+          <div class="action-card-title">Review GitGuardian incident #29214721</div>
+          <div class="action-card-meta">ACC &middot; Security &middot; Due today</div>
+        </div>
+        <span class="priority-badge priority-high">High</span>
+      </div>
+      <div class="action-card" id="todo-page-2">
+        <div class="checkbox" onclick="completeTodo('todo-page-2', 'Prep Q2 risk report')"></div>
+        <div class="action-card-icon" style="background:var(--red-bg)">&#128202;</div>
+        <div class="action-card-content">
+          <div class="action-card-title">Prep Q2 risk report</div>
+          <div class="action-card-meta">Cross Risk &middot; Reporting &middot; Due Apr 10</div>
+        </div>
+        <span class="priority-badge priority-high">High</span>
+      </div>
+      <div class="action-card" id="todo-page-3">
+        <div class="checkbox" onclick="completeTodo('todo-page-3', 'Update Aravo API docs')"></div>
+        <div class="action-card-icon" style="background:var(--yellow-bg)">&#128221;</div>
+        <div class="action-card-content">
+          <div class="action-card-title">Update Aravo API docs</div>
+          <div class="action-card-meta">AuditBoard &middot; Documentation &middot; Due Apr 8</div>
+        </div>
+        <span class="priority-badge priority-medium">Medium</span>
+      </div>
+      <div class="action-card" id="todo-page-4">
+        <div class="checkbox" onclick="completeTodo('todo-page-4', 'Review AB2 test coverage')"></div>
+        <div class="action-card-icon" style="background:var(--green-bg)">&#9989;</div>
+        <div class="action-card-content">
+          <div class="action-card-title">Review AB2 test coverage report</div>
+          <div class="action-card-meta">AuditBoard Tax &middot; QA &middot; Due Apr 12</div>
+        </div>
+        <span class="priority-badge priority-low">Low</span>
+      </div>
+      <div class="action-card" id="todo-page-5">
+        <div class="checkbox" onclick="completeTodo('todo-page-5', 'Schedule 3PI V2 demo')"></div>
+        <div class="action-card-icon" style="background:rgba(168,85,247,0.12)">&#128197;</div>
+        <div class="action-card-content">
+          <div class="action-card-title">Schedule 3PI V2 demo with stakeholders</div>
+          <div class="action-card-meta">3PI V2 &middot; Planning &middot; Due Apr 15</div>
+        </div>
+        <span class="priority-badge priority-low">Low</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- PLACEHOLDER PAGES -->
+  <div class="page" id="page-projects">
+    <h1 style="font-size:22px;font-weight:700;margin-bottom:20px">Projects</h1>
+    <div class="agents-grid">
+      <div class="card" style="cursor:pointer" onclick="setScope('Anti-Corruption (ACC)')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--red-bg);display:flex;align-items:center;justify-content:center;font-size:18px">&#128737;&#65039;</div>
+          <div><div style="font-weight:600">Anti-Corruption (ACC)</div><div style="font-size:12px;color:var(--text-dim)">8 agents &middot; 12 todos</div></div>
+        </div>
+        <div class="health-dot green" style="display:inline-block;margin-right:6px"></div><span style="font-size:12px;color:var(--text-muted)">Active &middot; Phase 2</span>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="setScope('AuditBoard (AB1)')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(59,130,246,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">&#128203;</div>
+          <div><div style="font-weight:600">AuditBoard (AB1)</div><div style="font-size:12px;color:var(--text-dim)">15 agents &middot; 18 todos</div></div>
+        </div>
+        <div class="health-dot green" style="display:inline-block;margin-right:6px"></div><span style="font-size:12px;color:var(--text-muted)">Active &middot; Config migration</span>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="setScope('AuditBoard Tax (AB2)')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(234,179,8,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">&#128176;</div>
+          <div><div style="font-weight:600">AuditBoard Tax (AB2)</div><div style="font-size:12px;color:var(--text-dim)">6 agents &middot; 8 todos</div></div>
+        </div>
+        <div class="health-dot green" style="display:inline-block;margin-right:6px"></div><span style="font-size:12px;color:var(--text-muted)">Active &middot; Tax module</span>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="setScope('3PI V2')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:rgba(168,85,247,0.12);display:flex;align-items:center;justify-content:center;font-size:18px">&#127760;</div>
+          <div><div style="font-weight:600">3PI V2</div><div style="font-size:12px;color:var(--text-dim)">10 agents &middot; 6 todos</div></div>
+        </div>
+        <div class="health-dot green" style="display:inline-block;margin-right:6px"></div><span style="font-size:12px;color:var(--text-muted)">Active &middot; Architecture</span>
+      </div>
+      <div class="card" style="cursor:pointer" onclick="setScope('Cross Risk Tools')">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <div style="width:40px;height:40px;border-radius:10px;background:var(--green-bg);display:flex;align-items:center;justify-content:center;font-size:18px">&#128736;&#65039;</div>
+          <div><div style="font-weight:600">Cross Risk Tools</div><div style="font-size:12px;color:var(--text-dim)">5 agents &middot; 6 todos</div></div>
+        </div>
+        <div class="health-dot green" style="display:inline-block;margin-right:6px"></div><span style="font-size:12px;color:var(--text-muted)">Active &middot; Maintenance</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page" id="page-knowledge">
+    <div class="placeholder-page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      <h2>Knowledge Hub</h2>
+      <p>302 entries across 13 teams. Search or browse your knowledge base.</p>
+    </div>
+  </div>
+
+  <div class="page" id="page-costs">
+    <div class="placeholder-page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <h2>Costs</h2>
+      <p>$2.40 spent today. $18.72 this week. View breakdowns by team and agent.</p>
+    </div>
+  </div>
+
+  <div class="page" id="page-chat">
+    <div class="placeholder-page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <h2>Chat</h2>
+      <p>Talk to CoCo. Full Claude access with your MCP tools and skills.</p>
+    </div>
+  </div>
+
+  <div class="page" id="page-settings">
+    <div class="placeholder-page">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <h2>Settings</h2>
+      <p>Configure CoCo Platform preferences, budgets, and integrations.</p>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Floating Orb ── -->
+<div class="orb-container">
+  <div class="orb-input-wrap" id="orbInput">
+    <div class="orb-input-label">What do you need done?</div>
+    <input type="text" class="orb-input" placeholder="e.g. Review the ACC deployment logs..." id="orbTextField" onkeydown="if(event.key==='Enter')spawnFromOrb()">
+    <button class="orb-submit" onclick="spawnFromOrb()">Spawn Agent</button>
+  </div>
+  <button class="orb" onclick="toggleOrb()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+  </button>
+</div>
+
+<!-- ── Toast Container ── -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ── Navigation ──
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('.nav-item[data-page="' + page + '"]').classList.add('active');
+}
+
+// ── Sidebar ──
+function toggleSidebar() {
+  const sb = document.getElementById('sidebar');
+  sb.classList.toggle('collapsed');
+  const btn = sb.querySelector('.sidebar-collapse-btn svg');
+  if (sb.classList.contains('collapsed')) {
+    btn.innerHTML = '<path d="M9 18l6-6-6-6"/>';
+  } else {
+    btn.innerHTML = '<path d="M15 18l-6-6 6-6"/>';
+  }
+}
+
+// ── Scope ──
+function toggleScope() {
+  document.getElementById('scopeDropdown').classList.toggle('open');
+}
+function setScope(name, event) {
+  if (event) event.stopPropagation();
+  document.getElementById('scopeLabel').textContent = name;
+  document.getElementById('scopeDropdown').classList.remove('open');
+  document.querySelectorAll('.scope-option').forEach(o => o.classList.remove('active'));
+  if (event && event.target) event.target.classList.add('active');
+  showToast('Scope', 'Filtered to ' + name);
+}
+
+// Close scope on outside click
+document.addEventListener('click', function(e) {
+  if (!e.target.closest('.scope-indicator')) {
+    document.getElementById('scopeDropdown').classList.remove('open');
+  }
+  // Close classify dropdowns
+  if (!e.target.closest('.classify-wrap')) {
+    document.querySelectorAll('.classify-dropdown').forEach(d => d.classList.remove('open'));
+  }
+});
+
+// ── Inbox Tabs ──
+function switchTab(el) {
+  const tab = el.dataset.tab;
+  el.closest('.tabs').querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.inbox-tab-content').forEach(c => c.style.display = 'none');
+  document.getElementById('tab-' + tab).style.display = 'block';
+}
+
+// ── Todo Actions ──
+function completeTodo(id, name) {
+  if (id) {
+    const cb = document.getElementById(id).querySelector('.checkbox');
+    cb.classList.add('checked');
+    setTimeout(() => {
+      document.getElementById(id).style.opacity = '0.4';
+    }, 300);
+  }
+  showToast('Completed', '"' + name + '" marked done');
+}
+
+// ── Draft Actions ──
+function approveDraft(id, name) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'rgba(34,197,94,0.3)';
+  el.style.opacity = '0.5';
+  el.querySelector('.action-card-actions').innerHTML = '<span class="status-badge status-completed">Approved</span>';
+  showToast('Approved', name + ' published');
+}
+function rejectDraft(id, name) {
+  const el = document.getElementById(id);
+  el.style.borderColor = 'rgba(239,68,68,0.3)';
+  el.style.opacity = '0.5';
+  el.querySelector('.action-card-actions').innerHTML = '<span style="font-size:12px;color:var(--red)">Rejected</span>';
+  showToast('Rejected', name + ' sent back for revision');
+}
+
+// ── Classify ──
+function toggleClassify(btn, event) {
+  event.stopPropagation();
+  const dd = btn.nextElementSibling;
+  document.querySelectorAll('.classify-dropdown').forEach(d => { if (d !== dd) d.classList.remove('open'); });
+  dd.classList.toggle('open');
+}
+function classifyItem(category, event) {
+  event.stopPropagation();
+  const card = event.target.closest('.action-card, .inbox-item');
+  if (card) {
+    card.style.opacity = '0.4';
+  }
+  document.querySelectorAll('.classify-dropdown').forEach(d => d.classList.remove('open'));
+  showToast('Classified', 'Item moved to ' + category);
+}
+
+// ── Orb ──
+function toggleOrb() {
+  const wrap = document.getElementById('orbInput');
+  wrap.classList.toggle('open');
+  if (wrap.classList.contains('open')) {
+    document.getElementById('orbTextField').focus();
+  }
+}
+function spawnFromOrb() {
+  const input = document.getElementById('orbTextField');
+  const text = input.value.trim();
+  if (text) {
+    showToast('Agent Spawned', 'Working on: "' + text.substring(0, 40) + (text.length > 40 ? '...' : '') + '"');
+    input.value = '';
+    document.getElementById('orbInput').classList.remove('open');
+  } else {
+    showToast('Error', 'Please describe what you need done');
+  }
+}
+
+// ── Toast ──
+function showToast(title, message) {
+  const container = document.getElementById('toastContainer');
+  const icons = {
+    'Completed': '&#9989;', 'Approved': '&#9989;', 'Rejected': '&#10060;',
+    'Dismissed': '&#128465;&#65039;', 'Classified': '&#128193;', 'Agent Spawned': '&#129302;',
+    'Spawning': '&#129302;', 'Error': '&#9888;&#65039;', 'Scope': '&#127919;',
+    'Output': '&#128196;', 'Watching': '&#128064;', 'Cancelled': '&#128721;',
+    'Acknowledged': '&#128077;', 'Copied': '&#128203;', 'Snoozed': '&#128164;',
+    'Archived': '&#128230;', 'Opened': '&#128279;', 'Investigating': '&#128269;',
+    'History': '&#128218;', 'Search': '&#128269;', 'Theme': '&#127769;',
+    'Notifications': '&#128276;'
+  };
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = '<span class="toast-icon">' + (icons[title] || '&#128172;') + '</span><div><strong>' + title + '</strong><br><span style="color:var(--text-muted);font-size:12px">' + message + '</span></div>';
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 3000);
+}
+
+// ── Keyboard shortcut ──
+document.addEventListener('keydown', function(e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    showToast('Search', 'Cmd+K search coming soon');
+  }
+});
+
+// ── Progress bar animation ──
+let devProgress = 45;
+let secProgress = 72;
+setInterval(() => {
+  devProgress = Math.min(devProgress + 0.3, 95);
+  secProgress = Math.min(secProgress + 0.2, 98);
+  const bars = document.querySelectorAll('.progress-fill');
+  if (bars[0]) bars[0].style.width = devProgress + '%';
+  if (bars[1]) bars[1].style.width = secProgress + '%';
+}, 2000);
+
+// ── Live cost ticker ──
+let devCost = 0.08;
+let secCost = 0.12;
+setInterval(() => {
+  devCost += 0.001;
+  secCost += 0.0008;
+  const costs = document.querySelectorAll('.agent-cost');
+  // Update running agents' costs (first and third .agent-cost in agents page)
+  const agentCards = document.querySelectorAll('#page-agents .agent-card');
+  if (agentCards[0]) {
+    const c = agentCards[0].querySelector('.agent-cost');
+    if (c) c.textContent = '$' + devCost.toFixed(2);
+  }
+  if (agentCards[4]) {
+    const c = agentCards[4].querySelector('.agent-cost');
+    if (c) c.textContent = '$' + secCost.toFixed(2);
+  }
+}, 3000);
+</script>
+</body>
+</html>

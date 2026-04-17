@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Path A: Costs View</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #263348;
+  --bg-elevated: #334155;
+  --border: #334155;
+  --border-subtle: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent: #3b82f6;
+  --accent-hover: #2563eb;
+  --green: #22c55e;
+  --green-bg: rgba(34,197,94,0.12);
+  --red: #ef4444;
+  --red-bg: rgba(239,68,68,0.12);
+  --yellow: #eab308;
+  --yellow-bg: rgba(234,179,8,0.12);
+  --orange: #f97316;
+  --purple: #a855f7;
+  --radius: 12px;
+  --radius-lg: 16px;
+  --transition: 200ms ease;
+  --sidebar-width: 240px;
+  --sidebar-collapsed: 64px;
+  --topbar-height: 56px;
+  --glass: rgba(30,41,59,0.7);
+  --glass-border: rgba(148,163,184,0.08);
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  height: 100vh;
+  overflow: hidden;
+}
+
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+    --sidebar-collapsed: 0px;
+  }
+  .sidebar { display: none; }
+  .summary-grid { grid-template-columns: repeat(2, 1fr); }
+  .content-grid { grid-template-columns: 1fr; }
+  .table-section { grid-template-columns: 1fr; }
+  .budget-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  position: fixed;
+  left: 0; top: 0; bottom: 0;
+  width: var(--sidebar-width);
+  background: var(--bg-card);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  z-index: 100;
+  transition: width var(--transition);
+}
+.sidebar.collapsed { width: var(--sidebar-collapsed); }
+
+.sidebar-header {
+  height: var(--topbar-height);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.sidebar-logo {
+  width: 32px; height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff;
+  flex-shrink: 0;
+}
+.sidebar-title {
+  font-weight: 600; font-size: 16px; white-space: nowrap;
+  overflow: hidden; transition: opacity var(--transition);
+}
+.sidebar.collapsed .sidebar-title { opacity: 0; width: 0; }
+.sidebar-collapse-btn {
+  margin-left: auto;
+  background: none; border: none; color: var(--text-muted);
+  cursor: pointer; padding: 4px; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  transition: all var(--transition);
+  flex-shrink: 0;
+}
+.sidebar-collapse-btn:hover { color: var(--text); background: var(--bg-elevated); }
+.sidebar.collapsed .sidebar-collapse-btn { margin-left: 0; }
+
+.sidebar-nav {
+  flex: 1; padding: 12px 8px; overflow-y: auto;
+  display: flex; flex-direction: column; gap: 2px;
+}
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px 12px; border-radius: 10px;
+  cursor: pointer; color: var(--text-muted);
+  transition: all var(--transition);
+  white-space: nowrap; position: relative;
+  text-decoration: none;
+}
+.nav-item:hover { background: var(--bg-elevated); color: var(--text); }
+.nav-item.active { background: rgba(59,130,246,0.12); color: var(--accent); }
+.nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+.nav-item span {
+  overflow: hidden; transition: opacity var(--transition);
+}
+.sidebar.collapsed .nav-item span { opacity: 0; width: 0; }
+.nav-badge {
+  margin-left: auto; background: var(--red);
+  color: #fff; font-size: 11px; font-weight: 600;
+  padding: 1px 7px; border-radius: 10px; flex-shrink: 0;
+}
+.sidebar.collapsed .nav-badge {
+  position: absolute; top: 4px; right: 4px;
+  padding: 0 5px; font-size: 10px;
+}
+.nav-divider { height: 1px; background: var(--border); margin: 8px 4px; }
+
+/* ── Top Bar ── */
+.topbar {
+  position: fixed;
+  top: 0; right: 0;
+  left: var(--sidebar-width);
+  height: var(--topbar-height);
+  background: var(--glass);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--glass-border);
+  display: flex; align-items: center;
+  padding: 0 24px; gap: 16px;
+  z-index: 90;
+  transition: left var(--transition);
+}
+.sidebar.collapsed ~ .topbar { left: var(--sidebar-collapsed); }
+
+.topbar-title {
+  font-weight: 600; font-size: 18px;
+  display: flex; align-items: center; gap: 10px;
+}
+.topbar-title svg { width: 22px; height: 22px; color: var(--accent); }
+.topbar-spacer { flex: 1; }
+
+/* Date Range Picker */
+.date-range {
+  display: flex; align-items: center; gap: 2px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 3px;
+}
+.date-btn {
+  padding: 6px 14px; border-radius: 8px; border: none;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: all var(--transition);
+  color: var(--text-muted); background: transparent;
+}
+.date-btn:hover { color: var(--text); }
+.date-btn.active { background: var(--accent); color: #fff; }
+
+.btn {
+  padding: 7px 14px; border-radius: 8px; border: none;
+  font-size: 12px; font-weight: 500; cursor: pointer;
+  font-family: inherit; transition: all var(--transition);
+  display: inline-flex; align-items: center; gap: 6px;
+  white-space: nowrap;
+}
+.btn-ghost {
+  background: var(--bg-elevated); color: var(--text-muted);
+  border: 1px solid var(--border);
+}
+.btn-ghost:hover { color: var(--text); border-color: var(--text-dim); }
+.btn-primary { background: var(--accent); color: #fff; }
+.btn-primary:hover { background: var(--accent-hover); }
+
+/* ── Main Content ── */
+.main {
+  margin-left: var(--sidebar-width);
+  margin-top: var(--topbar-height);
+  height: calc(100vh - var(--topbar-height));
+  overflow-y: auto;
+  transition: margin-left var(--transition);
+  padding: 24px;
+}
+.sidebar.collapsed ~ .main { margin-left: var(--sidebar-collapsed); }
+
+/* ── Summary Cards ── */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.summary-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all var(--transition);
+}
+.summary-card:hover { border-color: var(--glass-border); background: var(--bg-card-hover); }
+.summary-card-label {
+  font-size: 12px; font-weight: 500; color: var(--text-dim);
+  text-transform: uppercase; letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+.summary-card-value {
+  font-size: 28px; font-weight: 700;
+  margin-bottom: 6px;
+}
+.summary-card-meta {
+  font-size: 12px; color: var(--text-muted);
+  display: flex; align-items: center; gap: 6px;
+}
+.trend-up { color: var(--red); }
+.trend-ok { color: var(--green); }
+
+/* Progress bar */
+.progress-bar {
+  width: 100%; height: 8px;
+  background: var(--bg-elevated);
+  border-radius: 4px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 800ms ease;
+}
+
+/* ── Chart Section ── */
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 320px;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  transition: all var(--transition);
+}
+.card:hover { border-color: var(--glass-border); background: var(--bg-card-hover); }
+.card-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 16px;
+}
+.card-title { font-weight: 600; font-size: 15px; }
+
+/* Mermaid chart container */
+#chart-container {
+  width: 100%;
+  min-height: 280px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+#chart-container svg {
+  width: 100% !important;
+  max-height: 300px;
+}
+
+/* Model breakdown bars */
+.model-breakdown {
+  display: flex; flex-direction: column; gap: 16px;
+}
+.model-item {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.model-item-header {
+  display: flex; justify-content: space-between;
+  font-size: 13px;
+}
+.model-item-name { font-weight: 500; }
+.model-item-value { color: var(--text-muted); }
+.model-bar-track {
+  width: 100%; height: 10px;
+  background: var(--bg-elevated);
+  border-radius: 5px;
+  overflow: hidden;
+}
+.model-bar-fill {
+  height: 100%;
+  border-radius: 5px;
+  transition: width 800ms ease;
+}
+
+/* ── Tables ── */
+.table-section {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+table th {
+  text-align: left;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--transition);
+}
+table th:hover { color: var(--text-muted); }
+table th .sort-icon { font-size: 10px; opacity: 0.5; }
+table td {
+  font-size: 13px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(51,65,85,0.4);
+  color: var(--text-muted);
+}
+table tr:hover td { color: var(--text); background: rgba(51,65,85,0.15); }
+table td:last-child { text-align: right; }
+table th:last-child { text-align: right; }
+
+.pct-bar {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.pct-bar-track {
+  width: 60px; height: 4px;
+  background: var(--bg-elevated);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.pct-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 2px;
+}
+
+/* ── Budget Controls ── */
+.budget-section {
+  margin-bottom: 24px;
+}
+.budget-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.budget-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+}
+.budget-item-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+.budget-item-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+.budget-edit-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+.budget-edit-btn:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+.budget-status {
+  grid-column: 1 / -1;
+  background: var(--green-bg);
+  border: 1px solid rgba(34,197,94,0.2);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--green);
+}
+.budget-status svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+/* ── Transactions ── */
+.transactions-card {
+  margin-bottom: 24px;
+}
+.transactions-scroll {
+  max-height: 320px;
+  overflow-y: auto;
+}
+.transactions-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.transactions-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.transactions-scroll::-webkit-scrollbar-thumb {
+  background: var(--bg-elevated);
+  border-radius: 3px;
+}
+.transactions-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--text-dim);
+}
+
+.tx-model {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+.tx-model-sonnet { background: rgba(59,130,246,0.15); color: var(--accent); }
+.tx-model-opus { background: rgba(168,85,247,0.15); color: var(--purple); }
+.tx-model-haiku { background: var(--green-bg); color: var(--green); }
+
+.tx-agent {
+  display: flex; align-items: center; gap: 6px;
+}
+.tx-agent-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* ── Toast ── */
+.toast-container {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  z-index: 1000;
+  display: flex; flex-direction: column-reverse; gap: 8px;
+}
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  animation: slideIn 300ms ease;
+  display: flex; align-items: center; gap: 8px;
+}
+@keyframes slideIn {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Scrollbar ── */
+.main::-webkit-scrollbar { width: 8px; }
+.main::-webkit-scrollbar-track { background: transparent; }
+.main::-webkit-scrollbar-thumb { background: var(--bg-elevated); border-radius: 4px; }
+.main::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ── Sidebar ── -->
+<nav class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <div class="sidebar-logo">Co</div>
+    <div class="sidebar-title">CoCo</div>
+    <button class="sidebar-collapse-btn" onclick="toggleSidebar()" title="Toggle sidebar">
+      <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item" data-page="home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span>Home</span>
+    </div>
+    <div class="nav-item" data-page="inbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22 6 12 13 2 6"/></svg>
+      <span>Inbox</span>
+      <div class="nav-badge">8</div>
+    </div>
+    <div class="nav-item" data-page="todos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/></svg>
+      <span>Todos</span>
+      <div class="nav-badge">3</div>
+    </div>
+    <div class="nav-item" data-page="agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Agents</span>
+    </div>
+    <div class="nav-item" data-page="projects">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      <span>Projects</span>
+    </div>
+    <div class="nav-item" data-page="knowledge">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      <span>Knowledge</span>
+    </div>
+    <div class="nav-divider"></div>
+    <div class="nav-item active" data-page="costs">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+      <span>Costs</span>
+    </div>
+    <div class="nav-item" data-page="chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+      <span>Chat</span>
+    </div>
+    <div class="nav-item" data-page="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+      <span>Settings</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Top Bar ── -->
+<header class="topbar">
+  <div class="topbar-title">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    Costs
+  </div>
+  <div class="topbar-spacer"></div>
+  <div class="date-range">
+    <button class="date-btn" onclick="setRange(this)">Today</button>
+    <button class="date-btn active" onclick="setRange(this)">7d</button>
+    <button class="date-btn" onclick="setRange(this)">30d</button>
+  </div>
+  <button class="btn btn-ghost" onclick="showToast('Export started — costs_2026-04-06.csv')">
+    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Export
+  </button>
+</header>
+
+<!-- ── Main Content ── -->
+<div class="main">
+
+  <!-- Summary Cards -->
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-card-label">Today</div>
+      <div class="summary-card-value">$2.40</div>
+      <div class="summary-card-meta">
+        <span class="trend-up">&#9650; 12% vs yesterday</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">This Week</div>
+      <div class="summary-card-value">$14.80</div>
+      <div class="summary-card-meta">
+        <span class="trend-ok">On track</span>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">Budget Used</div>
+      <div class="summary-card-value">48%</div>
+      <div class="summary-card-meta">of $50.00 / week</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 48%; background: linear-gradient(90deg, var(--accent), #818cf8);"></div>
+      </div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-card-label">Top Model</div>
+      <div class="summary-card-value" style="font-size: 22px;">Sonnet</div>
+      <div class="summary-card-meta">78% of spend</div>
+      <div class="progress-bar">
+        <div class="progress-fill" style="width: 78%; background: var(--accent);"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Chart + Model Breakdown -->
+  <div class="content-grid">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Daily Spend (Last 7 Days)</div>
+        <div style="font-size: 12px; color: var(--text-dim);">Budget line: $7.14/day</div>
+      </div>
+      <div id="chart-container">
+        <div style="color: var(--text-dim); font-size: 13px;">Loading chart...</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Breakdown by Model</div>
+      </div>
+      <div class="model-breakdown">
+        <div class="model-item">
+          <div class="model-item-header">
+            <span class="model-item-name" style="color: var(--accent);">Sonnet</span>
+            <span class="model-item-value">$11.50 (78%)</span>
+          </div>
+          <div class="model-bar-track">
+            <div class="model-bar-fill" style="width: 78%; background: var(--accent);"></div>
+          </div>
+        </div>
+        <div class="model-item">
+          <div class="model-item-header">
+            <span class="model-item-name" style="color: var(--purple);">Opus</span>
+            <span class="model-item-value">$2.80 (19%)</span>
+          </div>
+          <div class="model-bar-track">
+            <div class="model-bar-fill" style="width: 19%; background: var(--purple);"></div>
+          </div>
+        </div>
+        <div class="model-item">
+          <div class="model-item-header">
+            <span class="model-item-name" style="color: var(--green);">Haiku</span>
+            <span class="model-item-value">$0.50 (3%)</span>
+          </div>
+          <div class="model-bar-track">
+            <div class="model-bar-fill" style="width: 3%; background: var(--green);"></div>
+          </div>
+        </div>
+      </div>
+      <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border);">
+        <div style="font-size: 12px; color: var(--text-dim); margin-bottom: 8px;">Total This Week</div>
+        <div style="font-size: 24px; font-weight: 700;">$14.80</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Project Breakdown + Budget Controls -->
+  <div class="table-section">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title">Breakdown by Project</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Project</th>
+            <th>Agents</th>
+            <th>Tokens</th>
+            <th>Cost</th>
+            <th>%</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: var(--text); font-weight: 500;">ACC</td>
+            <td>3</td>
+            <td>45K</td>
+            <td>$4.20</td>
+            <td>
+              <div class="pct-bar">
+                <div class="pct-bar-track"><div class="pct-bar-fill" style="width: 28%;"></div></div>
+                28%
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-weight: 500;">AuditBoard</td>
+            <td>5</td>
+            <td>62K</td>
+            <td>$5.80</td>
+            <td>
+              <div class="pct-bar">
+                <div class="pct-bar-track"><div class="pct-bar-fill" style="width: 39%;"></div></div>
+                39%
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-weight: 500;">3PI V2</td>
+            <td>4</td>
+            <td>38K</td>
+            <td>$3.60</td>
+            <td>
+              <div class="pct-bar">
+                <div class="pct-bar-track"><div class="pct-bar-fill" style="width: 24%;"></div></div>
+                24%
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-weight: 500;">Other</td>
+            <td>2</td>
+            <td>15K</td>
+            <td>$1.20</td>
+            <td>
+              <div class="pct-bar">
+                <div class="pct-bar-track"><div class="pct-bar-fill" style="width: 8%;"></div></div>
+                8%
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card budget-section">
+      <div class="card-header">
+        <div class="card-title">Budget Controls</div>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 12px;">
+        <div class="budget-item">
+          <div>
+            <div class="budget-item-label">Daily Cap</div>
+            <div class="budget-item-value">$10.00</div>
+          </div>
+          <button class="budget-edit-btn" onclick="showToast('Edit daily cap')">Edit</button>
+        </div>
+        <div class="budget-item">
+          <div>
+            <div class="budget-item-label">Weekly Cap</div>
+            <div class="budget-item-value">$50.00</div>
+          </div>
+          <button class="budget-edit-btn" onclick="showToast('Edit weekly cap')">Edit</button>
+        </div>
+        <div class="budget-item">
+          <div>
+            <div class="budget-item-label">Alert Threshold</div>
+            <div class="budget-item-value">80%</div>
+          </div>
+          <button class="budget-edit-btn" onclick="showToast('Edit alert threshold')">Edit</button>
+        </div>
+        <div class="budget-status">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          On track -- $35.20 remaining this week
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Transactions -->
+  <div class="card transactions-card">
+    <div class="card-header">
+      <div class="card-title">Recent Transactions</div>
+      <div style="font-size: 12px; color: var(--text-dim);">Last 10 entries</div>
+    </div>
+    <div class="transactions-scroll">
+      <table id="txTable">
+        <thead>
+          <tr>
+            <th onclick="sortTable(0)">Timestamp <span class="sort-icon">&#9660;</span></th>
+            <th onclick="sortTable(1)">Agent</th>
+            <th onclick="sortTable(2)">Model</th>
+            <th onclick="sortTable(3)">Tokens</th>
+            <th onclick="sortTable(4)">Cost <span class="sort-icon">&#9660;</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">14:32:05</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--accent);"></div>ACC-Reviewer</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>2,840</td>
+            <td>$0.34</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">14:28:41</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--purple);"></div>Audit-Planner</div></td>
+            <td><span class="tx-model tx-model-opus">Opus</span></td>
+            <td>5,120</td>
+            <td>$1.24</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">14:15:22</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--green);"></div>3PI-Scanner</div></td>
+            <td><span class="tx-model tx-model-haiku">Haiku</span></td>
+            <td>890</td>
+            <td>$0.02</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">14:02:18</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--accent);"></div>ACC-Writer</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>3,210</td>
+            <td>$0.38</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">13:48:55</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--accent);"></div>Audit-Analyst</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>4,560</td>
+            <td>$0.54</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">13:31:09</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--orange);"></div>3PI-Validator</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>1,980</td>
+            <td>$0.24</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">13:12:44</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--purple);"></div>Audit-Planner</div></td>
+            <td><span class="tx-model tx-model-opus">Opus</span></td>
+            <td>6,340</td>
+            <td>$1.56</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">12:58:30</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--accent);"></div>ACC-Reviewer</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>2,100</td>
+            <td>$0.25</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">12:41:17</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--green);"></div>3PI-Scanner</div></td>
+            <td><span class="tx-model tx-model-haiku">Haiku</span></td>
+            <td>720</td>
+            <td>$0.02</td>
+          </tr>
+          <tr>
+            <td style="color: var(--text); font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px;">12:22:03</td>
+            <td><div class="tx-agent"><div class="tx-agent-dot" style="background: var(--accent);"></div>ACC-Writer</div></td>
+            <td><span class="tx-model tx-model-sonnet">Sonnet</span></td>
+            <td>3,890</td>
+            <td>$0.46</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script type="module">
+// ── Mermaid Chart ──
+import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3';
+
+const chartDef = `xychart-beta
+    title "Daily Spend (Last 7 Days)"
+    x-axis [Mon, Tue, Wed, Thu, Fri, Sat, Sun]
+    y-axis "USD" 0 --> 8
+    bar [1.80, 2.10, 3.40, 2.80, 2.40, 0, 0]
+    line [7.14, 7.14, 7.14, 7.14, 7.14, 7.14, 7.14]`;
+
+const theme = {
+  bg: '#1e293b',
+  fg: '#cbd5e1',
+  accent: '#60a5fa',
+  transparent: true
+};
+
+try {
+  const svg = await renderMermaidSVGAsync(chartDef, { theme });
+  const el = document.getElementById('chart-container');
+  el.innerHTML = '';
+  if (typeof svg === 'string') {
+    el.innerHTML = svg;
+  } else if (svg instanceof SVGElement || svg instanceof HTMLElement) {
+    el.appendChild(svg);
+  } else if (svg?.outerHTML) {
+    el.innerHTML = svg.outerHTML;
+  }
+} catch (e) {
+  console.error('Mermaid render error:', e);
+  document.getElementById('chart-container').innerHTML =
+    '<div style="color: var(--text-dim); font-size: 13px;">Chart failed to load. Check console.</div>';
+}
+</script>
+
+<script>
+// ── Sidebar toggle ──
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+}
+
+// ── Date range picker ──
+function setRange(btn) {
+  document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  showToast('Viewing: ' + btn.textContent);
+}
+
+// ── Table sorting ──
+function sortTable(colIndex) {
+  const table = document.getElementById('txTable');
+  const tbody = table.querySelector('tbody');
+  const rows = Array.from(tbody.querySelectorAll('tr'));
+
+  const isNumeric = colIndex === 3 || colIndex === 4;
+
+  rows.sort((a, b) => {
+    let aVal = a.cells[colIndex].textContent.trim();
+    let bVal = b.cells[colIndex].textContent.trim();
+    if (isNumeric) {
+      aVal = parseFloat(aVal.replace(/[$,]/g, ''));
+      bVal = parseFloat(bVal.replace(/[$,]/g, ''));
+      return bVal - aVal;
+    }
+    return aVal.localeCompare(bVal);
+  });
+
+  // Toggle direction
+  if (table.dataset.lastSort === String(colIndex)) {
+    rows.reverse();
+    table.dataset.lastSort = '';
+  } else {
+    table.dataset.lastSort = String(colIndex);
+  }
+
+  rows.forEach(r => tbody.appendChild(r));
+}
+
+// ── Toast ──
+function showToast(msg) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="var(--accent)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><circle cx="12" cy="16" r="0.5" fill="var(--accent)"/></svg>' + msg;
+  container.appendChild(toast);
+  setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity 300ms'; }, 2500);
+  setTimeout(() => toast.remove(), 2800);
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform - Light Theme</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset ── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* ── Light Theme Variables ── */
+  :root {
+    --bg: #FAFBFC;
+    --card: #FFFFFF;
+    --sidebar: #F7F8FA;
+    --sidebar-border: #E8EAED;
+    --border: #E5E7EB;
+    --border-light: #F0F1F3;
+    --text: #111827;
+    --text-secondary: #6B7280;
+    --text-muted: #9CA3AF;
+    --accent: #2563EB;
+    --accent-bg: #EFF6FF;
+    --accent-fg: #1D4ED8;
+    --success: #059669;
+    --success-bg: rgba(5,150,105,0.08);
+    --warning: #D97706;
+    --warning-bg: rgba(217,119,6,0.08);
+    --danger: #DC2626;
+    --danger-bg: rgba(220,38,38,0.08);
+    --muted-bg: #F3F4F6;
+    --hover: #F3F4F6;
+    --sidebar-active-bg: #EFF6FF;
+    --sidebar-active-text: #2563EB;
+    --font: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-xs: 6px;
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  }
+
+  body {
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Layout ── */
+  .shell { display: flex; min-height: 100vh; }
+
+  /* ── Sidebar ── */
+  .sidebar {
+    width: 240px; height: 100vh;
+    background: var(--sidebar);
+    border-right: 1px solid var(--sidebar-border);
+    display: flex; flex-direction: column;
+    position: fixed; left: 0; top: 0; z-index: 40;
+  }
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--sidebar-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .sidebar-logo {
+    width: 28px; height: 28px; border-radius: 8px;
+    background: var(--accent);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .sidebar-logo svg { color: white; }
+  .sidebar-brand h1 { font-size: 14px; font-weight: 700; color: var(--text); letter-spacing: -0.3px; }
+  .sidebar-brand p { font-size: 10px; color: var(--text-muted); line-height: 1; }
+
+  .scope-picker {
+    margin: 8px 8px 0; padding: 8px 12px;
+    display: flex; align-items: center; gap: 8px;
+    border-radius: var(--radius-xs); cursor: pointer; transition: background 150ms;
+  }
+  .scope-picker:hover { background: var(--hover); }
+  .scope-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); flex-shrink: 0; }
+  .scope-label { font-size: 14px; font-weight: 500; color: var(--text); flex: 1; }
+  .scope-chevron { color: var(--text-muted); }
+
+  .nav-area { flex: 1; padding: 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 16px; }
+  .nav-section-label {
+    display: flex; align-items: center; gap: 4px;
+    padding: 4px 12px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); cursor: pointer; user-select: none;
+  }
+  .nav-section-label:hover { color: var(--text-secondary); }
+  .nav-section-items { display: flex; flex-direction: column; gap: 2px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 8px 12px; font-size: 14px; color: var(--text-secondary);
+    border-radius: var(--radius-xs); cursor: pointer; position: relative;
+    transition: all 150ms; text-decoration: none;
+  }
+  .nav-item:hover { color: var(--text); background: var(--hover); }
+  .nav-item.active {
+    color: var(--sidebar-active-text); background: var(--sidebar-active-bg); font-weight: 500;
+  }
+  .nav-item.active::before {
+    content: ''; position: absolute;
+    left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 16px; background: var(--accent); border-radius: 0 4px 4px 0;
+  }
+  .nav-item svg { flex-shrink: 0; width: 16px; height: 16px; }
+  .nav-item .label { flex: 1; }
+  .nav-badge {
+    font-size: 10px; font-weight: 500; padding: 2px 6px;
+    border-radius: 10px; min-width: 20px; text-align: center;
+  }
+  .nav-badge.danger { background: var(--danger); color: white; }
+  .nav-badge.default { background: var(--muted-bg); color: var(--text-muted); }
+
+  .sidebar-collapse { display: flex; justify-content: center; padding: 4px 0; }
+  .sidebar-collapse button {
+    padding: 6px; border-radius: var(--radius-xs);
+    color: var(--text-muted); background: none; border: none; cursor: pointer; transition: all 150ms;
+  }
+  .sidebar-collapse button:hover { color: var(--text); background: var(--hover); }
+
+  .sidebar-footer {
+    padding: 12px; border-top: 1px solid var(--sidebar-border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: var(--muted-bg); color: var(--text-secondary);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 600; flex-shrink: 0;
+  }
+  .sidebar-user-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .sidebar-user-version { font-size: 10px; color: var(--text-muted); }
+
+  /* ── Main content area ── */
+  .main-wrap {
+    flex: 1; margin-left: 240px;
+    display: flex; flex-direction: column; height: 100vh;
+  }
+  .topbar {
+    position: sticky; top: 0; z-index: 30;
+    background: rgba(250,251,252,0.85); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 24px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .breadcrumbs { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+  .breadcrumbs .active { color: var(--text); }
+  .topbar-actions { display: flex; align-items: center; gap: 8px; }
+  .search-btn {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 12px; font-size: 14px; color: var(--text-muted);
+    background: var(--muted-bg); border: 1px solid var(--border);
+    border-radius: var(--radius-xs); cursor: pointer; transition: background 150ms;
+  }
+  .search-btn:hover { background: var(--hover); }
+  .search-btn svg { width: 14px; height: 14px; }
+  .search-btn .text { font-size: 12px; }
+  .kbd {
+    font-size: 10px; color: var(--text-muted); background: var(--bg);
+    padding: 2px 6px; border-radius: 4px; font-family: var(--mono); margin-left: 4px;
+  }
+  .bell-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: var(--radius-xs); border: none; background: none;
+    cursor: pointer; color: var(--text-muted); transition: all 150ms;
+  }
+  .bell-btn:hover { background: var(--hover); color: var(--text); }
+
+  .page-content {
+    flex: 1; padding: 24px; max-width: 1280px;
+    width: 100%; margin: 0 auto; overflow-y: auto;
+  }
+
+  /* ── Transitions ── */
+  .fade-enter { animation: fadeIn 300ms ease forwards; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ── Home page ── */
+  .home-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .greeting { font-size: 18px; font-weight: 600; color: var(--text); }
+  .date-label { font-size: 12px; color: var(--text-muted); margin-left: 12px; }
+  .header-right { display: flex; align-items: center; gap: 12px; }
+  .sync-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .sync-label { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
+
+  .two-col { display: grid; grid-template-columns: 7fr 5fr; gap: 24px; }
+  .left-col { display: flex; flex-direction: column; gap: 20px; }
+  .right-col { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--card); box-shadow: var(--shadow-sm);
+  }
+  .card-header {
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--text-muted); padding: 24px 24px 16px;
+  }
+  .card-body { padding: 0 24px 24px; }
+
+  .briefing-empty { font-size: 14px; color: var(--text-secondary); margin-bottom: 16px; }
+  .briefing-stats {
+    display: flex; gap: 12px; font-size: 12px; color: var(--text-muted);
+    border-top: 1px solid var(--border-light); padding-top: 12px; margin-top: 12px;
+  }
+  .stat-sep { color: var(--border); }
+  .briefing-cost {
+    display: flex; align-items: center; gap: 12px;
+    margin-top: 8px; font-size: 12px; color: var(--text-muted); font-family: var(--mono);
+  }
+  .briefing-actions { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .btn-outline {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    background: none; color: var(--text); font-size: 14px; font-weight: 500;
+    border: 1px solid var(--border); cursor: pointer; transition: background 150ms;
+  }
+  .btn-outline:hover { background: var(--hover); }
+  .btn-primary {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 16px; border-radius: var(--radius-sm);
+    background: var(--accent); color: white;
+    font-size: 14px; font-weight: 500; border: none; cursor: pointer; transition: opacity 150ms;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+
+  .focus-header {
+    padding: 20px 24px 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .focus-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .focus-empty { padding: 48px 24px; text-align: center; font-size: 14px; color: var(--text-muted); }
+
+  .projects-header {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px;
+  }
+  .projects-title { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); }
+  .projects-count { font-size: 11px; color: #C0C4CA; margin-left: 12px; }
+
+  .project-card {
+    border-radius: var(--radius-sm); border: 1px solid var(--border);
+    border-left: 3px solid #D1D5DB; background: var(--card); padding: 20px; margin-bottom: 8px;
+  }
+  .project-card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 4px; }
+  .project-name { font-size: 14px; font-weight: 500; color: var(--text); }
+  .health-badge {
+    font-size: 10px; font-weight: 500; padding: 2px 6px; border-radius: 4px;
+    background: var(--muted-bg); color: var(--text-muted);
+  }
+  .project-empty-note { font-size: 11px; color: #C0C4CA; font-style: italic; }
+
+  /* ── Empty state pattern ── */
+  .empty-state {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 80px 20px; text-align: center;
+  }
+  .empty-state-icon {
+    width: 48px; height: 48px; border-radius: 12px;
+    background: var(--muted-bg);
+    display: flex; align-items: center; justify-content: center; margin-bottom: 16px;
+  }
+  .empty-state-icon svg { width: 24px; height: 24px; color: var(--text-muted); }
+  .empty-state h3 { font-size: 15px; font-weight: 500; color: var(--text); margin-bottom: 4px; }
+  .empty-state p { font-size: 13px; color: var(--text-muted); max-width: 320px; }
+  .empty-state .btn-primary { margin-top: 16px; }
+
+  /* ── Tab bar (for Inbox) ── */
+  .tab-bar {
+    display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 0;
+  }
+  .tab-item {
+    padding: 10px 20px; font-size: 13px; font-weight: 500;
+    color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent;
+    transition: all 150ms;
+  }
+  .tab-item:hover { color: var(--text); }
+  .tab-item.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+  /* ── Settings ── */
+  .settings-section {
+    margin-bottom: 24px; border: 1px solid var(--border);
+    border-radius: var(--radius); background: var(--card);
+  }
+  .settings-section-header {
+    padding: 16px 20px; font-size: 13px; font-weight: 600; color: var(--text);
+    border-bottom: 1px solid var(--border-light);
+  }
+  .settings-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px; border-bottom: 1px solid var(--border-light);
+  }
+  .settings-row:last-child { border-bottom: none; }
+  .settings-label { font-size: 13px; color: var(--text-secondary); }
+  .settings-value {
+    font-size: 13px; font-weight: 500; color: var(--text);
+    background: var(--muted-bg); padding: 4px 12px; border-radius: var(--radius-xs);
+  }
+  .settings-value.active { background: var(--accent-bg); color: var(--accent-fg); }
+
+  /* ── Chat page ── */
+  .chat-layout { display: grid; grid-template-columns: 240px 1fr; gap: 0; height: calc(100vh - 120px); }
+  .chat-sidebar {
+    border-right: 1px solid var(--border); padding: 16px;
+    background: var(--card); border-radius: var(--radius) 0 0 var(--radius);
+  }
+  .chat-sidebar-header { font-size: 11px; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; }
+  .chat-main {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    background: var(--card); border-radius: 0 var(--radius) var(--radius) 0; padding: 40px;
+  }
+  .chat-input-wrap {
+    margin-top: 24px; width: 100%; max-width: 480px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .chat-input {
+    flex: 1; padding: 10px 16px; border: 1px solid var(--border);
+    border-radius: var(--radius-sm); font-size: 14px; font-family: var(--font);
+    background: var(--bg); color: var(--text); outline: none;
+  }
+  .chat-input:focus { border-color: var(--accent); }
+  .chat-send {
+    padding: 10px 16px; border-radius: var(--radius-sm);
+    background: var(--accent); color: white; border: none;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+  }
+
+  .section-chevron { transition: transform 200ms; display: inline-block; }
+  .section-chevron.open { transform: rotate(90deg); }
+  .hidden { display: none !important; }
+  .page { display: none; }
+  .page.active { display: block; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a9 9 0 0 0-9 9c0 3.6 2.4 6.5 5 8.2V21a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-1.8c2.6-1.7 5-4.6 5-8.2a9 9 0 0 0-9-9z"/><path d="M10 17h4"/></svg>
+      </div>
+      <div class="sidebar-brand">
+        <h1>CoCo</h1>
+        <p>Rijul's Brain</p>
+      </div>
+    </div>
+
+    <div class="scope-picker">
+      <div class="scope-dot"></div>
+      <span class="scope-label">All</span>
+      <span class="scope-chevron">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m7 15 5 5 5-5"/><path d="m7 9 5-5 5 5"/></svg>
+      </span>
+    </div>
+
+    <nav class="nav-area">
+      <!-- Home section -->
+      <div>
+        <div class="nav-section-label">
+          <span class="section-chevron open"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+          Home
+        </div>
+        <div class="nav-section-items">
+          <a class="nav-item active" data-page="home">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span class="label">Home</span>
+          </a>
+          <a class="nav-item" data-page="analytics">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span class="label">Analytics</span>
+          </a>
+          <a class="nav-item" data-page="inbox">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+            <span class="label">Inbox</span>
+            <span class="nav-badge default">0</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Work section -->
+      <div>
+        <div class="nav-section-label">
+          <span class="section-chevron open"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+          Work
+        </div>
+        <div class="nav-section-items">
+          <a class="nav-item" data-page="portfolio">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><line x1="12" y1="6" x2="12" y2="11"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="13" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="11" y2="12"/></svg>
+            <span class="label">My Portfolio</span>
+          </a>
+          <a class="nav-item" data-page="teams">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+            <span class="label">Teams</span>
+          </a>
+          <a class="nav-item" data-page="todos">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+            <span class="label">Todos</span>
+            <span class="nav-badge default">0</span>
+          </a>
+          <a class="nav-item" data-page="goals">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span class="label">Goals</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Intelligence section -->
+      <div>
+        <div class="nav-section-label">
+          <span class="section-chevron open"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+          Intelligence
+        </div>
+        <div class="nav-section-items">
+          <a class="nav-item" data-page="knowledge">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <span class="label">Knowledge</span>
+          </a>
+          <a class="nav-item" data-page="chat">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            <span class="label">Chat</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- System section (collapsed by default) -->
+      <div>
+        <div class="nav-section-label" id="system-toggle">
+          <span class="section-chevron"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg></span>
+          System
+        </div>
+        <div class="nav-section-items hidden" id="system-items">
+          <a class="nav-item" data-page="agents">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 4.93 9.17 9.17"/><path d="M14.83 14.83l4.24 4.24"/><path d="M14.83 9.17l4.24-4.24"/><path d="M14.83 9.17l-1.41-1.41"/><path d="M4.93 19.07l4.24-4.24"/></svg>
+            <span class="label">Agent Team</span>
+            <span class="nav-badge default">0</span>
+          </a>
+          <a class="nav-item" data-page="costs">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span class="label">Costs</span>
+          </a>
+          <a class="nav-item" data-page="activity">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span class="label">Activity</span>
+          </a>
+          <a class="nav-item" data-page="self-improve">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 4V2"/><path d="M15 16v-2"/><path d="M8 9h2"/><path d="M20 9h2"/><path d="M17.8 11.8 19 13"/><path d="M15 9h0"/><path d="M17.8 6.2 19 5"/><path d="m3 21 9-9"/><path d="M12.2 6.2 11 5"/></svg>
+            <span class="label">Self-Improve</span>
+          </a>
+          <a class="nav-item" data-page="settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span class="label">Settings</span>
+          </a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="sidebar-collapse">
+      <button title="Collapse sidebar">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/><path d="m16 15-3-3 3-3"/></svg>
+      </button>
+    </div>
+
+    <div class="sidebar-footer">
+      <div class="avatar">RK</div>
+      <div>
+        <div class="sidebar-user-name">Rijul Kalra</div>
+        <div class="sidebar-user-version">v1.1</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main-wrap">
+
+    <header class="topbar">
+      <div class="breadcrumbs">
+        <span class="active" id="breadcrumb-text">Home</span>
+      </div>
+      <div class="topbar-actions">
+        <button class="search-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <span class="text">Search</span>
+          <span class="kbd">&#8984;K</span>
+        </button>
+        <button class="bell-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </button>
+      </div>
+    </header>
+
+    <div class="page-content" id="page-content">
+
+      <!-- ══════ HOME ══════ -->
+      <div class="page active" id="page-home">
+        <div style="margin-bottom:20px">
+          <header class="home-header">
+            <div style="display:flex;align-items:baseline;gap:12px">
+              <h1 class="greeting">Good morning, Rijul</h1>
+              <span class="date-label">Sunday, April 6</span>
+            </div>
+            <div class="header-right">
+              <span class="sync-label"><span class="sync-dot" style="background:var(--text-muted)"></span>Not synced yet</span>
+            </div>
+          </header>
+        </div>
+
+        <div class="two-col">
+          <div class="left-col">
+            <!-- Briefing -->
+            <div class="card">
+              <div class="card-header">Morning Briefing</div>
+              <div class="card-body">
+                <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+                  <div style="width:36px;height:36px;border-radius:10px;background:var(--muted-bg);display:flex;align-items:center;justify-content:center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                  </div>
+                  <div>
+                    <p style="font-size:14px;color:var(--text);">Nothing needs your attention right now.</p>
+                    <p style="font-size:12px;color:var(--text-muted);">All clear.</p>
+                  </div>
+                </div>
+                <div class="briefing-stats">
+                  <span>0 open tasks</span><span class="stat-sep">&middot;</span>
+                  <span>0 high priority</span><span class="stat-sep">&middot;</span>
+                  <span>0 active projects</span><span class="stat-sep">&middot;</span>
+                  <span>0/0 sources healthy</span>
+                </div>
+                <div class="briefing-cost"><span>Cost: $0.00 today</span><span class="stat-sep">&middot;</span><span>$0.00 this month</span></div>
+                <div class="briefing-actions">
+                  <button class="btn-outline"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg> Sync Now</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Focus List -->
+            <div class="card">
+              <div class="focus-header">
+                <span class="focus-label">Today's Focus</span>
+              </div>
+              <div class="focus-empty">No priority items. You're all caught up.</div>
+            </div>
+          </div>
+
+          <div class="right-col">
+            <div class="projects-header">
+              <div style="display:flex;align-items:center;gap:12px">
+                <span class="projects-title">Health</span>
+                <span class="projects-count">0 active</span>
+              </div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-top"><div class="project-name">Team 1</div><span class="health-badge">Not configured</span></div>
+              <div class="project-empty-note">No activity yet</div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-top"><div class="project-name">Team 2</div><span class="health-badge">Not configured</span></div>
+              <div class="project-empty-note">No activity yet</div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-top"><div class="project-name">Team 3</div><span class="health-badge">Not configured</span></div>
+              <div class="project-empty-note">No activity yet</div>
+            </div>
+            <div class="project-card">
+              <div class="project-card-top"><div class="project-name">Team 4</div><span class="health-badge">Not configured</span></div>
+              <div class="project-empty-note">No activity yet</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ ANALYTICS ══════ -->
+      <div class="page" id="page-analytics">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+          </div>
+          <h3>Analytics</h3>
+          <p>No analytics data yet. Data will appear as you use CoCo.</p>
+        </div>
+      </div>
+
+      <!-- ══════ INBOX ══════ -->
+      <div class="page" id="page-inbox">
+        <div class="tab-bar">
+          <div class="tab-item active">Urgent (0)</div>
+          <div class="tab-item">Drafts (0)</div>
+          <div class="tab-item">All (0)</div>
+        </div>
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></svg>
+          </div>
+          <h3>Inbox is empty</h3>
+          <p>New items will appear here when Knowledge Hub processes content.</p>
+        </div>
+      </div>
+
+      <!-- ══════ MY PORTFOLIO ══════ -->
+      <div class="page" id="page-portfolio">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/><line x1="12" y1="6" x2="12" y2="11"/><line x1="12" y1="13" x2="12" y2="18"/><line x1="13" y1="12" x2="18" y2="12"/><line x1="6" y1="12" x2="11" y2="12"/></svg>
+          </div>
+          <h3>My Portfolio</h3>
+          <p>No portfolio items yet. Add your first team to get started.</p>
+          <button class="btn-primary">+ Add Team</button>
+        </div>
+      </div>
+
+      <!-- ══════ TEAMS ══════ -->
+      <div class="page" id="page-teams">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/></svg>
+          </div>
+          <h3>Teams</h3>
+          <p>No teams configured. Teams will appear when Knowledge Hub syncs projects.</p>
+        </div>
+      </div>
+
+      <!-- ══════ TODOS ══════ -->
+      <div class="page" id="page-todos">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          </div>
+          <h3>Todos</h3>
+          <p>No todos yet. Action items will be extracted from your emails and content.</p>
+        </div>
+      </div>
+
+      <!-- ══════ GOALS ══════ -->
+      <div class="page" id="page-goals">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          </div>
+          <h3>Goals</h3>
+          <p>No goals set. Create your first OKR to track progress.</p>
+        </div>
+      </div>
+
+      <!-- ══════ KNOWLEDGE ══════ -->
+      <div class="page" id="page-knowledge">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </div>
+          <h3>Knowledge</h3>
+          <p>No knowledge items yet. Content will appear as Knowledge Hub ingests emails and documents.</p>
+        </div>
+      </div>
+
+      <!-- ══════ CHAT ══════ -->
+      <div class="page" id="page-chat">
+        <div class="chat-layout">
+          <div class="chat-sidebar">
+            <div class="chat-sidebar-header">Conversations</div>
+            <p style="font-size:13px;color:var(--text-muted);padding:20px 0;text-align:center;">No conversations</p>
+          </div>
+          <div class="chat-main">
+            <div class="empty-state-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            </div>
+            <h3 style="font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px;">Start a new conversation with CoCo</h3>
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:24px;">Ask questions, run commands, or manage your projects.</p>
+            <div class="chat-input-wrap">
+              <input class="chat-input" type="text" placeholder="Message CoCo..." />
+              <button class="chat-send">Send</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════ AGENT TEAM ══════ -->
+      <div class="page" id="page-agents">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 4.93 9.17 9.17"/><path d="M14.83 14.83l4.24 4.24"/><path d="M14.83 9.17l4.24-4.24"/><path d="M14.83 9.17l-1.41-1.41"/><path d="M4.93 19.07l4.24-4.24"/></svg>
+          </div>
+          <h3>Agent Team</h3>
+          <p>No agents running. Use the Orb or spawn an agent to get started.</p>
+          <p style="font-size:12px;color:var(--text-muted);margin-top:8px;">302 agents available</p>
+        </div>
+      </div>
+
+      <!-- ══════ COSTS ══════ -->
+      <div class="page" id="page-costs">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          </div>
+          <h3>Costs</h3>
+          <p>No cost data yet. Costs will be tracked as agents run.</p>
+          <p style="font-size:18px;font-weight:600;font-family:var(--mono);color:var(--text);margin-top:12px;">$0.00 <span style="font-size:12px;font-weight:400;color:var(--text-muted);">today</span></p>
+        </div>
+      </div>
+
+      <!-- ══════ ACTIVITY ══════ -->
+      <div class="page" id="page-activity">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <h3>Activity</h3>
+          <p>No activity recorded yet. Actions will appear here as you use CoCo.</p>
+        </div>
+      </div>
+
+      <!-- ══════ SELF-IMPROVE ══════ -->
+      <div class="page" id="page-self-improve">
+        <div class="empty-state">
+          <div class="empty-state-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
+          </div>
+          <h3>Self-Improve</h3>
+          <p>Self-improve cycles haven't been run yet. Start a cycle to let CoCo improve its own code.</p>
+        </div>
+      </div>
+
+      <!-- ══════ SETTINGS ══════ -->
+      <div class="page" id="page-settings">
+        <h2 style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:20px;">Settings</h2>
+
+        <div class="settings-section">
+          <div class="settings-section-header">General</div>
+          <div class="settings-row">
+            <span class="settings-label">Theme</span>
+            <span class="settings-value active">Light</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Edition</span>
+            <span class="settings-value">Studio</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Default model</span>
+            <span class="settings-value">sonnet</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-header">Agents</div>
+          <div class="settings-row">
+            <span class="settings-label">Max concurrent</span>
+            <span class="settings-value">3</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Timeout</span>
+            <span class="settings-value">30 min</span>
+          </div>
+          <div class="settings-row">
+            <span class="settings-label">Default budget</span>
+            <span class="settings-value">$5.00</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-header">Automations</div>
+          <div class="settings-row">
+            <span class="settings-label">Triggers</span>
+            <span style="font-size:13px;color:var(--text-muted);">No triggers configured</span>
+          </div>
+        </div>
+
+        <div class="settings-section">
+          <div class="settings-section-header">YOLO Mode</div>
+          <div class="settings-row">
+            <span class="settings-label">Mode</span>
+            <span class="settings-value active">YOLO (active)</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- end page-content -->
+  </div>
+</div>
+
+<script>
+// ── Page names for breadcrumbs ──
+const PAGE_NAMES = {
+  home: 'Home',
+  analytics: 'Analytics',
+  inbox: 'Inbox',
+  portfolio: 'My Portfolio',
+  teams: 'Teams',
+  todos: 'Todos',
+  goals: 'Goals',
+  knowledge: 'Knowledge',
+  chat: 'Chat',
+  agents: 'Agent Team',
+  costs: 'Costs',
+  activity: 'Activity',
+  'self-improve': 'Self-Improve',
+  settings: 'Settings'
+};
+
+// ── Navigate to page ──
+function navigateTo(pageId) {
+  // Deactivate all nav items
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+
+  // Activate clicked nav item
+  const navItem = document.querySelector(`.nav-item[data-page="${pageId}"]`);
+  if (navItem) navItem.classList.add('active');
+
+  // Hide all pages, show target
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  const targetPage = document.getElementById('page-' + pageId);
+  if (targetPage) {
+    targetPage.classList.add('active');
+    targetPage.classList.add('fade-enter');
+    setTimeout(() => targetPage.classList.remove('fade-enter'), 300);
+  }
+
+  // Update breadcrumbs
+  document.getElementById('breadcrumb-text').textContent = PAGE_NAMES[pageId] || pageId;
+
+  // If navigating to a System page, ensure System section is expanded
+  const systemPages = ['agents', 'costs', 'activity', 'self-improve', 'settings'];
+  if (systemPages.includes(pageId)) {
+    document.getElementById('system-items').classList.remove('hidden');
+    document.querySelector('#system-toggle .section-chevron').classList.add('open');
+  }
+}
+
+// ── Bind nav item clicks ──
+document.querySelectorAll('.nav-item[data-page]').forEach(item => {
+  item.addEventListener('click', (e) => {
+    e.preventDefault();
+    navigateTo(item.dataset.page);
+  });
+});
+
+// ── System section collapse toggle ──
+document.getElementById('system-toggle').addEventListener('click', function() {
+  const items = document.getElementById('system-items');
+  const chevron = this.querySelector('.section-chevron');
+  items.classList.toggle('hidden');
+  chevron.classList.toggle('open');
+});
+
+// ── All other section headers toggle ──
+document.querySelectorAll('.nav-section-label').forEach(label => {
+  if (label.id === 'system-toggle') return; // already handled
+  label.addEventListener('click', function() {
+    const items = this.nextElementSibling;
+    const chevron = this.querySelector('.section-chevron');
+    if (items) items.classList.toggle('hidden');
+    if (chevron) chevron.classList.toggle('open');
+  });
+});
+</script>
+</body>
+</html>

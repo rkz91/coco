@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo — Happy Path (Light)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --bg: #FAFBFC; --surface: #FFFFFF; --sidebar-bg: #F8F9FA;
+    --text: #111827; --text-secondary: #6B7280; --text-muted: #9CA3AF;
+    --accent: #2563EB; --success: #059669; --warning: #D97706; --danger: #DC2626;
+    --hover: #F3F4F6; --selected: #EFF6FF; --border: #E5E7EB; --border-subtle: #F3F4F6;
+    --radius: 8px; --shadow-sm: 0 1px 2px rgba(0,0,0,.05); --shadow-md: 0 4px 12px rgba(0,0,0,.08);
+  }
+  body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text); font-size: 13px; line-height: 1.5; display: flex; height: 100vh; overflow: hidden; }
+
+  /* Sidebar */
+  .sidebar { width: 220px; background: var(--sidebar-bg); border-right: 1px solid var(--border); display: flex; flex-direction: column; padding: 16px 12px; flex-shrink: 0; }
+  .sidebar-brand { display: flex; align-items: center; gap: 6px; padding: 4px 8px; margin-bottom: 24px; font-size: 14px; font-weight: 600; color: var(--text); }
+  .sidebar-brand .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--radius); cursor: pointer; font-size: 13px; font-weight: 400; color: var(--text-secondary); position: relative; height: 36px; transition: background .15s; user-select: none; }
+  .nav-item:hover { background: var(--hover); }
+  .nav-item.active { background: var(--selected); color: var(--accent); font-weight: 500; }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+  .nav-badge { font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 10px; margin-left: auto; }
+  .nav-badge.red { background: #FEE2E2; color: var(--danger); }
+  .nav-badge.blue { background: #DBEAFE; color: var(--accent); }
+  .sidebar-bottom { margin-top: auto; display: flex; align-items: center; gap: 10px; padding: 8px 10px; }
+  .avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; }
+
+  /* Main area */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+  /* Top bar */
+  .topbar { height: 56px; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 24px; gap: 16px; flex-shrink: 0; background: var(--surface); }
+  .topbar-left { flex: 1; }
+  .topbar-left h1 { font-size: 16px; font-weight: 600; }
+  .topbar-left .date { font-size: 12px; color: var(--text-muted); }
+  .search-bar { width: 360px; height: 34px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); display: flex; align-items: center; gap: 8px; padding: 0 12px; font-size: 13px; color: var(--text-muted); cursor: text; transition: border-color .15s, box-shadow .15s; }
+  .search-bar.focused { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(37,99,235,.1); }
+  .search-bar input { border: none; background: none; outline: none; flex: 1; font: inherit; color: var(--text); }
+  .search-bar kbd { font-size: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 4px; padding: 1px 5px; color: var(--text-muted); font-family: inherit; }
+  .topbar-right { display: flex; align-items: center; gap: 12px; }
+  .icon-btn { width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text-secondary); transition: background .15s; }
+  .icon-btn:hover { background: var(--hover); }
+
+  /* Content */
+  .content { flex: 1; overflow-y: auto; padding: 24px; }
+  .content.placeholder { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 15px; }
+
+  /* Metrics row */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 16px; cursor: pointer; transition: box-shadow .15s, border-color .15s; }
+  .metric-card:hover { box-shadow: var(--shadow-sm); border-color: #D1D5DB; }
+  .metric-val { font-size: 22px; font-weight: 600; }
+  .metric-label { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+  .metric-card.urgent .metric-val { color: var(--danger); }
+  .metric-card.running .metric-val { color: var(--accent); }
+  .metric-card.healthy .metric-val { color: var(--success); font-size: 13px; }
+
+  /* Section header */
+  .section-header { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 12px; }
+  .section-header span { font-weight: 400; color: var(--text-muted); }
+
+  /* Cards */
+  .card-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 28px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; transition: box-shadow .2s, opacity .4s, max-height .5s, padding .5s, margin .5s, border-color .3s; overflow: hidden; }
+  .card:hover { box-shadow: var(--shadow-sm); }
+  .card.fading { opacity: .45; pointer-events: none; }
+  .card.dismissed { max-height: 0; padding: 0 18px; margin: 0; opacity: 0; border-color: transparent; }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+  .card-icon { font-size: 14px; flex-shrink: 0; }
+  .card-title { font-size: 14px; font-weight: 500; flex: 1; }
+  .card-title.struck { text-decoration: line-through; color: var(--text-muted); }
+  .pill { font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 10px; text-transform: uppercase; letter-spacing: .3px; }
+  .pill.high { background: #FEE2E2; color: var(--danger); }
+  .pill.running { background: #DBEAFE; color: var(--accent); animation: pulse-pill 2s infinite; }
+  .pill.complete { background: #D1FAE5; color: var(--success); }
+  .card-meta { font-size: 11px; color: var(--text-muted); margin-bottom: 8px; font-family: 'Inter', sans-serif; }
+  .card-meta .mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; }
+  .card-body { font-size: 13px; color: #374151; margin-bottom: 12px; line-height: 1.55; }
+  .card-body.summary { background: var(--selected); border-radius: 6px; padding: 10px 12px; font-size: 12px; line-height: 1.6; }
+  .card-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn { font-size: 12px; font-weight: 500; padding: 6px 14px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-secondary); cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; gap: 5px; user-select: none; }
+  .btn:hover { background: var(--hover); border-color: #D1D5DB; }
+  .btn.green { background: var(--success); color: #fff; border-color: var(--success); }
+  .btn.green:hover { background: #047857; }
+  .btn.blue { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .btn.blue:hover { background: #1D4ED8; }
+  .btn.red-outline { border-color: #FECACA; color: var(--danger); }
+  .btn.red-outline:hover { background: #FEF2F2; }
+  .btn.muted { border: none; color: var(--text-muted); }
+  .btn.muted:hover { color: var(--text-secondary); background: var(--hover); }
+  .badge-inline { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; color: var(--success); margin-left: 8px; }
+
+  /* Running agent specifics */
+  .card.agent-running { border-left: 3px solid var(--accent); }
+  .progress-bar { height: 4px; background: #E5E7EB; border-radius: 2px; margin: 8px 0; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, var(--accent), #60A5FA); border-radius: 2px; animation: progress-move 2.5s ease-in-out infinite; }
+  @keyframes progress-move { 0% { width: 35%; margin-left: 0; } 50% { width: 50%; margin-left: 25%; } 100% { width: 35%; margin-left: 65%; } }
+  @keyframes pulse-pill { 0%,100% { opacity: 1; } 50% { opacity: .7; } }
+
+  /* Completed section */
+  .completed-section .card { opacity: .55; }
+  .completed-section .card:hover { opacity: .75; }
+
+  /* Footer stats */
+  .footer-stats { font-size: 11px; color: var(--text-muted); padding: 12px 0; border-top: 1px solid var(--border-subtle); text-align: center; margin-top: 8px; }
+  .footer-stats .healthy-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--success); vertical-align: middle; margin-left: 2px; }
+
+  /* Orb */
+  .orb-trigger { position: fixed; bottom: 24px; right: 24px; width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #2563EB, #3B82F6); color: #fff; border: none; cursor: pointer; box-shadow: 0 4px 16px rgba(37,99,235,.35); display: flex; align-items: center; justify-content: center; transition: transform .2s, box-shadow .2s; z-index: 100; }
+  .orb-trigger:hover { transform: scale(1.08); box-shadow: 0 6px 20px rgba(37,99,235,.45); }
+  .orb-trigger svg { width: 20px; height: 20px; }
+  .orb-panel { position: fixed; bottom: 84px; right: 24px; width: 340px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.12); padding: 18px; z-index: 100; transform: scale(.9) translateY(10px); opacity: 0; pointer-events: none; transition: all .2s ease; }
+  .orb-panel.open { transform: scale(1) translateY(0); opacity: 1; pointer-events: auto; }
+  .orb-panel h3 { font-size: 14px; font-weight: 600; margin-bottom: 12px; }
+  .orb-panel textarea { width: 100%; height: 60px; border: 1px solid var(--border); border-radius: 6px; padding: 8px 10px; font: 13px/1.5 'Inter', sans-serif; resize: none; outline: none; transition: border-color .15s; }
+  .orb-panel textarea:focus { border-color: var(--accent); }
+  .orb-row { display: flex; align-items: center; gap: 12px; margin-top: 10px; }
+  .orb-select { font-size: 12px; padding: 5px 8px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); color: var(--text-secondary); cursor: pointer; font-family: 'JetBrains Mono', monospace; }
+
+  /* Delegate dropdown */
+  .dropdown-wrap { position: relative; display: inline-block; }
+  .dropdown-menu { position: absolute; bottom: 100%; left: 0; margin-bottom: 4px; background: var(--surface); border: 1px solid var(--border); border-radius: 6px; box-shadow: var(--shadow-md); min-width: 160px; padding: 4px; display: none; z-index: 10; }
+  .dropdown-menu.open { display: block; }
+  .dropdown-item { padding: 6px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; color: var(--text-secondary); }
+  .dropdown-item:hover { background: var(--hover); color: var(--text); }
+
+  /* Toast */
+  .toast-container { position: fixed; bottom: 84px; right: 24px; display: flex; flex-direction: column-reverse; gap: 8px; z-index: 200; pointer-events: none; }
+  .toast { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--success); border-radius: 6px; padding: 10px 16px; font-size: 12px; font-weight: 500; box-shadow: var(--shadow-md); display: flex; align-items: center; gap: 6px; opacity: 0; transform: translateY(8px); animation: toast-in .25s ease forwards; pointer-events: auto; }
+  @keyframes toast-in { to { opacity: 1; transform: translateY(0); } }
+  .toast.out { animation: toast-out .3s ease forwards; }
+  @keyframes toast-out { to { opacity: 0; transform: translateY(-8px); } }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<nav class="sidebar">
+  <div class="sidebar-brand"><span class="dot"></span> CoCo</div>
+  <div class="nav-item active" data-page="home">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 6.5L8 2l6 4.5V13a1 1 0 01-1 1H3a1 1 0 01-1-1V6.5z"/></svg>
+    Home
+  </div>
+  <div class="nav-item" data-page="inbox">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M2 6l6 4 6-4"/></svg>
+    Inbox <span class="nav-badge red">3</span>
+  </div>
+  <div class="nav-item" data-page="agents">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="6" r="3"/><path d="M3 14c0-2.8 2.2-5 5-5s5 2.2 5 5"/></svg>
+    Agents <span class="nav-badge blue">1</span>
+  </div>
+  <div class="nav-item" data-page="projects">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="12" height="11" rx="1"/><path d="M2 7h12"/></svg>
+    Projects
+  </div>
+  <div class="nav-item" data-page="knowledge">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h4l1 1h5a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V3a1 1 0 011-1z"/></svg>
+    Knowledge
+  </div>
+  <div class="nav-item" data-page="chat">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10a1 1 0 011 1v6a1 1 0 01-1 1H6l-3 3V4a1 1 0 011-1z"/></svg>
+    Chat
+  </div>
+  <div class="sidebar-bottom">
+    <div class="avatar">RK</div>
+    <span style="font-size:12px;color:var(--text-secondary)">Rijul Kalra</span>
+  </div>
+</nav>
+
+<!-- Main -->
+<div class="main">
+  <!-- Top bar -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <h1 id="page-title">Good morning, Rijul</h1>
+      <div class="date" id="page-subtitle">Tuesday, Apr 8</div>
+    </div>
+    <div class="search-bar" id="searchBar">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"/><path d="M11 11l3.5 3.5"/></svg>
+      <input type="text" placeholder="Search or press /" id="searchInput">
+      <kbd>/</kbd>
+    </div>
+    <div class="topbar-right">
+      <div class="icon-btn" title="Notifications">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 6a4 4 0 018 0c0 4 2 5 2 5H2s2-1 2-5z"/><path d="M6.5 13a1.5 1.5 0 003 0"/></svg>
+      </div>
+    </div>
+  </header>
+
+  <!-- Page: Home -->
+  <div class="content" id="page-home">
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric-card urgent"><div class="metric-val">3</div><div class="metric-label">Urgent</div></div>
+      <div class="metric-card"><div class="metric-val">5</div><div class="metric-label">Drafts to Review</div></div>
+      <div class="metric-card running"><div class="metric-val">1</div><div class="metric-label">Agent Running</div></div>
+      <div class="metric-card healthy"><div class="metric-val" style="display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--success);display:inline-block"></span> Healthy</div><div class="metric-label">All Systems</div></div>
+    </div>
+
+    <!-- Action cards -->
+    <div class="section-header">Needs Your Attention <span>· 7 items</span></div>
+    <div class="card-list" id="actionCards">
+
+      <!-- Draft card -->
+      <div class="card" id="card-draft-1">
+        <div class="card-header">
+          <span class="card-icon">&#x1F4DD;</span>
+          <span class="card-title">ACC Phase 2 Status Update</span>
+        </div>
+        <div class="card-meta">Knowledge Hub · <span class="mono">87% confidence</span> · 2 days ago</div>
+        <div class="card-body">"The ACC Phase 2 implementation has progressed beyond initial milestones with 3 key deliverables completed, including the auth middleware refactor and query optimization layer..."</div>
+        <div class="card-actions">
+          <button class="btn green" onclick="approveCard('card-draft-1','ACC Phase 2 draft')">&#x2713; Approve</button>
+          <button class="btn red-outline" onclick="dismissCard('card-draft-1','Draft rejected')">&#x2717; Reject</button>
+          <button class="btn muted" onclick="showToast('Opening preview...')">Preview &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Todo card -->
+      <div class="card" id="card-todo-1">
+        <div class="card-header">
+          <span class="card-icon" id="todo-check-1" style="cursor:pointer" onclick="completeTodo('1')">&#x2610;</span>
+          <span class="card-title" id="todo-title-1">Prep Q2 Risk Report</span>
+          <span class="pill high">HIGH</span>
+        </div>
+        <div class="card-meta">Cross Risk Tools · due Apr 15 · 7 days left</div>
+        <div class="card-actions">
+          <button class="btn blue" onclick="completeTodo('1')">&#x2713; Complete</button>
+          <div class="dropdown-wrap">
+            <button class="btn" onclick="toggleDropdown(this)">Delegate &darr;</button>
+            <div class="dropdown-menu">
+              <div class="dropdown-item" onclick="delegateAction(this,'Developer')">Developer</div>
+              <div class="dropdown-item" onclick="delegateAction(this,'PM')">PM</div>
+              <div class="dropdown-item" onclick="delegateAction(this,'Architect')">Architect</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Urgent card 1 -->
+      <div class="card" id="card-urgent-1">
+        <div class="card-header">
+          <span class="card-icon">&#x1F534;</span>
+          <span class="card-title">Review GitGuardian incident #29214721</span>
+        </div>
+        <div class="card-meta">ACC · email from GitGuardian · 9 days ago</div>
+        <div class="card-body">"A potential secret was detected in the acc-service repository. API key found in config.py line 47. Immediate action recommended."</div>
+        <div class="card-actions">
+          <button class="btn blue" onclick="showToast('Opening review...')">Review &rarr;</button>
+          <button class="btn" onclick="dismissCard('card-urgent-1','Incident dismissed')">Dismiss</button>
+          <div class="dropdown-wrap">
+            <button class="btn" onclick="toggleDropdown(this)">Assign to &#x25BE;</button>
+            <div class="dropdown-menu">
+              <div class="dropdown-item" onclick="delegateAction(this,'Developer')">Developer</div>
+              <div class="dropdown-item" onclick="delegateAction(this,'DevOps')">DevOps</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Urgent card 2 -->
+      <div class="card" id="card-urgent-2">
+        <div class="card-header">
+          <span class="card-icon">&#x1F534;</span>
+          <span class="card-title">Aravo vendor assessment overdue</span>
+        </div>
+        <div class="card-meta">3Pi · risk assessment · 12 days overdue</div>
+        <div class="card-body">"The annual vendor risk assessment for Aravo third-party integration is past due. Compliance requires completion by EOW."</div>
+        <div class="card-actions">
+          <button class="btn blue" onclick="showToast('Opening assessment...')">Start &rarr;</button>
+          <button class="btn" onclick="dismissCard('card-urgent-2','Assessment snoozed')">Snooze</button>
+        </div>
+      </div>
+
+      <!-- Draft card 2 -->
+      <div class="card" id="card-draft-2">
+        <div class="card-header">
+          <span class="card-icon">&#x1F4DD;</span>
+          <span class="card-title">Weekly Cross Risk Digest</span>
+        </div>
+        <div class="card-meta">Knowledge Hub · <span class="mono">92% confidence</span> · 1 day ago</div>
+        <div class="card-body">"Cross Risk digest for week of Mar 31: 4 new action items, 2 resolved incidents, pipeline throughput at 98.7%..."</div>
+        <div class="card-actions">
+          <button class="btn green" onclick="approveCard('card-draft-2','Weekly digest')">&#x2713; Approve</button>
+          <button class="btn red-outline" onclick="dismissCard('card-draft-2','Draft rejected')">&#x2717; Reject</button>
+          <button class="btn muted" onclick="showToast('Opening preview...')">Preview &rarr;</button>
+        </div>
+      </div>
+
+      <!-- Running agent card -->
+      <div class="card agent-running" id="card-agent-running">
+        <div class="card-header">
+          <span class="card-icon">&#x1F916;</span>
+          <span class="card-title">Developer — Auth Middleware Refactor</span>
+          <span class="pill running">RUNNING</span>
+        </div>
+        <div class="card-meta"><span class="mono">sonnet</span> · started <span id="agent-timer">2m 14s</span> ago · <span class="mono" id="agent-cost">$0.08</span></div>
+        <div class="progress-bar"><div class="progress-fill"></div></div>
+        <div class="card-body" style="font-size:12px;color:var(--text-secondary)">Latest: "Implementing parameterized query for login endpoint..."</div>
+        <div class="card-actions">
+          <button class="btn" onclick="showToast('Opening agent logs...')">View Logs</button>
+          <button class="btn" onclick="showToast('Agent paused')">&#x23F8; Pause</button>
+          <button class="btn red-outline" onclick="showToast('Agent stopped')">&#x23F9; Stop</button>
+        </div>
+      </div>
+
+      <!-- Completed agent card -->
+      <div class="card" id="card-agent-done">
+        <div class="card-header">
+          <span class="card-icon">&#x2705;</span>
+          <span class="card-title">Technical Architect — Architecture Review</span>
+          <span class="pill complete">COMPLETE</span>
+        </div>
+        <div class="card-meta"><span class="mono">opus</span> · 4m 12s · <span class="mono">$0.23</span></div>
+        <div class="card-body summary">
+          <strong>Summary</strong><br>
+          Found 3 scaling bottlenecks:<br>
+          &bull; hub_sync: SQLite WAL limit at 100 concurrent reads<br>
+          &bull; agent_output: Unbounded table growth (no TTL)<br>
+          &bull; event_bus: No backpressure on queues<br>
+          <em>Recommendation: Add connection pooling first.</em>
+        </div>
+        <div class="card-actions">
+          <button class="btn" onclick="showToast('Opening full output...')">Full Output</button>
+          <button class="btn" onclick="showToast('Opening chat with context...')">&#x1F4AC; Chat About</button>
+          <button class="btn blue" onclick="openOrb()">Spawn Follow-up</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Completed section -->
+    <div class="section-header">Completed <span>· 3 items</span></div>
+    <div class="card-list completed-section">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">&#x2705;</span>
+          <span class="card-title" style="text-decoration:line-through;color:var(--text-muted)">Update JIRA sprint board</span>
+          <span class="pill complete">DONE</span>
+        </div>
+        <div class="card-meta">Cross Risk · completed 3h ago</div>
+      </div>
+      <div class="card">
+        <div class="card-header">
+          <span class="card-icon">&#x2705;</span>
+          <span class="card-title" style="text-decoration:line-through;color:var(--text-muted)">Review PR #847 — query optimizer</span>
+          <span class="pill complete">DONE</span>
+        </div>
+        <div class="card-meta">ACC · completed 5h ago</div>
+      </div>
+    </div>
+
+    <!-- Footer stats -->
+    <div class="footer-stats">
+      13 teams &middot; 50 todos &middot; 302 agents &middot; <span class="mono" style="font-family:'JetBrains Mono',monospace">$2.40</span> today &middot; All systems healthy<span class="healthy-dot"></span>
+    </div>
+  </div>
+
+  <!-- Placeholder pages -->
+  <div class="content placeholder" id="page-inbox" style="display:none">Inbox — 3 unread items. <em>Full view in next prototype.</em></div>
+  <div class="content placeholder" id="page-agents" style="display:none">Agents — 1 running, 14 idle. <em>Full view in next prototype.</em></div>
+  <div class="content placeholder" id="page-projects" style="display:none">Projects — 13 teams, 27 projects. <em>Full view in next prototype.</em></div>
+  <div class="content placeholder" id="page-knowledge" style="display:none">Knowledge Hub — 1,284 items indexed. <em>Full view in next prototype.</em></div>
+  <div class="content placeholder" id="page-chat" style="display:none">Chat — Start a conversation. <em>Full view in next prototype.</em></div>
+</div>
+
+<!-- Floating Orb -->
+<button class="orb-trigger" id="orbBtn" onclick="toggleOrb()" title="Spawn agent">
+  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="10" y1="4" x2="10" y2="16"/><line x1="4" y1="10" x2="16" y2="10"/></svg>
+</button>
+<div class="orb-panel" id="orbPanel">
+  <h3>What do you need done?</h3>
+  <textarea placeholder="Describe the task..."></textarea>
+  <div class="orb-row">
+    <select class="orb-select"><option>sonnet</option><option>opus</option><option>haiku</option></select>
+    <select class="orb-select"><option>$5 budget</option><option>$1 budget</option><option>$10 budget</option><option>$25 budget</option></select>
+    <button class="btn blue" style="margin-left:auto" onclick="spawnAgent()">&#x1F680; Spawn</button>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<script>
+  // --- Navigation ---
+  const navItems = document.querySelectorAll('.nav-item');
+  const pages = {home:'page-home',inbox:'page-inbox',agents:'page-agents',projects:'page-projects',knowledge:'page-knowledge',chat:'page-chat'};
+  const titles = {home:['Good morning, Rijul','Tuesday, Apr 8'],inbox:['Inbox','3 unread'],agents:['Agents','1 running'],projects:['Projects','13 teams'],knowledge:['Knowledge Hub','1,284 items'],chat:['Chat','New conversation']};
+
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const page = item.dataset.page;
+      navItems.forEach(n => n.classList.remove('active'));
+      item.classList.add('active');
+      Object.values(pages).forEach(id => document.getElementById(id).style.display = 'none');
+      document.getElementById(pages[page]).style.display = '';
+      document.getElementById('page-title').textContent = titles[page][0];
+      document.getElementById('page-subtitle').textContent = titles[page][1];
+    });
+  });
+
+  // --- Search shortcut ---
+  const searchInput = document.getElementById('searchInput');
+  const searchBar = document.getElementById('searchBar');
+  document.addEventListener('keydown', e => {
+    if (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+      e.preventDefault(); searchInput.focus();
+    }
+    if (e.key === 'Escape') { searchInput.blur(); closeOrb(); closeAllDropdowns(); }
+  });
+  searchInput.addEventListener('focus', () => searchBar.classList.add('focused'));
+  searchInput.addEventListener('blur', () => searchBar.classList.remove('focused'));
+
+  // --- Card actions ---
+  function approveCard(id, label) {
+    const card = document.getElementById(id);
+    card.classList.add('fading');
+    const badge = document.createElement('span');
+    badge.className = 'badge-inline'; badge.innerHTML = '&#x2713; Approved';
+    card.querySelector('.card-header').appendChild(badge);
+    showToast('Draft approved: ' + label);
+    setTimeout(() => { card.classList.add('dismissed'); }, 1200);
+  }
+
+  function completeTodo(num) {
+    const check = document.getElementById('todo-check-' + num);
+    const title = document.getElementById('todo-title-' + num);
+    const card = document.getElementById('card-todo-' + num);
+    check.innerHTML = '&#x2611;'; check.style.color = 'var(--accent)';
+    title.classList.add('struck');
+    card.classList.add('fading');
+    showToast('Todo completed: ' + title.textContent);
+    setTimeout(() => { card.classList.add('dismissed'); }, 1200);
+  }
+
+  function dismissCard(id, msg) {
+    const card = document.getElementById(id);
+    card.classList.add('fading');
+    showToast(msg);
+    setTimeout(() => { card.classList.add('dismissed'); }, 800);
+  }
+
+  // --- Dropdown ---
+  function toggleDropdown(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains('open');
+    closeAllDropdowns();
+    if (!isOpen) menu.classList.add('open');
+  }
+  function closeAllDropdowns() { document.querySelectorAll('.dropdown-menu').forEach(m => m.classList.remove('open')); }
+  function delegateAction(item, role) {
+    closeAllDropdowns();
+    showToast('Delegated to ' + role);
+  }
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown-wrap')) closeAllDropdowns();
+  });
+
+  // --- Orb ---
+  let orbOpen = false;
+  function toggleOrb() { orbOpen ? closeOrb() : openOrb(); }
+  function openOrb() { orbOpen = true; document.getElementById('orbPanel').classList.add('open'); }
+  function closeOrb() { orbOpen = false; document.getElementById('orbPanel').classList.remove('open'); }
+  function spawnAgent() {
+    const ta = document.querySelector('.orb-panel textarea');
+    const task = ta.value.trim() || 'New task';
+    ta.value = '';
+    closeOrb();
+    showToast('Agent spawned: ' + task);
+  }
+
+  // --- Toast ---
+  function showToast(msg) {
+    const c = document.getElementById('toasts');
+    const t = document.createElement('div');
+    t.className = 'toast'; t.innerHTML = '<span style="color:var(--success);font-weight:600">&#x2713;</span> ' + msg;
+    c.appendChild(t);
+    setTimeout(() => { t.classList.add('out'); }, 2700);
+    setTimeout(() => { t.remove(); }, 3000);
+  }
+
+  // --- Live timer + cost for running agent ---
+  let agentSeconds = 134; // 2m14s
+  let agentCost = 0.08;
+  setInterval(() => {
+    agentSeconds++;
+    const m = Math.floor(agentSeconds / 60);
+    const s = agentSeconds % 60;
+    document.getElementById('agent-timer').textContent = m + 'm ' + (s < 10 ? '0' : '') + s + 's';
+    agentCost += 0.0003 + Math.random() * 0.0004;
+    document.getElementById('agent-cost').textContent = '$' + agentCost.toFixed(2);
+  }, 1000);
+</script>
+</body>
+</html>

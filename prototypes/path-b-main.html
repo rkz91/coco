@@ -1,0 +1,1574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Path B: Collapse</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ─── Reset & Base ─── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0f172a;
+  --bg-raised: #1e293b;
+  --bg-card: #1e293b;
+  --bg-card-hover: #253348;
+  --border: #334155;
+  --border-subtle: #1e293b;
+  --text: #f1f5f9;
+  --text-muted: #94a3b8;
+  --text-dim: #64748b;
+  --accent: #22c55e;
+  --accent-glow: rgba(34, 197, 94, 0.25);
+  --green: #22c55e;
+  --yellow: #eab308;
+  --red: #ef4444;
+  --orange: #f97316;
+  --purple: #a78bfa;
+  --sidebar-w: 60px;
+  --topbar-h: 52px;
+  --panel-w: 420px;
+}
+html, body { height: 100%; }
+body {
+  font-family: 'Inter', -apple-system, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  overflow: hidden;
+  display: flex;
+}
+
+/* ─── Sidebar ─── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  height: 100vh;
+  background: #0b1120;
+  border-right: 1px solid var(--border-subtle);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 0;
+  z-index: 100;
+}
+.sidebar-logo {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; font-size: 14px; color: #fff;
+  margin-bottom: 24px;
+}
+.sidebar-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+.sidebar-item {
+  position: relative;
+  width: 40px; height: 40px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  color: var(--text-dim);
+  transition: all 0.2s;
+}
+.sidebar-item:hover { background: var(--bg-raised); color: var(--text-muted); }
+.sidebar-item.active { color: var(--accent); background: rgba(59,130,246,0.1); }
+.sidebar-item.active::before {
+  content: '';
+  position: absolute; left: -10px; top: 50%; transform: translateY(-50%);
+  width: 3px; height: 20px; border-radius: 0 3px 3px 0;
+  background: var(--accent);
+}
+.sidebar-item svg { width: 20px; height: 20px; }
+.sidebar-tooltip {
+  position: absolute; left: 54px; top: 50%; transform: translateY(-50%);
+  background: var(--bg-card); border: 1px solid var(--border);
+  color: var(--text); font-size: 12px; font-weight: 500;
+  padding: 4px 10px; border-radius: 6px; white-space: nowrap;
+  pointer-events: none; opacity: 0; transition: opacity 0.15s;
+  z-index: 200;
+}
+.sidebar-item:hover .sidebar-tooltip { opacity: 1; }
+.sidebar-bottom { margin-top: auto; }
+
+/* ─── Main Layout ─── */
+.main-wrap { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+
+/* ─── Top Bar ─── */
+.topbar {
+  height: var(--topbar-h);
+  min-height: var(--topbar-h);
+  background: #0b1120;
+  border-bottom: 1px solid var(--border-subtle);
+  display: flex; align-items: center;
+  padding: 0 20px; gap: 16px;
+}
+.search-box {
+  flex: 1; max-width: 480px;
+  height: 32px; border-radius: 8px;
+  background: var(--bg-raised); border: 1px solid var(--border);
+  display: flex; align-items: center; padding: 0 10px; gap: 8px;
+  cursor: pointer; transition: border-color 0.2s;
+}
+.search-box:hover { border-color: var(--text-dim); }
+.search-box svg { width: 14px; height: 14px; color: var(--text-dim); flex-shrink: 0; }
+.search-box span { color: var(--text-dim); font-size: 13px; }
+.search-box kbd {
+  margin-left: auto; font-family: inherit; font-size: 11px;
+  color: var(--text-dim); background: var(--bg);
+  padding: 1px 5px; border-radius: 4px; border: 1px solid var(--border);
+}
+.scope-btn {
+  font-size: 13px; color: var(--text-muted); background: none; border: 1px solid var(--border);
+  padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  transition: all 0.2s;
+}
+.scope-btn:hover { border-color: var(--text-dim); color: var(--text); }
+.notif-btn {
+  position: relative; background: none; border: none;
+  color: var(--text-dim); cursor: pointer; width: 32px; height: 32px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 8px; transition: all 0.2s;
+}
+.notif-btn:hover { background: var(--bg-raised); color: var(--text-muted); }
+.notif-badge {
+  position: absolute; top: 2px; right: 2px;
+  width: 16px; height: 16px; border-radius: 50%;
+  background: var(--red); font-size: 10px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; color: #fff;
+}
+.avatar {
+  width: 28px; height: 28px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #fff; cursor: pointer;
+}
+
+/* ─── Page Container ─── */
+.page-container {
+  flex: 1; overflow: hidden; position: relative;
+}
+.page { display: none; height: 100%; overflow-y: auto; }
+.page.active { display: flex; flex-direction: column; }
+
+/* ─── HOME PAGE ─── */
+/* Attention Bar */
+.attention-bar {
+  display: flex; gap: 0; min-height: 44px;
+  background: linear-gradient(90deg, rgba(239,68,68,0.06), rgba(234,179,8,0.06), rgba(59,130,246,0.06), rgba(34,197,94,0.06));
+  border-bottom: 1px solid var(--border-subtle);
+}
+.attn-item {
+  flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px;
+  font-size: 13px; color: var(--text-muted); cursor: pointer;
+  border-right: 1px solid var(--border-subtle);
+  padding: 0 12px; transition: all 0.2s; position: relative;
+}
+.attn-item:last-child { border-right: none; }
+.attn-item:hover { background: rgba(255,255,255,0.03); }
+.attn-item.active { background: rgba(255,255,255,0.05); }
+.attn-num { font-weight: 700; font-size: 18px; }
+.attn-item[data-filter="urgent"] .attn-num { color: var(--red); }
+.attn-item[data-filter="drafts"] .attn-num { color: var(--yellow); }
+.attn-item[data-filter="agents"] .attn-num { color: var(--accent); }
+.attn-item[data-filter="cost"] .attn-num { color: var(--green); }
+.attn-label { font-size: 12px; }
+
+/* Home Layout */
+.home-body {
+  flex: 1; display: flex; overflow: hidden;
+}
+.home-main { flex: 1; overflow-y: auto; padding: 20px 24px; min-width: 0; }
+.home-aside {
+  width: 240px; min-width: 240px;
+  border-left: 1px solid var(--border-subtle);
+  padding: 20px 16px;
+  display: flex; flex-direction: column; gap: 20px;
+  overflow-y: auto;
+}
+
+/* Filter Chips */
+.filter-chips { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
+.chip {
+  display: flex; align-items: center; gap: 5px;
+  padding: 5px 12px; border-radius: 20px;
+  font-size: 12px; font-weight: 500;
+  cursor: pointer; transition: all 0.2s;
+  background: var(--bg-raised); color: var(--text-muted);
+  border: 1px solid transparent;
+}
+.chip:hover { border-color: var(--border); color: var(--text); }
+.chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.chip-count {
+  background: rgba(255,255,255,0.15);
+  padding: 0 5px; border-radius: 10px; font-size: 10px;
+}
+.chip.active .chip-count { background: rgba(255,255,255,0.25); }
+
+/* Stream Cards */
+.stream { display: flex; flex-direction: column; gap: 8px; }
+.stream-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+}
+.stream-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.stream-card.hidden { display: none; }
+.card-top { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+.card-type {
+  font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;
+  padding: 2px 7px; border-radius: 4px;
+}
+.card-type.todo { background: rgba(59,130,246,0.15); color: var(--accent); }
+.card-type.draft { background: rgba(234,179,8,0.15); color: var(--yellow); }
+.card-type.agent { background: rgba(167,139,250,0.15); color: var(--purple); }
+.card-type.inbox { background: rgba(148,163,184,0.15); color: var(--text-muted); }
+.card-priority {
+  font-size: 10px; font-weight: 600; padding: 2px 6px;
+  border-radius: 4px; margin-left: auto;
+}
+.card-priority.high { background: rgba(239,68,68,0.15); color: var(--red); }
+.card-priority.medium { background: rgba(249,115,22,0.15); color: var(--orange); }
+.card-priority.low { background: rgba(34,197,94,0.15); color: var(--green); }
+.card-title { font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+.card-meta { font-size: 12px; color: var(--text-dim); margin-bottom: 10px; }
+.card-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.card-actions button {
+  font-family: inherit; font-size: 12px; font-weight: 500;
+  padding: 4px 10px; border-radius: 6px; cursor: pointer;
+  border: 1px solid var(--border); background: var(--bg);
+  color: var(--text-muted); transition: all 0.15s;
+}
+.card-actions button:hover { border-color: var(--accent); color: var(--text); }
+.card-actions button.primary {
+  background: var(--accent); border-color: var(--accent); color: #fff;
+}
+.card-actions button.primary:hover { background: #2563eb; }
+.card-actions button.danger { border-color: var(--red); color: var(--red); }
+.card-actions button.danger:hover { background: rgba(239,68,68,0.1); }
+.card-checkbox {
+  width: 16px; height: 16px; border-radius: 4px;
+  border: 2px solid var(--border); background: none;
+  cursor: pointer; flex-shrink: 0; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center;
+}
+.card-checkbox:hover { border-color: var(--accent); }
+.card-checkbox.checked { background: var(--accent); border-color: var(--accent); }
+.card-checkbox.checked::after { content: ''; width: 6px; height: 6px; background: #fff; border-radius: 2px; }
+.card-source {
+  font-size: 10px; padding: 2px 6px; border-radius: 4px;
+  background: rgba(148,163,184,0.1); color: var(--text-dim);
+}
+.card-status {
+  font-size: 10px; font-weight: 600; padding: 2px 6px;
+  border-radius: 4px; display: flex; align-items: center; gap: 4px;
+}
+.card-status.running { background: rgba(59,130,246,0.15); color: var(--accent); }
+.card-status.completed { background: rgba(34,197,94,0.15); color: var(--green); }
+.card-status.idle { background: rgba(148,163,184,0.1); color: var(--text-dim); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; }
+.running .status-dot { background: var(--accent); animation: pulse 2s infinite; }
+.completed .status-dot { background: var(--green); }
+.idle .status-dot { background: var(--text-dim); }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+/* Quick Stats sidebar */
+.stat-section h3 {
+  font-size: 11px; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.6px; color: var(--text-dim); margin-bottom: 10px;
+}
+.health-grid {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px;
+  margin-bottom: 4px;
+}
+.health-dot {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; color: var(--text-muted);
+}
+.health-dot .dot {
+  width: 8px; height: 8px; border-radius: 50%;
+}
+.dot.green { background: var(--green); }
+.dot.yellow { background: var(--yellow); }
+.dot.red { background: var(--red); }
+.dot.blue { background: var(--accent); }
+.stat-big {
+  font-size: 28px; font-weight: 700; color: var(--text);
+  line-height: 1;
+}
+.stat-label { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+/* Recent Activity */
+.recent-activity {
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 12px; margin-top: auto;
+}
+.recent-toggle {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  cursor: pointer; background: none; border: none; padding: 4px 0;
+  text-transform: uppercase; letter-spacing: 0.5px;
+}
+.recent-toggle svg {
+  width: 12px; height: 12px;
+  transition: transform 0.2s;
+}
+.recent-toggle.open svg { transform: rotate(180deg); }
+.recent-list { display: none; margin-top: 8px; }
+.recent-list.open { display: block; }
+.recent-item {
+  font-size: 12px; color: var(--text-muted);
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.recent-item:last-child { border-bottom: none; }
+.recent-time { color: var(--text-dim); font-size: 11px; }
+
+/* ─── AGENTS PAGE ─── */
+.agents-page { padding: 24px; }
+.agents-header { margin-bottom: 20px; }
+.agents-header h2 { font-size: 20px; font-weight: 600; }
+.agents-header p { font-size: 13px; color: var(--text-dim); margin-top: 4px; }
+.agents-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.agent-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.agent-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.agent-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.agent-icon {
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+}
+.agent-icon.dev { background: rgba(59,130,246,0.15); }
+.agent-icon.arch { background: rgba(167,139,250,0.15); }
+.agent-icon.qa { background: rgba(34,197,94,0.15); }
+.agent-icon.pm { background: rgba(234,179,8,0.15); }
+.agent-name { font-size: 14px; font-weight: 600; }
+.agent-team { font-size: 11px; color: var(--text-dim); }
+.agent-summary { font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.5; }
+.agent-footer { display: flex; align-items: center; justify-content: space-between; }
+.agent-cost { font-size: 12px; color: var(--text-dim); }
+
+/* ─── TREE PAGE ─── */
+.tree-page { padding: 24px; overflow-y: auto; }
+.tree-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+.tree-list { display: flex; flex-direction: column; gap: 4px; }
+.tree-team {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.tree-team-header {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 16px; cursor: pointer; transition: background 0.15s;
+}
+.tree-team-header:hover { background: var(--bg-card-hover); }
+.tree-chevron { color: var(--text-dim); transition: transform 0.2s; width: 16px; height: 16px; }
+.tree-team.open .tree-chevron { transform: rotate(90deg); }
+.tree-team-name { font-size: 14px; font-weight: 600; }
+.tree-team-count { font-size: 11px; color: var(--text-dim); margin-left: auto; }
+.tree-children { display: none; padding: 0 16px 8px 42px; }
+.tree-team.open .tree-children { display: block; }
+.tree-child {
+  padding: 8px 12px; font-size: 13px; color: var(--text-muted);
+  border-left: 2px solid var(--border);
+  margin-bottom: 4px; cursor: pointer; border-radius: 0 6px 6px 0;
+  transition: all 0.15s;
+}
+.tree-child:hover { background: var(--bg-card-hover); color: var(--text); border-left-color: var(--accent); }
+.tree-child-type { font-size: 10px; color: var(--text-dim); }
+
+/* ─── SELF-IMPROVE PAGE ─── */
+.improve-page { padding: 24px; }
+.improve-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 4px; }
+.improve-page .subtitle { font-size: 13px; color: var(--text-dim); margin-bottom: 20px; }
+.improve-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+.improve-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  padding: 20px;
+  transition: all 0.2s;
+  cursor: pointer;
+}
+.improve-card:hover {
+  border-color: var(--border);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+.improve-card h3 { font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.improve-card p { font-size: 12px; color: var(--text-muted); line-height: 1.5; }
+.improve-icon { font-size: 24px; margin-bottom: 10px; display: block; }
+
+/* ─── SLIDE-OVER PANEL ─── */
+.overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.5);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.overlay.visible { opacity: 1; pointer-events: all; }
+.slide-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: var(--panel-w); z-index: 510;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.4);
+}
+.slide-panel.open { transform: translateX(0); }
+.panel-header {
+  display: flex; align-items: center; padding: 16px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  gap: 12px;
+}
+.panel-close {
+  background: none; border: none; color: var(--text-dim);
+  cursor: pointer; width: 28px; height: 28px;
+  display: flex; align-items: center; justify-content: center;
+  border-radius: 6px; transition: all 0.15s;
+}
+.panel-close:hover { background: var(--bg-raised); color: var(--text); }
+.panel-title { font-size: 14px; font-weight: 600; flex: 1; }
+.panel-body { flex: 1; overflow-y: auto; padding: 20px; }
+.panel-body h3 { font-size: 13px; font-weight: 600; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; margin-top: 16px; }
+.panel-body h3:first-child { margin-top: 0; }
+.panel-body p { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 8px; }
+.panel-meta-row {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+.panel-meta-label { color: var(--text-dim); }
+.panel-meta-value { color: var(--text); font-weight: 500; }
+.panel-actions {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; gap: 8px;
+}
+.panel-actions button {
+  flex: 1; padding: 8px 12px; border-radius: 8px;
+  font-family: inherit; font-size: 13px; font-weight: 500;
+  cursor: pointer; transition: all 0.15s;
+}
+.panel-btn-primary {
+  background: var(--accent); border: none; color: #fff;
+}
+.panel-btn-primary:hover { background: #2563eb; }
+.panel-btn-secondary {
+  background: none; border: 1px solid var(--border); color: var(--text-muted);
+}
+.panel-btn-secondary:hover { border-color: var(--text-dim); color: var(--text); }
+.panel-btn-chat {
+  background: none; border: 1px solid var(--purple); color: var(--purple);
+}
+.panel-btn-chat:hover { background: rgba(167,139,250,0.1); }
+
+/* ─── CHAT SLIDE-OVER ─── */
+.chat-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: var(--panel-w); z-index: 520;
+  background: rgba(11, 17, 32, 0.96);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-left: 1px solid rgba(255,255,255,0.08);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex; flex-direction: column;
+  box-shadow: -8px 0 30px rgba(0,0,0,0.5);
+}
+.chat-panel.open { transform: translateX(0); }
+.chat-messages { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.chat-msg {
+  margin-bottom: 12px; padding: 10px 14px;
+  border-radius: 10px; font-size: 13px; line-height: 1.6;
+  max-width: 90%;
+}
+.chat-msg.system {
+  background: rgba(59,130,246,0.1); border: 1px solid rgba(59,130,246,0.15);
+  color: var(--text-muted); font-size: 12px;
+}
+.chat-msg.assistant { background: var(--bg-raised); color: var(--text); }
+.chat-msg.user { background: var(--accent); color: #fff; margin-left: auto; }
+.chat-input-wrap {
+  padding: 12px 16px;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  display: flex; gap: 8px;
+}
+.chat-input {
+  flex: 1; background: var(--bg-raised); border: 1px solid var(--border);
+  border-radius: 8px; padding: 8px 12px;
+  font-family: inherit; font-size: 13px; color: var(--text);
+  outline: none; resize: none;
+}
+.chat-input:focus { border-color: var(--accent); }
+.chat-send {
+  background: var(--accent); border: none; color: #fff;
+  width: 36px; height: 36px; border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: background 0.15s;
+}
+.chat-send:hover { background: #2563eb; }
+
+/* ─── FLOATING ORB ─── */
+.orb {
+  position: fixed; bottom: 24px; right: 24px; z-index: 400;
+  width: 52px; height: 52px; border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--purple));
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.4);
+  transition: all 0.3s;
+}
+.orb:hover { transform: scale(1.08); box-shadow: 0 6px 28px rgba(59,130,246,0.5); }
+.orb svg { width: 22px; height: 22px; color: #fff; }
+.orb-menu {
+  position: fixed; bottom: 84px; right: 24px; z-index: 401;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 12px; padding: 8px;
+  min-width: 220px;
+  opacity: 0; transform: translateY(8px) scale(0.95);
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+}
+.orb-menu.open { opacity: 1; transform: translateY(0) scale(1); pointer-events: all; }
+.orb-menu-title {
+  font-size: 12px; font-weight: 600; color: var(--text-dim);
+  padding: 6px 10px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.orb-menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 8px 10px; border-radius: 8px; cursor: pointer;
+  font-size: 13px; color: var(--text-muted);
+  transition: all 0.15s;
+}
+.orb-menu-item:hover { background: var(--bg-raised); color: var(--text); }
+.orb-menu-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+/* ─── TOAST ─── */
+.toast-container {
+  position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+  z-index: 600; display: flex; flex-direction: column; gap: 8px;
+  align-items: center;
+}
+.toast {
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  padding: 8px 16px; border-radius: 8px;
+  font-size: 13px; color: var(--text);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.2s forwards;
+}
+@keyframes toastIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes toastOut { from { opacity: 1; } to { opacity: 0; transform: translateY(-10px); } }
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- ─── SIDEBAR ─── -->
+<nav class="sidebar">
+  <div class="sidebar-logo">C</div>
+  <div class="sidebar-nav">
+    <div class="sidebar-item active" data-page="home" onclick="switchPage('home')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      <span class="sidebar-tooltip">Home</span>
+    </div>
+    <div class="sidebar-item" data-page="agents" onclick="switchPage('agents')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="3"/><line x1="8" y1="16" x2="8" y2="16.01"/><line x1="16" y1="16" x2="16" y2="16.01"/></svg>
+      <span class="sidebar-tooltip">Agents</span>
+    </div>
+    <div class="sidebar-item" data-page="tree" onclick="switchPage('tree')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+      <span class="sidebar-tooltip">Tree</span>
+    </div>
+    <div class="sidebar-item" data-page="improve" onclick="switchPage('improve')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <span class="sidebar-tooltip">Self-Improve</span>
+    </div>
+  </div>
+  <div class="sidebar-bottom">
+    <div class="sidebar-item" onclick="showToast('Settings coming soon')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="sidebar-tooltip">Settings</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ─── MAIN ─── -->
+<div class="main-wrap">
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="search-box" onclick="showToast('Search (Cmd+K) coming soon')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Search everything...</span>
+      <kbd>&#8984;K</kbd>
+    </div>
+    <button class="scope-btn">All Projects &#x25BE;</button>
+    <button class="notif-btn" onclick="showToast('3 unread notifications')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <span class="notif-badge">3</span>
+    </button>
+    <div class="avatar" title="Rijul Kalra">RK</div>
+  </header>
+
+  <!-- Pages -->
+  <div class="page-container">
+    <!-- ═══ HOME ═══ -->
+    <div class="page active" id="page-home">
+      <!-- Attention Bar -->
+      <div class="attention-bar">
+        <div class="attn-item" data-filter="urgent" onclick="filterStream('urgent')">
+          <span class="attn-num">2</span>
+          <span class="attn-label">urgent</span>
+        </div>
+        <div class="attn-item" data-filter="drafts" onclick="filterStream('drafts')">
+          <span class="attn-num">5</span>
+          <span class="attn-label">drafts pending</span>
+        </div>
+        <div class="attn-item" data-filter="agents" onclick="filterStream('agents')">
+          <span class="attn-num">1</span>
+          <span class="attn-label">agent running</span>
+        </div>
+        <div class="attn-item" data-filter="cost" onclick="showToast('Cost breakdown: $1.20 agents, $0.80 search, $0.40 embeddings')">
+          <span class="attn-num">$2.40</span>
+          <span class="attn-label">today</span>
+        </div>
+      </div>
+
+      <!-- Body: Stream + Sidebar -->
+      <div class="home-body">
+        <div class="home-main">
+          <!-- Filter Chips -->
+          <div class="filter-chips">
+            <div class="chip active" data-filter="all" onclick="filterStream('all')">All <span class="chip-count">12</span></div>
+            <div class="chip" data-filter="urgent" onclick="filterStream('urgent')">Urgent <span class="chip-count">2</span></div>
+            <div class="chip" data-filter="drafts" onclick="filterStream('drafts')">Drafts <span class="chip-count">5</span></div>
+            <div class="chip" data-filter="agents" onclick="filterStream('agents')">Agents <span class="chip-count">4</span></div>
+            <div class="chip" data-filter="todos" onclick="filterStream('todos')">Todos <span class="chip-count">3</span></div>
+          </div>
+
+          <!-- Action Stream -->
+          <div class="stream" id="action-stream">
+            <!-- Todo: high priority -->
+            <div class="stream-card" data-type="todo" data-priority="high" data-id="1" onclick="openPanel(this)">
+              <div class="card-top">
+                <div class="card-checkbox" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+                <span class="card-type todo">Todo</span>
+                <span class="card-priority high">High</span>
+              </div>
+              <div class="card-title">Resolve GitGuardian incident #721</div>
+              <div class="card-meta">ACC &middot; Exposed secret in commit a3f21e &middot; Due today</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); showToast('Assigned to you')">Assign &#x25BE;</button>
+                <button class="primary" onclick="event.stopPropagation(); showToast('Viewing incident...')">View Incident</button>
+              </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="stream-card" data-type="draft" data-priority="medium" data-id="2" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type draft">Draft</span>
+                <span class="card-source">Auto-generated</span>
+              </div>
+              <div class="card-title">ACC Status Update — Week 14</div>
+              <div class="card-meta">Generated 2h ago &middot; 4 sections &middot; ACC team</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Draft approved!')">Approve &#x2713;</button>
+                <button class="danger" onclick="event.stopPropagation(); showToast('Draft rejected')">Reject &#x2717;</button>
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">Preview &#x2192;</button>
+              </div>
+            </div>
+
+            <!-- Agent result -->
+            <div class="stream-card" data-type="agent" data-priority="medium" data-id="3" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type agent">Agent</span>
+                <span class="card-status running"><span class="status-dot"></span>Running</span>
+              </div>
+              <div class="card-title">Developer Agent &mdash; ACC API integration</div>
+              <div class="card-meta">Started 12m ago &middot; ACC &middot; 47 files analyzed, 3 changes proposed</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">View</button>
+                <button onclick="event.stopPropagation(); openChat('Developer Agent progress on ACC API integration')">Chat</button>
+                <button onclick="event.stopPropagation(); showToast('Follow-up agent spawned')">Spawn Follow-up</button>
+              </div>
+            </div>
+
+            <!-- Todo: high priority -->
+            <div class="stream-card" data-type="todo" data-priority="high" data-id="4" onclick="openPanel(this)">
+              <div class="card-top">
+                <div class="card-checkbox" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+                <span class="card-type todo">Todo</span>
+                <span class="card-priority high">High</span>
+              </div>
+              <div class="card-title">Complete Q2 Risk Report draft</div>
+              <div class="card-meta">Cross Risk &middot; Reviewer: Pankaj &middot; Due tomorrow</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); showToast('Assigned to you')">Assign &#x25BE;</button>
+                <button onclick="event.stopPropagation(); showToast('Opening editor...')">Edit Draft</button>
+              </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="stream-card" data-type="draft" data-priority="low" data-id="5" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type draft">Draft</span>
+                <span class="card-source">Manual</span>
+              </div>
+              <div class="card-title">AB Migration Plan v2</div>
+              <div class="card-meta">AuditBoard &middot; Updated yesterday &middot; 7 sections</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Draft approved!')">Approve &#x2713;</button>
+                <button class="danger" onclick="event.stopPropagation(); showToast('Draft rejected')">Reject &#x2717;</button>
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">Preview &#x2192;</button>
+              </div>
+            </div>
+
+            <!-- Agent result: completed -->
+            <div class="stream-card" data-type="agent" data-priority="low" data-id="6" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type agent">Agent</span>
+                <span class="card-status completed"><span class="status-dot"></span>Completed</span>
+              </div>
+              <div class="card-title">Architect Agent &mdash; AuditBoard schema review</div>
+              <div class="card-meta">Completed 1h ago &middot; AuditBoard &middot; 3 recommendations</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">View</button>
+                <button onclick="event.stopPropagation(); openChat('Architect Agent schema review results')">Chat</button>
+              </div>
+            </div>
+
+            <!-- Inbox item -->
+            <div class="stream-card" data-type="inbox" data-priority="low" data-id="7" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type inbox">Inbox</span>
+                <span class="card-source">Slack</span>
+              </div>
+              <div class="card-title">Aravo API documentation request from Pankaj</div>
+              <div class="card-meta">3PI V2 &middot; Received 3h ago</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); showToast('Classified as documentation task')">Classify &#x25BE;</button>
+                <button onclick="event.stopPropagation(); dismissCard(this.closest('.stream-card'))">Dismiss</button>
+              </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="stream-card" data-type="draft" data-priority="medium" data-id="8" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type draft">Draft</span>
+                <span class="card-source">Auto-generated</span>
+              </div>
+              <div class="card-title">3PI V2 Sprint Retro Summary</div>
+              <div class="card-meta">3PI V2 &middot; Generated 4h ago &middot; 3 action items</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Draft approved!')">Approve &#x2713;</button>
+                <button class="danger" onclick="event.stopPropagation(); showToast('Draft rejected')">Reject &#x2717;</button>
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">Preview &#x2192;</button>
+              </div>
+            </div>
+
+            <!-- Agent: completed -->
+            <div class="stream-card" data-type="agent" data-priority="low" data-id="9" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type agent">Agent</span>
+                <span class="card-status completed"><span class="status-dot"></span>Completed</span>
+              </div>
+              <div class="card-title">QA Agent &mdash; Cross Risk regression suite</div>
+              <div class="card-meta">Completed 30m ago &middot; Cross Risk Tools &middot; 142 tests, 0 failures</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">View</button>
+                <button onclick="event.stopPropagation(); openChat('QA Agent test results')">Chat</button>
+              </div>
+            </div>
+
+            <!-- Todo -->
+            <div class="stream-card" data-type="todo" data-priority="medium" data-id="10" onclick="openPanel(this)">
+              <div class="card-top">
+                <div class="card-checkbox" onclick="event.stopPropagation(); toggleCheck(this)"></div>
+                <span class="card-type todo">Todo</span>
+                <span class="card-priority medium">Medium</span>
+              </div>
+              <div class="card-title">Update Aravo API docs for 3PI V2</div>
+              <div class="card-meta">3PI V2 &middot; Requested by Pankaj &middot; Due Friday</div>
+              <div class="card-actions">
+                <button onclick="event.stopPropagation(); showToast('Assigned to you')">Assign &#x25BE;</button>
+                <button onclick="event.stopPropagation(); showToast('Opening docs...')">Open Docs</button>
+              </div>
+            </div>
+
+            <!-- Agent: idle -->
+            <div class="stream-card" data-type="agent" data-priority="low" data-id="11" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type agent">Agent</span>
+                <span class="card-status idle"><span class="status-dot"></span>Idle</span>
+              </div>
+              <div class="card-title">PM Agent &mdash; awaiting next assignment</div>
+              <div class="card-meta">Last active 2h ago &middot; Available for all teams</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Assigning task to PM Agent...')">Assign Task</button>
+                <button onclick="event.stopPropagation(); openChat('PM Agent capabilities')">Chat</button>
+              </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="stream-card" data-type="draft" data-priority="low" data-id="12" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type draft">Draft</span>
+                <span class="card-source">Auto-generated</span>
+              </div>
+              <div class="card-title">Cross Risk Tools — Weekly Metrics Dashboard</div>
+              <div class="card-meta">Cross Risk Tools &middot; Generated 5h ago &middot; 6 charts</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Draft approved!')">Approve &#x2713;</button>
+                <button class="danger" onclick="event.stopPropagation(); showToast('Draft rejected')">Reject &#x2717;</button>
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">Preview &#x2192;</button>
+              </div>
+            </div>
+
+            <!-- Draft -->
+            <div class="stream-card" data-type="draft" data-priority="medium" data-id="13" onclick="openPanel(this)">
+              <div class="card-top">
+                <span class="card-type draft">Draft</span>
+                <span class="card-source">Auto-generated</span>
+              </div>
+              <div class="card-title">AuditBoard Tax — Compliance Checklist Q2</div>
+              <div class="card-meta">AuditBoard Tax &middot; Generated 6h ago &middot; 12 items</div>
+              <div class="card-actions">
+                <button class="primary" onclick="event.stopPropagation(); showToast('Draft approved!')">Approve &#x2713;</button>
+                <button class="danger" onclick="event.stopPropagation(); showToast('Draft rejected')">Reject &#x2717;</button>
+                <button onclick="event.stopPropagation(); openPanel(this.closest('.stream-card'))">Preview &#x2192;</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Stats Sidebar -->
+        <aside class="home-aside">
+          <div class="stat-section">
+            <h3>Health</h3>
+            <div class="health-grid">
+              <div class="health-dot"><span class="dot green"></span>ACC</div>
+              <div class="health-dot"><span class="dot green"></span>AB</div>
+              <div class="health-dot"><span class="dot yellow"></span>AB Tax</div>
+              <div class="health-dot"><span class="dot green"></span>3PI V2</div>
+            </div>
+          </div>
+          <div class="stat-section">
+            <h3>Today's Cost</h3>
+            <div class="stat-big">$2.40</div>
+            <div class="stat-label">across 4 agents</div>
+          </div>
+          <div class="stat-section">
+            <h3>Active Agents</h3>
+            <div class="stat-big">1</div>
+            <div class="stat-label">of 4 total</div>
+          </div>
+          <div class="stat-section">
+            <h3>Teams</h3>
+            <div class="stat-big">5</div>
+            <div class="stat-label">projects tracked</div>
+          </div>
+
+          <!-- Recent Activity -->
+          <div class="recent-activity">
+            <button class="recent-toggle" onclick="toggleRecent(this)">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+              Recent Activity
+            </button>
+            <div class="recent-list" id="recent-list">
+              <div class="recent-item">Approved draft: ACC Status Update <span class="recent-time">&middot; 5m ago</span></div>
+              <div class="recent-item">Completed todo: GitGuardian #720 <span class="recent-time">&middot; 22m ago</span></div>
+              <div class="recent-item">Spawned Developer Agent <span class="recent-time">&middot; 35m ago</span></div>
+              <div class="recent-item">Rejected draft: AB Metrics v1 <span class="recent-time">&middot; 1h ago</span></div>
+              <div class="recent-item">Classified 3 inbox items <span class="recent-time">&middot; 2h ago</span></div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+
+    <!-- ═══ AGENTS PAGE ═══ -->
+    <div class="page" id="page-agents">
+      <div class="agents-page">
+        <div class="agents-header">
+          <h2>Agents</h2>
+          <p>4 agents across 5 teams</p>
+        </div>
+        <div class="agents-grid">
+          <div class="agent-card" onclick="openAgentPanel('developer')">
+            <div class="agent-top">
+              <div class="agent-icon dev">&#x1F4BB;</div>
+              <div>
+                <div class="agent-name">Developer</div>
+                <div class="agent-team">ACC</div>
+              </div>
+              <span class="card-status running" style="margin-left:auto"><span class="status-dot"></span>Running</span>
+            </div>
+            <div class="agent-summary">Implementing ACC API integration. 47 files analyzed, 3 PRs proposed. Currently refactoring auth module.</div>
+            <div class="agent-footer">
+              <span class="agent-cost">$0.82 today</span>
+            </div>
+          </div>
+          <div class="agent-card" onclick="openAgentPanel('architect')">
+            <div class="agent-top">
+              <div class="agent-icon arch">&#x1F3D7;&#xFE0F;</div>
+              <div>
+                <div class="agent-name">Architect</div>
+                <div class="agent-team">AuditBoard</div>
+              </div>
+              <span class="card-status completed" style="margin-left:auto"><span class="status-dot"></span>Completed</span>
+            </div>
+            <div class="agent-summary">Schema review complete. Recommended 3 index additions and 1 table normalization for the migration plan.</div>
+            <div class="agent-footer">
+              <span class="agent-cost">$0.54 today</span>
+            </div>
+          </div>
+          <div class="agent-card" onclick="openAgentPanel('qa')">
+            <div class="agent-top">
+              <div class="agent-icon qa">&#x1F9EA;</div>
+              <div>
+                <div class="agent-name">QA</div>
+                <div class="agent-team">Cross Risk Tools</div>
+              </div>
+              <span class="card-status completed" style="margin-left:auto"><span class="status-dot"></span>Completed</span>
+            </div>
+            <div class="agent-summary">Regression suite passed: 142 tests, 0 failures. Coverage increased from 78% to 84%.</div>
+            <div class="agent-footer">
+              <span class="agent-cost">$0.68 today</span>
+            </div>
+          </div>
+          <div class="agent-card" onclick="openAgentPanel('pm')">
+            <div class="agent-top">
+              <div class="agent-icon pm">&#x1F4CB;</div>
+              <div>
+                <div class="agent-name">PM</div>
+                <div class="agent-team">All teams</div>
+              </div>
+              <span class="card-status idle" style="margin-left:auto"><span class="status-dot"></span>Idle</span>
+            </div>
+            <div class="agent-summary">Awaiting next assignment. Last task: generated weekly status updates for 3 teams.</div>
+            <div class="agent-footer">
+              <span class="agent-cost">$0.36 today</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ TREE PAGE ═══ -->
+    <div class="page" id="page-tree">
+      <div class="tree-page">
+        <h2>Knowledge Tree</h2>
+        <div class="tree-list">
+          <div class="tree-team open">
+            <div class="tree-team-header" onclick="toggleTree(this.parentElement)">
+              <svg class="tree-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="tree-team-name">ACC</span>
+              <span class="tree-team-count">12 items</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child" onclick="showToast('Opening ACC API Spec...')">ACC API Specification <span class="tree-child-type">&middot; Document</span></div>
+              <div class="tree-child" onclick="showToast('Opening ACC Architecture...')">Architecture Overview <span class="tree-child-type">&middot; Diagram</span></div>
+              <div class="tree-child" onclick="showToast('Opening sprint notes...')">Sprint Notes — Week 14 <span class="tree-child-type">&middot; Meeting Notes</span></div>
+              <div class="tree-child" onclick="showToast('Opening deployment guide...')">Deployment Runbook <span class="tree-child-type">&middot; Runbook</span></div>
+            </div>
+          </div>
+          <div class="tree-team">
+            <div class="tree-team-header" onclick="toggleTree(this.parentElement)">
+              <svg class="tree-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="tree-team-name">AuditBoard</span>
+              <span class="tree-team-count">8 items</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child" onclick="showToast('Opening migration plan...')">Migration Plan v2 <span class="tree-child-type">&middot; Document</span></div>
+              <div class="tree-child" onclick="showToast('Opening schema review...')">Schema Review Report <span class="tree-child-type">&middot; Report</span></div>
+              <div class="tree-child" onclick="showToast('Opening env setup...')">Environment Setup Guide <span class="tree-child-type">&middot; Runbook</span></div>
+            </div>
+          </div>
+          <div class="tree-team">
+            <div class="tree-team-header" onclick="toggleTree(this.parentElement)">
+              <svg class="tree-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="tree-team-name">AuditBoard Tax</span>
+              <span class="tree-team-count">6 items</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child" onclick="showToast('Opening compliance checklist...')">Compliance Checklist Q2 <span class="tree-child-type">&middot; Checklist</span></div>
+              <div class="tree-child" onclick="showToast('Opening tax rules...')">Tax Calculation Rules <span class="tree-child-type">&middot; Reference</span></div>
+            </div>
+          </div>
+          <div class="tree-team">
+            <div class="tree-team-header" onclick="toggleTree(this.parentElement)">
+              <svg class="tree-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="tree-team-name">3PI V2</span>
+              <span class="tree-team-count">9 items</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child" onclick="showToast('Opening Aravo docs...')">Aravo API Documentation <span class="tree-child-type">&middot; Document</span></div>
+              <div class="tree-child" onclick="showToast('Opening retro...')">Sprint Retro — Week 13 <span class="tree-child-type">&middot; Meeting Notes</span></div>
+              <div class="tree-child" onclick="showToast('Opening vendor matrix...')">Vendor Evaluation Matrix <span class="tree-child-type">&middot; Spreadsheet</span></div>
+            </div>
+          </div>
+          <div class="tree-team">
+            <div class="tree-team-header" onclick="toggleTree(this.parentElement)">
+              <svg class="tree-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+              <span class="tree-team-name">Cross Risk Tools</span>
+              <span class="tree-team-count">11 items</span>
+            </div>
+            <div class="tree-children">
+              <div class="tree-child" onclick="showToast('Opening risk framework...')">Risk Assessment Framework <span class="tree-child-type">&middot; Document</span></div>
+              <div class="tree-child" onclick="showToast('Opening test report...')">QA Regression Report <span class="tree-child-type">&middot; Report</span></div>
+              <div class="tree-child" onclick="showToast('Opening tool inventory...')">Tool Inventory 2026 <span class="tree-child-type">&middot; Spreadsheet</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ SELF-IMPROVE PAGE ═══ -->
+    <div class="page" id="page-improve">
+      <div class="improve-page">
+        <h2>Self-Improve</h2>
+        <p class="subtitle">Help CoCo get smarter about your workflow</p>
+        <div class="improve-grid">
+          <div class="improve-card" onclick="showToast('Opening classifier audit...')">
+            <span class="improve-icon">&#x1F50D;</span>
+            <h3>Audit Classifier</h3>
+            <p>Review how incoming items are being classified. Fix misrouted documents and retrain the classifier.</p>
+          </div>
+          <div class="improve-card" onclick="showToast('Opening knowledge graph...')">
+            <span class="improve-icon">&#x1F578;&#xFE0F;</span>
+            <h3>Knowledge Graph</h3>
+            <p>Visualize connections between people, projects, and documents. Find gaps in your knowledge base.</p>
+          </div>
+          <div class="improve-card" onclick="showToast('Opening routing rules...')">
+            <span class="improve-icon">&#x1F4A1;</span>
+            <h3>Routing Brain</h3>
+            <p>Teach CoCo which agent handles which type of work. Review and edit routing rules.</p>
+          </div>
+          <div class="improve-card" onclick="showToast('Opening feedback log...')">
+            <span class="improve-icon">&#x1F4AC;</span>
+            <h3>Feedback Loop</h3>
+            <p>See corrections you've made and how they improved accuracy. Approve pending learning updates.</p>
+          </div>
+          <div class="improve-card" onclick="showToast('Opening prompt library...')">
+            <span class="improve-icon">&#x1F4DD;</span>
+            <h3>Prompt Library</h3>
+            <p>Manage saved prompts, templates, and agent instructions. Version control for your AI config.</p>
+          </div>
+          <div class="improve-card" onclick="showToast('Opening analytics...')">
+            <span class="improve-icon">&#x1F4CA;</span>
+            <h3>Analytics</h3>
+            <p>Cost trends, agent utilization, task completion rates. Find inefficiencies in your workflow.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── SLIDE-OVER PANEL ─── -->
+<div class="overlay" id="overlay" onclick="closePanel()"></div>
+<div class="slide-panel" id="slide-panel">
+  <div class="panel-header">
+    <button class="panel-close" onclick="closePanel()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="panel-title" id="panel-title">Detail</div>
+  </div>
+  <div class="panel-body" id="panel-body">
+    <!-- Filled dynamically -->
+  </div>
+  <div class="panel-actions" id="panel-actions">
+    <!-- Filled dynamically -->
+  </div>
+</div>
+
+<!-- ─── CHAT SLIDE-OVER ─── -->
+<div class="chat-panel" id="chat-panel">
+  <div class="panel-header">
+    <button class="panel-close" onclick="closeChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div class="panel-title" id="chat-title">Chat with Claude</div>
+  </div>
+  <div class="chat-messages" id="chat-messages"></div>
+  <div class="chat-input-wrap">
+    <input class="chat-input" id="chat-input" placeholder="Ask about this item..." onkeydown="if(event.key==='Enter')sendChat()">
+    <button class="chat-send" onclick="sendChat()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- ─── FLOATING ORB ─── -->
+<div class="orb" id="orb" onclick="toggleOrb()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+</div>
+<div class="orb-menu" id="orb-menu">
+  <div class="orb-menu-title">What do you need?</div>
+  <div class="orb-menu-item" onclick="showToast('Spawning new Developer Agent...'); toggleOrb()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="3"/></svg>
+    Spawn Agent
+  </div>
+  <div class="orb-menu-item" onclick="openChat('General assistance'); toggleOrb()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Quick Chat
+  </div>
+  <div class="orb-menu-item" onclick="showToast('Creating new todo...'); toggleOrb()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Add Todo
+  </div>
+  <div class="orb-menu-item" onclick="showToast('Opening knowledge search...'); toggleOrb()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    Search Knowledge
+  </div>
+</div>
+
+<!-- ─── TOAST CONTAINER ─── -->
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// ─── PAGE SWITCHING ───
+function switchPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item[data-page]').forEach(i => i.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.querySelector('.sidebar-item[data-page="' + page + '"]').classList.add('active');
+  closePanel();
+  closeChat();
+}
+
+// ─── FILTER STREAM ───
+let currentFilter = 'all';
+function filterStream(filter) {
+  // Map attention bar filters to stream types
+  const filterMap = { urgent: 'urgent', drafts: 'draft', agents: 'agent', todos: 'todo', all: 'all' };
+  const type = filterMap[filter] || filter;
+  currentFilter = type;
+
+  // Update chips
+  document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+  const matchChip = document.querySelector('.chip[data-filter="' + filter + '"]')
+    || document.querySelector('.chip[data-filter="all"]');
+  if (matchChip) matchChip.classList.add('active');
+
+  // Update attention bar
+  document.querySelectorAll('.attn-item').forEach(a => a.classList.remove('active'));
+  const matchAttn = document.querySelector('.attn-item[data-filter="' + filter + '"]');
+  if (matchAttn) matchAttn.classList.add('active');
+
+  // Filter cards
+  document.querySelectorAll('.stream-card').forEach(card => {
+    if (type === 'all') {
+      card.classList.remove('hidden');
+    } else if (type === 'urgent') {
+      card.classList.toggle('hidden', card.dataset.priority !== 'high');
+    } else {
+      card.classList.toggle('hidden', card.dataset.type !== type);
+    }
+  });
+}
+
+// ─── PANEL DETAIL DATA ───
+const panelData = {
+  '1': {
+    title: 'Resolve GitGuardian incident #721',
+    body: `<h3>Description</h3>
+<p>A secret (AWS access key) was detected in commit a3f21e on the ACC repository. The key has been automatically rotated, but the commit history needs to be cleaned and the incident closed in GitGuardian.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">ACC</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Priority</span><span class="panel-meta-value" style="color:var(--red)">High</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Due</span><span class="panel-meta-value">Today</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Assigned</span><span class="panel-meta-value">Rijul Kalra</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Source</span><span class="panel-meta-value">GitGuardian webhook</span></div>`,
+    actions: 'todo'
+  },
+  '2': {
+    title: 'ACC Status Update — Week 14',
+    body: `<h3>Preview</h3>
+<p>This week the ACC team completed the API integration milestone. Key highlights include 3 new endpoints shipped, load testing passed at 2x expected traffic, and the auth module refactor is 80% complete.</p>
+<h3>Sections</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Highlights</span><span class="panel-meta-value">3 items</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Blockers</span><span class="panel-meta-value">1 item</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Next Week</span><span class="panel-meta-value">4 planned</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Metrics</span><span class="panel-meta-value">On track</span></div>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">ACC</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Generated</span><span class="panel-meta-value">2 hours ago</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Word count</span><span class="panel-meta-value">842</span></div>`,
+    actions: 'draft'
+  },
+  '3': {
+    title: 'Developer Agent — ACC API Integration',
+    body: `<h3>Status</h3>
+<p>Currently running. Analyzing the ACC codebase for API integration opportunities. Has proposed 3 pull requests so far.</p>
+<h3>Progress</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Files analyzed</span><span class="panel-meta-value">47</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">PRs proposed</span><span class="panel-meta-value">3</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Runtime</span><span class="panel-meta-value">12 minutes</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost so far</span><span class="panel-meta-value">$0.82</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">ACC</span></div>
+<h3>Recent Actions</h3>
+<p>Refactoring auth middleware to support API key rotation. Updating integration test suite.</p>`,
+    actions: 'agent'
+  },
+  '4': {
+    title: 'Complete Q2 Risk Report draft',
+    body: `<h3>Description</h3>
+<p>The quarterly risk report needs to be finalized before the review meeting with Pankaj. Sections on operational risk and emerging threats are still incomplete.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">Cross Risk</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Priority</span><span class="panel-meta-value" style="color:var(--red)">High</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Due</span><span class="panel-meta-value">Tomorrow</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Reviewer</span><span class="panel-meta-value">Pankaj</span></div>`,
+    actions: 'todo'
+  },
+  '5': {
+    title: 'AB Migration Plan v2',
+    body: `<h3>Preview</h3>
+<p>Updated migration plan incorporating Architect Agent's schema review recommendations. Adds 3 new indexes and 1 table normalization step to the rollback-safe migration sequence.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">AuditBoard</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Updated</span><span class="panel-meta-value">Yesterday</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Sections</span><span class="panel-meta-value">7</span></div>`,
+    actions: 'draft'
+  },
+  '6': {
+    title: 'Architect Agent — AuditBoard Schema Review',
+    body: `<h3>Results</h3>
+<p>Completed comprehensive schema review of the AuditBoard database. Found 3 optimization opportunities and 1 normalization issue.</p>
+<h3>Recommendations</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Add index</span><span class="panel-meta-value">audit_logs.created_at</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Add index</span><span class="panel-meta-value">findings.severity</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Add index</span><span class="panel-meta-value">users.team_id</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Normalize</span><span class="panel-meta-value">Split metadata JSON column</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost</span><span class="panel-meta-value">$0.54</span></div>`,
+    actions: 'agent'
+  },
+  '7': {
+    title: 'Aravo API documentation request',
+    body: `<h3>Details</h3>
+<p>Pankaj requested updated Aravo API documentation for the 3PI V2 integration. The current docs are outdated and missing the new authentication endpoints.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Source</span><span class="panel-meta-value">Slack</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">From</span><span class="panel-meta-value">Pankaj</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">3PI V2</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Received</span><span class="panel-meta-value">3 hours ago</span></div>`,
+    actions: 'inbox'
+  },
+  '8': {
+    title: '3PI V2 Sprint Retro Summary',
+    body: `<h3>Preview</h3>
+<p>Sprint 13 retrospective highlights: improved velocity by 15%, resolved 2 blockers, identified 3 action items for next sprint.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">3PI V2</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Generated</span><span class="panel-meta-value">4 hours ago</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Action items</span><span class="panel-meta-value">3</span></div>`,
+    actions: 'draft'
+  },
+  '9': {
+    title: 'QA Agent — Cross Risk Regression Suite',
+    body: `<h3>Results</h3>
+<p>Full regression suite completed successfully. All 142 tests passed with zero failures. Code coverage increased from 78% to 84%.</p>
+<h3>Details</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Tests run</span><span class="panel-meta-value">142</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Failures</span><span class="panel-meta-value" style="color:var(--green)">0</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Coverage</span><span class="panel-meta-value">84% (+6%)</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Duration</span><span class="panel-meta-value">4m 23s</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost</span><span class="panel-meta-value">$0.68</span></div>`,
+    actions: 'agent'
+  },
+  '10': {
+    title: 'Update Aravo API docs for 3PI V2',
+    body: `<h3>Description</h3>
+<p>Document the new Aravo API authentication endpoints and update examples for the 3PI V2 integration.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">3PI V2</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Priority</span><span class="panel-meta-value" style="color:var(--orange)">Medium</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Due</span><span class="panel-meta-value">Friday</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Requested by</span><span class="panel-meta-value">Pankaj</span></div>`,
+    actions: 'todo'
+  },
+  '11': {
+    title: 'PM Agent — Awaiting Assignment',
+    body: `<h3>Status</h3>
+<p>The PM Agent is idle and ready for the next task. Last active 2 hours ago when it generated weekly status updates for ACC, AuditBoard, and 3PI V2.</p>
+<h3>Capabilities</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Status reports</span><span class="panel-meta-value">Automated</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Meeting notes</span><span class="panel-meta-value">Automated</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Sprint planning</span><span class="panel-meta-value">Assisted</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost today</span><span class="panel-meta-value">$0.36</span></div>`,
+    actions: 'agent'
+  },
+  '12': {
+    title: 'Cross Risk Tools — Weekly Metrics Dashboard',
+    body: `<h3>Preview</h3>
+<p>Auto-generated weekly metrics report with 6 charts covering tool adoption, incident trends, and team productivity.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">Cross Risk Tools</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Generated</span><span class="panel-meta-value">5 hours ago</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Charts</span><span class="panel-meta-value">6</span></div>`,
+    actions: 'draft'
+  },
+  '13': {
+    title: 'AuditBoard Tax — Compliance Checklist Q2',
+    body: `<h3>Preview</h3>
+<p>Quarterly compliance checklist with 12 items covering tax regulation updates, audit findings follow-ups, and documentation requirements.</p>
+<h3>Metadata</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">AuditBoard Tax</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Generated</span><span class="panel-meta-value">6 hours ago</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Checklist items</span><span class="panel-meta-value">12</span></div>`,
+    actions: 'draft'
+  }
+};
+
+const agentPanelData = {
+  developer: {
+    title: 'Developer Agent',
+    body: `<h3>Overview</h3>
+<p>Full-stack development agent specializing in API integrations, code refactoring, and automated PR generation.</p>
+<h3>Current Task</h3>
+<p>ACC API integration — refactoring auth module and proposing pull requests for new endpoints.</p>
+<h3>Stats</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Status</span><span class="panel-meta-value" style="color:var(--accent)">Running</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">ACC</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Runtime</span><span class="panel-meta-value">12 minutes</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Files analyzed</span><span class="panel-meta-value">47</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">PRs proposed</span><span class="panel-meta-value">3</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost today</span><span class="panel-meta-value">$0.82</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Total cost</span><span class="panel-meta-value">$14.30</span></div>`,
+    actions: 'agent'
+  },
+  architect: {
+    title: 'Architect Agent',
+    body: `<h3>Overview</h3>
+<p>Architecture and schema review agent. Analyzes database schemas, API designs, and system architectures for optimization opportunities.</p>
+<h3>Last Task</h3>
+<p>AuditBoard schema review — identified 3 index additions and 1 normalization opportunity.</p>
+<h3>Stats</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Status</span><span class="panel-meta-value" style="color:var(--green)">Completed</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">AuditBoard</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Recommendations</span><span class="panel-meta-value">4</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost today</span><span class="panel-meta-value">$0.54</span></div>`,
+    actions: 'agent'
+  },
+  qa: {
+    title: 'QA Agent',
+    body: `<h3>Overview</h3>
+<p>Quality assurance agent running regression suites, analyzing test coverage, and generating test reports.</p>
+<h3>Last Task</h3>
+<p>Cross Risk Tools regression suite — 142 tests passed, coverage at 84%.</p>
+<h3>Stats</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Status</span><span class="panel-meta-value" style="color:var(--green)">Completed</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Team</span><span class="panel-meta-value">Cross Risk Tools</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Tests run</span><span class="panel-meta-value">142</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Failures</span><span class="panel-meta-value" style="color:var(--green)">0</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost today</span><span class="panel-meta-value">$0.68</span></div>`,
+    actions: 'agent'
+  },
+  pm: {
+    title: 'PM Agent',
+    body: `<h3>Overview</h3>
+<p>Project management agent handling status reports, meeting notes, sprint planning assistance, and cross-team coordination.</p>
+<h3>Stats</h3>
+<div class="panel-meta-row"><span class="panel-meta-label">Status</span><span class="panel-meta-value" style="color:var(--text-dim)">Idle</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Teams</span><span class="panel-meta-value">All</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Last active</span><span class="panel-meta-value">2 hours ago</span></div>
+<div class="panel-meta-row"><span class="panel-meta-label">Cost today</span><span class="panel-meta-value">$0.36</span></div>`,
+    actions: 'agent'
+  }
+};
+
+// ─── PANEL OPEN / CLOSE ───
+function openPanel(cardEl) {
+  const id = cardEl.dataset.id;
+  const data = panelData[id];
+  if (!data) return;
+  document.getElementById('panel-title').textContent = data.title;
+  document.getElementById('panel-body').innerHTML = data.body;
+  document.getElementById('panel-actions').innerHTML = getPanelActions(data.actions, data.title);
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('slide-panel').classList.add('open');
+}
+
+function openAgentPanel(agentKey) {
+  const data = agentPanelData[agentKey];
+  if (!data) return;
+  document.getElementById('panel-title').textContent = data.title;
+  document.getElementById('panel-body').innerHTML = data.body;
+  document.getElementById('panel-actions').innerHTML = getPanelActions(data.actions, data.title);
+  document.getElementById('overlay').classList.add('visible');
+  document.getElementById('slide-panel').classList.add('open');
+}
+
+function getPanelActions(type, title) {
+  const chatBtn = `<button class="panel-btn-chat" onclick="closePanel(); openChat('${title.replace(/'/g, "\\'")}')">Chat About This</button>`;
+  switch(type) {
+    case 'todo':
+      return `<button class="panel-btn-primary" onclick="showToast('Marked complete'); closePanel()">Complete</button>${chatBtn}`;
+    case 'draft':
+      return `<button class="panel-btn-primary" onclick="showToast('Draft approved!'); closePanel()">Approve</button>
+        <button class="panel-btn-secondary" onclick="showToast('Draft rejected'); closePanel()">Reject</button>${chatBtn}`;
+    case 'agent':
+      return `<button class="panel-btn-primary" onclick="showToast('Viewing full output...')">View Full Output</button>${chatBtn}`;
+    case 'inbox':
+      return `<button class="panel-btn-primary" onclick="showToast('Classified as task'); closePanel()">Classify</button>
+        <button class="panel-btn-secondary" onclick="showToast('Dismissed'); closePanel()">Dismiss</button>${chatBtn}`;
+    default:
+      return chatBtn;
+  }
+}
+
+function closePanel() {
+  document.getElementById('overlay').classList.remove('visible');
+  document.getElementById('slide-panel').classList.remove('open');
+}
+
+// ─── CHAT ───
+function openChat(context) {
+  const panel = document.getElementById('chat-panel');
+  const msgs = document.getElementById('chat-messages');
+  document.getElementById('chat-title').textContent = 'Chat with Claude';
+  msgs.innerHTML = `
+    <div class="chat-msg system">Context loaded: ${context}</div>
+    <div class="chat-msg assistant">I have context about "${context}". How can I help you with this?</div>
+  `;
+  panel.classList.add('open');
+  document.getElementById('chat-input').focus();
+}
+
+function closeChat() {
+  document.getElementById('chat-panel').classList.remove('open');
+}
+
+function sendChat() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if (!msg) return;
+  const msgs = document.getElementById('chat-messages');
+  msgs.innerHTML += `<div class="chat-msg user">${escapeHtml(msg)}</div>`;
+  input.value = '';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => {
+    const responses = [
+      "I can help with that. Based on the current context, I'd recommend reviewing the recent changes first.",
+      "Good question. Let me analyze the relevant data and get back to you with a detailed breakdown.",
+      "I've checked the knowledge base. Here's what I found that's relevant to your query.",
+      "That's an important consideration. I'll flag this for the team's attention in the next status update."
+    ];
+    msgs.innerHTML += `<div class="chat-msg assistant">${responses[Math.floor(Math.random() * responses.length)]}</div>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 800);
+}
+
+function escapeHtml(s) {
+  const d = document.createElement('div');
+  d.textContent = s;
+  return d.innerHTML;
+}
+
+// ─── ORB ───
+function toggleOrb() {
+  document.getElementById('orb-menu').classList.toggle('open');
+}
+
+// ─── UTILITY ───
+function toggleCheck(el) {
+  el.classList.toggle('checked');
+  if (el.classList.contains('checked')) {
+    showToast('Todo marked complete');
+  }
+}
+
+function dismissCard(card) {
+  card.style.opacity = '0';
+  card.style.transform = 'translateX(40px)';
+  card.style.transition = 'all 0.3s';
+  setTimeout(() => card.style.display = 'none', 300);
+  showToast('Item dismissed');
+}
+
+function toggleRecent(btn) {
+  btn.classList.toggle('open');
+  document.getElementById('recent-list').classList.toggle('open');
+}
+
+function toggleTree(el) {
+  el.classList.toggle('open');
+}
+
+function showToast(msg) {
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = msg;
+  container.appendChild(toast);
+  setTimeout(() => toast.remove(), 2600);
+}
+
+// ─── KEYBOARD ───
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    if (document.getElementById('chat-panel').classList.contains('open')) {
+      closeChat();
+    } else if (document.getElementById('slide-panel').classList.contains('open')) {
+      closePanel();
+    }
+    if (document.getElementById('orb-menu').classList.contains('open')) {
+      toggleOrb();
+    }
+  }
+});
+
+// Close orb menu when clicking outside
+document.addEventListener('click', e => {
+  const orb = document.getElementById('orb');
+  const menu = document.getElementById('orb-menu');
+  if (!orb.contains(e.target) && !menu.contains(e.target) && menu.classList.contains('open')) {
+    menu.classList.remove('open');
+  }
+});
+</script>
+</body>
+</html>

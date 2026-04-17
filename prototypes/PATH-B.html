@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Path B — Collapse</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0a;
+      color: #e2e8f0;
+      overflow: hidden;
+    }
+
+    /* ── Top Nav Bar ── */
+    .nav-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: #0f172a;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 12px;
+      z-index: 1000;
+      border-bottom: 1px solid #1e293b;
+    }
+
+    .nav-title {
+      display: flex;
+      flex-direction: column;
+      margin-right: 24px;
+      flex-shrink: 0;
+    }
+    .nav-title .main {
+      font-size: 14px;
+      font-weight: 700;
+      color: #34d399;
+      line-height: 1.2;
+    }
+    .nav-title .sub {
+      font-size: 10px;
+      color: #64748b;
+      line-height: 1.2;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 4px;
+      overflow-x: auto;
+      flex: 1;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+
+    .tab-btn {
+      padding: 6px 14px;
+      border: 1px solid transparent;
+      border-radius: 6px;
+      background: transparent;
+      color: #94a3b8;
+      font-family: 'Inter', sans-serif;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+    .tab-btn:hover {
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    .tab-btn.active {
+      background: rgba(52, 211, 153, 0.15);
+      color: #34d399;
+      border-color: #34d399;
+    }
+
+    /* ── Content Area ── */
+    .content {
+      position: fixed;
+      top: 48px;
+      left: 0;
+      right: 0;
+      bottom: 24px;
+    }
+
+    .view-frame {
+      display: none;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    .view-frame.active {
+      display: block;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 24px;
+      background: #0f172a;
+      border-top: 1px solid #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: #475569;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Nav Bar -->
+  <nav class="nav-bar">
+    <div class="nav-title">
+      <span class="main">Path B &mdash; Collapse</span>
+      <span class="sub">4 pages + slide-over panels</span>
+    </div>
+    <div class="nav-tabs">
+      <button class="tab-btn active" data-tab="main">Main App</button>
+      <button class="tab-btn" data-tab="home">Command Center</button>
+      <button class="tab-btn" data-tab="panels">Slide-Over Panels</button>
+      <button class="tab-btn" data-tab="agents">Agents</button>
+      <button class="tab-btn" data-tab="tree">Tree</button>
+      <button class="tab-btn" data-tab="chat">Chat</button>
+      <button class="tab-btn" data-tab="settings">Settings</button>
+      <button class="tab-btn" data-tab="flow">User Flow</button>
+    </div>
+  </nav>
+
+  <!-- Content Iframes -->
+  <div class="content">
+    <iframe id="frame-main" class="view-frame active" src="path-b-main.html"></iframe>
+    <iframe id="frame-home" class="view-frame"></iframe>
+    <iframe id="frame-panels" class="view-frame"></iframe>
+    <iframe id="frame-agents" class="view-frame"></iframe>
+    <iframe id="frame-tree" class="view-frame"></iframe>
+    <iframe id="frame-chat" class="view-frame"></iframe>
+    <iframe id="frame-settings" class="view-frame"></iframe>
+    <iframe id="frame-flow" class="view-frame"></iframe>
+  </div>
+
+  <!-- Footer -->
+  <footer class="footer">
+    Path B: 4 real pages (Home, Agents, Tree, Self-Improve) + slide-over panels. Medium risk, 3&ndash;4 weeks.
+  </footer>
+
+  <script>
+    const srcMap = {
+      main:   'path-b-main.html',
+      home:   'path-b-home.html',
+      panels: 'path-b-panels.html',
+      agents: 'path-b-agents.html',
+      tree:   'path-b-tree.html',
+      chat:   'path-b-chat.html',
+      settings: 'path-b-settings.html',
+      flow:   'path-b-flow.html'
+    };
+
+    const loaded = new Set(['main']); // main is pre-loaded
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const tab = btn.dataset.tab;
+
+        // Update active button
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        // Update active frame
+        document.querySelectorAll('.view-frame').forEach(f => f.classList.remove('active'));
+        const frame = document.getElementById('frame-' + tab);
+        frame.classList.add('active');
+
+        // Lazy load: set src only on first visit
+        if (!loaded.has(tab)) {
+          frame.src = srcMap[tab];
+          loaded.add(tab);
+        }
+      });
+    });
+  </script>
+
+</body>
+</html>

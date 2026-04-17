@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path B — Tree Page | CoCo Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0b0f1a;
+    --surface:   #111827;
+    --surface-2: #1e293b;
+    --surface-3: #283548;
+    --border:    #1e293b;
+    --border-2:  #334155;
+    --text:      #e2e8f0;
+    --text-dim:  #94a3b8;
+    --text-muted:#64748b;
+    --accent:    #818cf8;
+    --accent-2:  #6366f1;
+    --accent-bg: rgba(129, 140, 248, 0.12);
+    --accent-border: rgba(129, 140, 248, 0.25);
+    --green:     #34d399;
+    --green-bg:  rgba(52, 211, 153, 0.12);
+    --red:       #f87171;
+    --red-bg:    rgba(248, 113, 113, 0.12);
+    --orange:    #fb923c;
+    --orange-bg: rgba(251, 146, 60, 0.12);
+    --yellow:    #fbbf24;
+    --yellow-bg: rgba(251, 191, 36, 0.12);
+    --sidebar-w: 60px;
+    --topbar-h:  52px;
+    --slide-w:   40%;
+    --anim:      300ms cubic-bezier(0.16, 1, 0.3, 1);
+    --anim-fast: 150ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* ── Icon Sidebar (60px) ─────────────────────────────── */
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    display: flex; flex-direction: column; align-items: center;
+    padding: 14px 0;
+    z-index: 20;
+  }
+  .sidebar .logo {
+    width: 34px; height: 34px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--accent-2), #a78bfa);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px; color: #fff;
+    margin-bottom: 24px;
+  }
+  .sidebar .nav-item {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-muted); cursor: pointer;
+    transition: background var(--anim-fast), color var(--anim-fast);
+    margin-bottom: 4px; position: relative;
+  }
+  .sidebar .nav-item:hover { background: var(--surface-2); color: var(--text-dim); }
+  .sidebar .nav-item.active { background: var(--accent-bg); color: var(--accent); }
+  .sidebar .nav-item svg { width: 20px; height: 20px; }
+  .sidebar .nav-item .tooltip {
+    position: absolute; left: 54px; top: 50%; transform: translateY(-50%);
+    background: var(--surface-3); color: var(--text);
+    font-size: 12px; font-weight: 500; padding: 4px 10px; border-radius: 6px;
+    white-space: nowrap; pointer-events: none; opacity: 0;
+    transition: opacity var(--anim-fast);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+  }
+  .sidebar .nav-item:hover .tooltip { opacity: 1; }
+
+  /* ── Top Bar ──────────────────────────────────────────── */
+  .topbar {
+    position: fixed; top: 0; left: var(--sidebar-w); right: 0;
+    height: var(--topbar-h); z-index: 15;
+    display: flex; align-items: center; gap: 16px;
+    padding: 0 24px;
+    background: rgba(11, 15, 26, 0.88);
+    backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar-title {
+    font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+  }
+  .topbar-search {
+    margin-left: 20px; flex: 1; max-width: 320px;
+    position: relative;
+  }
+  .topbar-search input {
+    width: 100%; padding: 7px 12px 7px 34px;
+    background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 8px; color: var(--text); font-size: 13px;
+    outline: none; transition: border-color var(--anim-fast);
+  }
+  .topbar-search input:focus { border-color: var(--accent); }
+  .topbar-search input::placeholder { color: var(--text-muted); }
+  .topbar-search svg {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    width: 16px; height: 16px; color: var(--text-muted);
+  }
+  .topbar-actions { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .btn-add {
+    padding: 6px 14px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    background: var(--accent-2); color: #fff; border: none; cursor: pointer;
+    transition: background var(--anim-fast);
+  }
+  .btn-add:hover { background: #5558e6; }
+
+  /* ── Main Area ───────────────────────────────────────── */
+  .main {
+    margin-left: var(--sidebar-w); margin-top: var(--topbar-h);
+    height: calc(100vh - var(--topbar-h));
+    display: flex;
+    transition: var(--anim);
+  }
+
+  /* ── Tree Panel ──────────────────────────────────────── */
+  .tree-panel {
+    flex: 1; overflow-y: auto; padding: 24px 20px 24px 28px;
+    transition: flex var(--anim);
+  }
+  .tree-panel.shrunk { flex: 0 0 60%; }
+  .tree-panel::-webkit-scrollbar { width: 6px; }
+  .tree-panel::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  /* ── Tree Nodes ──────────────────────────────────────── */
+  .tree-root { list-style: none; padding: 0; }
+  .tree-root > .tree-item { margin-bottom: 2px; }
+
+  .tree-item { position: relative; }
+  .tree-item ul {
+    list-style: none; padding-left: 28px;
+    position: relative;
+  }
+  /* vertical connector line */
+  .tree-item ul::before {
+    content: ''; position: absolute; left: 14px; top: 0; bottom: 12px;
+    width: 1px; background: var(--border-2);
+  }
+  .tree-item ul > .tree-item { position: relative; }
+  /* horizontal connector line */
+  .tree-item ul > .tree-item::before {
+    content: ''; position: absolute; left: -14px; top: 20px;
+    width: 14px; height: 1px; background: var(--border-2);
+  }
+
+  .tree-node {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px;
+    cursor: pointer; transition: background var(--anim-fast);
+    position: relative;
+  }
+  .tree-node:hover { background: var(--surface-2); }
+  .tree-node.selected { background: var(--accent-bg); outline: 1px solid var(--accent-border); }
+  .tree-node.drag-over { outline: 2px dashed var(--accent); outline-offset: -2px; }
+
+  .tree-expand {
+    width: 20px; height: 20px; display: flex; align-items: center; justify-content: center;
+    border-radius: 4px; cursor: pointer; flex-shrink: 0;
+    color: var(--text-muted); transition: transform var(--anim-fast), color var(--anim-fast);
+  }
+  .tree-expand:hover { color: var(--text); }
+  .tree-expand.open { transform: rotate(90deg); }
+  .tree-expand.leaf { visibility: hidden; }
+  .tree-expand svg { width: 14px; height: 14px; }
+
+  .tree-icon {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; font-size: 14px;
+  }
+  .tree-icon.team { background: var(--accent-bg); color: var(--accent); }
+  .tree-icon.project { background: var(--green-bg); color: var(--green); }
+
+  .tree-label {
+    font-size: 13px; font-weight: 500; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis; flex: 1;
+  }
+
+  .tree-meta {
+    display: flex; align-items: center; gap: 8px; flex-shrink: 0;
+    margin-left: auto;
+  }
+  .tree-badge {
+    font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 99px;
+    background: var(--surface-3); color: var(--text-dim);
+  }
+  .tree-agents {
+    font-size: 11px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 3px;
+  }
+  .tree-agents svg { width: 12px; height: 12px; }
+  .tree-status {
+    width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0;
+  }
+  .tree-status.green  { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+  .tree-status.yellow { background: var(--yellow); box-shadow: 0 0 6px rgba(251,191,36,0.4); }
+  .tree-status.red    { background: var(--red); box-shadow: 0 0 6px rgba(248,113,113,0.4); }
+  .tree-status.dim    { background: var(--text-muted); }
+
+  .tree-more {
+    padding: 8px 12px 8px 68px;
+    font-size: 13px; color: var(--text-muted); cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tree-more:hover { color: var(--accent); }
+
+  /* drop indicator */
+  .drop-line {
+    height: 2px; background: var(--accent); border-radius: 1px;
+    margin: -1px 0 -1px 40px;
+    opacity: 0; transition: opacity 100ms;
+  }
+  .drop-line.visible { opacity: 1; }
+
+  /* ── Slide-Over Panel ────────────────────────────────── */
+  .slide-over {
+    width: var(--slide-w); flex-shrink: 0;
+    background: rgba(15, 23, 42, 0.92);
+    backdrop-filter: blur(24px);
+    border-left: 1px solid var(--border);
+    transform: translateX(100%);
+    transition: transform var(--anim);
+    overflow-y: auto;
+    display: flex; flex-direction: column;
+  }
+  .slide-over.open { transform: translateX(0); }
+  .slide-over::-webkit-scrollbar { width: 6px; }
+  .slide-over::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+
+  .slide-header {
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: flex-start; gap: 14px;
+  }
+  .slide-header-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .slide-header-icon.team { background: var(--accent-bg); color: var(--accent); }
+  .slide-header-icon.project { background: var(--green-bg); color: var(--green); }
+  .slide-header-info { flex: 1; }
+  .slide-header-info h2 { font-size: 17px; font-weight: 700; margin-bottom: 4px; }
+  .slide-header-info .status-line {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .slide-header-info .status-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+  }
+  .slide-close {
+    width: 28px; height: 28px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    background: none; border: none; color: var(--text-muted);
+    cursor: pointer; transition: background var(--anim-fast), color var(--anim-fast);
+  }
+  .slide-close:hover { background: var(--surface-2); color: var(--text); }
+  .slide-close svg { width: 16px; height: 16px; }
+
+  /* Quick Stats Row */
+  .quick-stats {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px; text-align: center;
+  }
+  .stat-card .val { font-size: 20px; font-weight: 700; }
+  .stat-card .lbl { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+  /* Slide-Over Sections */
+  .slide-section {
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+  }
+  .slide-section:last-child { border-bottom: none; }
+  .slide-section h3 {
+    font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); margin-bottom: 12px; font-weight: 600;
+  }
+
+  /* Recent Activity */
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 10px;
+  }
+  .activity-item:last-child { margin-bottom: 0; }
+  .activity-dot {
+    width: 6px; height: 6px; border-radius: 50%; margin-top: 6px; flex-shrink: 0;
+  }
+  .activity-text { font-size: 13px; line-height: 1.45; }
+  .activity-text .time { color: var(--text-muted); font-size: 11px; display: block; margin-top: 2px; }
+
+  /* Todos */
+  .todo-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 6px 0; cursor: pointer;
+  }
+  .todo-check {
+    width: 16px; height: 16px; border: 1.5px solid var(--border-2);
+    border-radius: 4px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    transition: background var(--anim-fast), border-color var(--anim-fast);
+  }
+  .todo-check.done { background: var(--accent); border-color: var(--accent); }
+  .todo-check.done svg { opacity: 1; }
+  .todo-check svg { width: 10px; height: 10px; color: #fff; opacity: 0; }
+  .todo-text { font-size: 13px; }
+  .todo-text.done { text-decoration: line-through; color: var(--text-muted); }
+
+  /* Agent Mini Cards */
+  .agent-cards { display: flex; flex-wrap: wrap; gap: 8px; }
+  .agent-card {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 12px; border-radius: 8px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 12px;
+  }
+  .agent-avatar {
+    width: 24px; height: 24px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #fff;
+  }
+  .agent-name { font-weight: 500; }
+  .agent-status { font-size: 10px; color: var(--text-muted); }
+
+  /* Slide Actions */
+  .slide-actions {
+    padding: 16px 24px 24px; display: flex; flex-direction: column; gap: 8px;
+    margin-top: auto;
+  }
+  .btn-analyze {
+    width: 100%; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 600;
+    background: var(--accent-2); color: #fff; border: none; cursor: pointer;
+    transition: background var(--anim-fast);
+  }
+  .btn-analyze:hover { background: #5558e6; }
+  .btn-link {
+    width: 100%; padding: 8px; border-radius: 8px; font-size: 12px; font-weight: 500;
+    background: none; color: var(--text-muted); border: 1px solid var(--border);
+    cursor: pointer; transition: color var(--anim-fast), border-color var(--anim-fast);
+  }
+  .btn-link:hover { color: var(--text); border-color: var(--border-2); }
+
+  /* ── Context Menu ────────────────────────────────────── */
+  .ctx-menu {
+    position: fixed; z-index: 100;
+    background: var(--surface); border: 1px solid var(--border-2);
+    border-radius: 10px; padding: 6px; min-width: 180px;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .ctx-menu.show { display: block; }
+  .ctx-menu-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 12px; border-radius: 6px; font-size: 13px;
+    color: var(--text-dim); cursor: pointer;
+    transition: background var(--anim-fast), color var(--anim-fast);
+  }
+  .ctx-menu-item:hover { background: var(--surface-2); color: var(--text); }
+  .ctx-menu-item.danger:hover { background: var(--red-bg); color: var(--red); }
+  .ctx-menu-sep { height: 1px; background: var(--border); margin: 4px 8px; }
+  .ctx-menu-item svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ── Proto Banner ────────────────────────────────────── */
+  .proto-banner {
+    position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%);
+    z-index: 100; background: var(--surface-2); border: 1px solid var(--border-2);
+    border-radius: 10px; padding: 8px 18px;
+    font-size: 12px; color: var(--text-muted);
+    display: flex; align-items: center; gap: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+  .proto-banner .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+</style>
+</head>
+<body>
+
+<!-- ── Icon Sidebar ──────────────────────────────────── -->
+<nav class="sidebar">
+  <div class="logo">C</div>
+  <div class="nav-item" onclick="location.href='path-b-panels.html'">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/><path d="M9 22V12h6v10"/></svg>
+    <span class="tooltip">Home</span>
+  </div>
+  <div class="nav-item">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 00-16 0"/></svg>
+    <span class="tooltip">Agents</span>
+  </div>
+  <div class="nav-item active">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2v11z"/></svg>
+    <span class="tooltip">Tree</span>
+  </div>
+  <div class="nav-item">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+    <span class="tooltip">Self-Improve</span>
+  </div>
+</nav>
+
+<!-- ── Top Bar ───────────────────────────────────────── -->
+<header class="topbar">
+  <span class="topbar-title">Portfolio</span>
+  <div class="topbar-search">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search teams, projects...">
+  </div>
+  <div class="topbar-actions">
+    <button class="btn-add" onclick="alert('Add Team modal would open')">Add Team +</button>
+  </div>
+</header>
+
+<!-- ── Main Layout ───────────────────────────────────── -->
+<div class="main">
+
+  <!-- Tree Panel -->
+  <div class="tree-panel" id="treePanel">
+    <ul class="tree-root" id="treeRoot"></ul>
+  </div>
+
+  <!-- Slide-Over Detail -->
+  <div class="slide-over" id="slideOver">
+    <div class="slide-header" id="slideHeader"></div>
+    <div class="quick-stats" id="slideStats"></div>
+    <div id="slideSections"></div>
+    <div class="slide-actions" id="slideActions"></div>
+  </div>
+</div>
+
+<!-- Context Menu -->
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-menu-item" data-action="rename">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Rename
+  </div>
+  <div class="ctx-menu-item" data-action="move">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 9l7-7 7 7"/><path d="M12 2v16"/><path d="M19 22H5"/></svg>
+    Move
+  </div>
+  <div class="ctx-menu-item" data-action="add-child">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+    Add Child
+  </div>
+  <div class="ctx-menu-item" data-action="analyze">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+    Analyze
+  </div>
+  <div class="ctx-menu-sep"></div>
+  <div class="ctx-menu-item danger" data-action="delete">
+    <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+    Delete
+  </div>
+</div>
+
+<!-- Proto Banner -->
+<div class="proto-banner">
+  <div class="dot"></div>
+  Path B — Tree Page Prototype &middot; Click nodes, right-click for context menu, drag to reorder
+</div>
+
+<script>
+// ── Data ────────────────────────────────────────────────
+const TREE_DATA = [
+  { id: 'acc', name: 'Anti-Corruption (ACC)', type: 'team', items: 21, agents: 3, status: 'green', cost: '$124',
+    activity: [
+      { text: 'Compliance matrix updated', time: '12 min ago', color: 'var(--green)' },
+      { text: 'ACC-47 flagged for review', time: '1h ago', color: 'var(--orange)' },
+      { text: 'Agent "Lexis" completed scan', time: '3h ago', color: 'var(--accent)' },
+    ],
+    todos: [
+      { text: 'Review ACC-47 risk classification', done: false },
+      { text: 'Update stakeholder mapping', done: false },
+      { text: 'Finalize Q2 compliance report', done: true },
+    ],
+    agentList: [
+      { name: 'Lexis', color: '#6366f1', status: 'Active' },
+      { name: 'Auditor', color: '#34d399', status: 'Idle' },
+      { name: 'Classifier', color: '#fb923c', status: 'Active' },
+    ],
+    children: [
+      { id: 'acc-p1', name: 'ACC Phase 1', type: 'project', items: 8, agents: 1, status: 'dim',
+        cost: '$0', activity: [{ text: 'Phase completed and archived', time: '2 weeks ago', color: 'var(--text-muted)' }],
+        todos: [{ text: 'Archive final deliverables', done: true }], agentList: [{ name: 'Lexis', color: '#6366f1', status: 'Done' }] },
+      { id: 'acc-p2', name: 'ACC Phase 2', type: 'project', items: 13, agents: 2, status: 'green',
+        cost: '$89', activity: [
+          { text: 'New regulatory items ingested', time: '30 min ago', color: 'var(--green)' },
+          { text: 'Risk scoring updated', time: '2h ago', color: 'var(--accent)' },
+        ],
+        todos: [{ text: 'Review risk scores for batch 12', done: false }, { text: 'Update classification rules', done: false }],
+        agentList: [{ name: 'Lexis', color: '#6366f1', status: 'Active' }, { name: 'Classifier', color: '#fb923c', status: 'Active' }] },
+    ]
+  },
+  { id: 'ab1', name: 'AuditBoard (AB1)', type: 'team', items: 40, agents: 5, status: 'yellow', cost: '$312',
+    activity: [
+      { text: 'Config migration 60% complete', time: '25 min ago', color: 'var(--yellow)' },
+      { text: 'AB1-102 needs manual review', time: '2h ago', color: 'var(--orange)' },
+      { text: 'Tax module sprint started', time: '5h ago', color: 'var(--green)' },
+    ],
+    todos: [
+      { text: 'Resolve AB1-102 merge conflict', done: false },
+      { text: 'Validate config migration scripts', done: false },
+      { text: 'Update API integration tests', done: false },
+    ],
+    agentList: [
+      { name: 'Migrator', color: '#fbbf24', status: 'Active' },
+      { name: 'Tester', color: '#34d399', status: 'Active' },
+      { name: 'DocGen', color: '#f87171', status: 'Idle' },
+      { name: 'Analyzer', color: '#818cf8', status: 'Active' },
+      { name: 'Reviewer', color: '#fb923c', status: 'Queued' },
+    ],
+    children: [
+      { id: 'ab1-config', name: 'AB Config Migration', type: 'project', items: 15, agents: 2, status: 'yellow',
+        cost: '$187', activity: [{ text: 'Migration script v3 deployed', time: '45 min ago', color: 'var(--yellow)' }],
+        todos: [{ text: 'Test rollback procedure', done: false }], agentList: [{ name: 'Migrator', color: '#fbbf24', status: 'Active' }] },
+      { id: 'ab1-tax', name: 'AB Tax Module', type: 'project', items: 25, agents: 3, status: 'green',
+        cost: '$125', activity: [{ text: 'Tax calculations validated', time: '1h ago', color: 'var(--green)' }],
+        todos: [{ text: 'Add edge case tests', done: false }], agentList: [{ name: 'Tester', color: '#34d399', status: 'Active' }] },
+    ]
+  },
+  { id: 'ab2', name: 'AuditBoard Tax (AB2)', type: 'team', items: 23, agents: 2, status: 'green', cost: '$98',
+    activity: [
+      { text: 'Tax filing templates updated', time: '40 min ago', color: 'var(--green)' },
+      { text: 'Quarterly review passed', time: '1 day ago', color: 'var(--green)' },
+    ],
+    todos: [{ text: 'Prepare Q2 tax estimates', done: false }, { text: 'Review filing deadlines', done: false }],
+    agentList: [{ name: 'TaxBot', color: '#34d399', status: 'Active' }, { name: 'Filer', color: '#818cf8', status: 'Idle' }],
+    children: []
+  },
+  { id: '3pi', name: '3PI V2', type: 'team', items: 18, agents: 4, status: 'green', cost: '$156',
+    activity: [
+      { text: 'Vendor scoring algorithm updated', time: '1h ago', color: 'var(--green)' },
+      { text: 'API v2 endpoints deployed', time: '4h ago', color: 'var(--accent)' },
+    ],
+    todos: [{ text: 'Finalize vendor comparison matrix', done: false }, { text: 'Load test API endpoints', done: false }],
+    agentList: [
+      { name: 'Comparer', color: '#6366f1', status: 'Active' },
+      { name: 'Integrator', color: '#34d399', status: 'Active' },
+      { name: 'Scorer', color: '#fbbf24', status: 'Active' },
+      { name: 'Monitor', color: '#f87171', status: 'Idle' },
+    ],
+    children: [
+      { id: '3pi-vendor', name: 'Vendor Comparison', type: 'project', items: 6, agents: 1, status: 'green',
+        cost: '$45', activity: [{ text: 'Comparison report generated', time: '2h ago', color: 'var(--green)' }],
+        todos: [{ text: 'Add pricing tier analysis', done: false }], agentList: [{ name: 'Comparer', color: '#6366f1', status: 'Active' }] },
+      { id: '3pi-api', name: 'API Integration', type: 'project', items: 12, agents: 3, status: 'green',
+        cost: '$111', activity: [{ text: 'Endpoint latency optimized', time: '3h ago', color: 'var(--accent)' }],
+        todos: [{ text: 'Write integration tests', done: false }], agentList: [{ name: 'Integrator', color: '#34d399', status: 'Active' }] },
+    ]
+  },
+  { id: 'crt', name: 'Cross Risk Tools', type: 'team', items: 15, agents: 2, status: 'yellow', cost: '$67',
+    activity: [
+      { text: 'Dashboard refresh deployed', time: '3h ago', color: 'var(--green)' },
+      { text: 'Data pipeline stalled', time: '6h ago', color: 'var(--yellow)' },
+    ],
+    todos: [{ text: 'Investigate pipeline stall', done: false }, { text: 'Add new risk metrics', done: false }],
+    agentList: [{ name: 'Builder', color: '#818cf8', status: 'Active' }, { name: 'DataBot', color: '#fbbf24', status: 'Stalled' }],
+    children: []
+  },
+  { id: 'aravo', name: 'Aravo', type: 'team', items: 8, agents: 1, status: 'red', cost: '$23',
+    activity: [
+      { text: 'API rate limit exceeded', time: '15 min ago', color: 'var(--red)' },
+      { text: 'Vendor sync failed', time: '1h ago', color: 'var(--red)' },
+    ],
+    todos: [{ text: 'Fix API rate limiting', done: false }, { text: 'Re-run vendor sync', done: false }],
+    agentList: [{ name: 'Syncer', color: '#f87171', status: 'Error' }],
+    children: []
+  },
+];
+
+const COLLAPSED_TEAMS = ['Vendor Intelligence', 'Reg Reporting', 'Model Risk', 'OpRisk Dashboard', 'KYC Refresh', 'Sanctions Engine', 'Data Quality'];
+
+// ── State ───────────────────────────────────────────────
+let selectedId = null;
+let expandedIds = new Set(['acc', 'ab1', '3pi']);
+let dragId = null;
+
+// ── Render Tree ─────────────────────────────────────────
+function renderTree() {
+  const root = document.getElementById('treeRoot');
+  root.innerHTML = '';
+
+  TREE_DATA.forEach(node => {
+    root.appendChild(createTreeItem(node));
+  });
+
+  // "+ 7 more teams..." row
+  const more = document.createElement('li');
+  more.className = 'tree-more';
+  more.innerHTML = `<svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg> + 7 more teams (${COLLAPSED_TEAMS.join(', ')})`;
+  more.onclick = () => alert('Would expand to show: ' + COLLAPSED_TEAMS.join(', '));
+  root.appendChild(more);
+}
+
+function createTreeItem(node) {
+  const li = document.createElement('li');
+  li.className = 'tree-item';
+  li.dataset.id = node.id;
+
+  const hasChildren = node.children && node.children.length > 0;
+  const isExpanded = expandedIds.has(node.id);
+  const isSelected = selectedId === node.id;
+
+  // Node row
+  const row = document.createElement('div');
+  row.className = 'tree-node' + (isSelected ? ' selected' : '');
+  row.draggable = true;
+
+  row.innerHTML = `
+    <div class="tree-expand ${hasChildren ? (isExpanded ? 'open' : '') : 'leaf'}">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </div>
+    <div class="tree-icon ${node.type}">${node.type === 'team' ? '&#128193;' : '&#128196;'}</div>
+    <span class="tree-label">${node.name}</span>
+    <div class="tree-meta">
+      <span class="tree-badge">${node.items} items</span>
+      ${node.agents ? `<span class="tree-agents"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 00-16 0"/></svg>${node.agents}</span>` : ''}
+      <div class="tree-status ${node.status}"></div>
+    </div>
+  `;
+
+  // Click handler — select node & open slide-over
+  row.addEventListener('click', (e) => {
+    if (e.target.closest('.tree-expand') && hasChildren) {
+      e.stopPropagation();
+      toggleExpand(node.id);
+      return;
+    }
+    selectNode(node);
+  });
+
+  // Right-click context menu
+  row.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    showContextMenu(e.clientX, e.clientY, node);
+  });
+
+  // Drag events
+  row.addEventListener('dragstart', (e) => {
+    dragId = node.id;
+    e.dataTransfer.effectAllowed = 'move';
+    row.style.opacity = '0.5';
+  });
+  row.addEventListener('dragend', () => {
+    dragId = null;
+    row.style.opacity = '1';
+    document.querySelectorAll('.tree-node.drag-over').forEach(el => el.classList.remove('drag-over'));
+    document.querySelectorAll('.drop-line.visible').forEach(el => el.classList.remove('visible'));
+  });
+  row.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    if (dragId && dragId !== node.id) {
+      row.classList.add('drag-over');
+    }
+  });
+  row.addEventListener('dragleave', () => row.classList.remove('drag-over'));
+  row.addEventListener('drop', (e) => {
+    e.preventDefault();
+    row.classList.remove('drag-over');
+    if (dragId && dragId !== node.id) {
+      alert(`Would move "${dragId}" under "${node.name}"`);
+    }
+  });
+
+  li.appendChild(row);
+
+  // Children
+  if (hasChildren && isExpanded) {
+    const ul = document.createElement('ul');
+    node.children.forEach(child => {
+      ul.appendChild(createTreeItem(child));
+    });
+    li.appendChild(ul);
+  }
+
+  return li;
+}
+
+function toggleExpand(id) {
+  if (expandedIds.has(id)) expandedIds.delete(id);
+  else expandedIds.add(id);
+  renderTree();
+}
+
+// ── Select Node & Slide-Over ────────────────────────────
+function selectNode(node) {
+  selectedId = node.id;
+  renderTree();
+  renderSlideOver(node);
+
+  const panel = document.getElementById('slideOver');
+  const tree = document.getElementById('treePanel');
+  panel.classList.add('open');
+  tree.classList.add('shrunk');
+}
+
+function closeSlideOver() {
+  selectedId = null;
+  document.getElementById('slideOver').classList.remove('open');
+  document.getElementById('treePanel').classList.remove('shrunk');
+  renderTree();
+}
+
+function renderSlideOver(node) {
+  const statusLabel = { green: 'Active', yellow: 'At Risk', red: 'Blocked', dim: 'Completed' };
+  const statusColor = { green: 'var(--green)', yellow: 'var(--yellow)', red: 'var(--red)', dim: 'var(--text-muted)' };
+
+  // Header
+  document.getElementById('slideHeader').innerHTML = `
+    <div class="slide-header-icon ${node.type}">${node.type === 'team' ? '&#128193;' : '&#128196;'}</div>
+    <div class="slide-header-info">
+      <h2>${node.name}</h2>
+      <div class="status-line">
+        <div class="status-dot" style="background:${statusColor[node.status]}"></div>
+        ${statusLabel[node.status]}
+        ${node.children && node.children.length ? ` &middot; ${node.children.length} sub-projects` : ''}
+      </div>
+    </div>
+    <button class="slide-close" onclick="closeSlideOver()">
+      <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  `;
+
+  // Stats
+  document.getElementById('slideStats').innerHTML = `
+    <div class="stat-card"><div class="val">${node.items}</div><div class="lbl">Items</div></div>
+    <div class="stat-card"><div class="val">${node.agents || 0}</div><div class="lbl">Agents</div></div>
+    <div class="stat-card"><div class="val">${node.cost || '$0'}</div><div class="lbl">This Week</div></div>
+  `;
+
+  // Sections
+  let sections = '';
+
+  // Recent Activity
+  if (node.activity && node.activity.length) {
+    sections += `<div class="slide-section"><h3>Recent Activity</h3>`;
+    node.activity.forEach(a => {
+      sections += `<div class="activity-item">
+        <div class="activity-dot" style="background:${a.color}"></div>
+        <div class="activity-text">${a.text}<span class="time">${a.time}</span></div>
+      </div>`;
+    });
+    sections += `</div>`;
+  }
+
+  // Todos
+  if (node.todos && node.todos.length) {
+    sections += `<div class="slide-section"><h3>Top Todos</h3>`;
+    node.todos.forEach((t, i) => {
+      sections += `<div class="todo-item" onclick="toggleTodo(this)">
+        <div class="todo-check ${t.done ? 'done' : ''}">
+          <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+        </div>
+        <span class="todo-text ${t.done ? 'done' : ''}">${t.text}</span>
+      </div>`;
+    });
+    sections += `</div>`;
+  }
+
+  // Agents
+  if (node.agentList && node.agentList.length) {
+    sections += `<div class="slide-section"><h3>Active Agents</h3><div class="agent-cards">`;
+    node.agentList.forEach(a => {
+      sections += `<div class="agent-card">
+        <div class="agent-avatar" style="background:${a.color}">${a.name[0]}</div>
+        <div><div class="agent-name">${a.name}</div><div class="agent-status">${a.status}</div></div>
+      </div>`;
+    });
+    sections += `</div></div>`;
+  }
+
+  document.getElementById('slideSections').innerHTML = sections;
+
+  // Actions
+  document.getElementById('slideActions').innerHTML = `
+    <button class="btn-analyze" onclick="alert('Analyzing ${node.name}...')">Analyze Folder</button>
+    <button class="btn-link" onclick="alert('Navigate to full detail page for ${node.name}')">Open Full Detail &#x2197;</button>
+  `;
+}
+
+// ── Todo Toggle ─────────────────────────────────────────
+function toggleTodo(el) {
+  const check = el.querySelector('.todo-check');
+  const text = el.querySelector('.todo-text');
+  check.classList.toggle('done');
+  text.classList.toggle('done');
+}
+
+// ── Context Menu ────────────────────────────────────────
+let ctxTarget = null;
+
+function showContextMenu(x, y, node) {
+  ctxTarget = node;
+  const menu = document.getElementById('ctxMenu');
+  menu.style.left = x + 'px';
+  menu.style.top = y + 'px';
+  menu.classList.add('show');
+}
+
+document.addEventListener('click', () => {
+  document.getElementById('ctxMenu').classList.remove('show');
+});
+
+document.querySelectorAll('.ctx-menu-item').forEach(item => {
+  item.addEventListener('click', () => {
+    const action = item.dataset.action;
+    if (ctxTarget) alert(`${action} on "${ctxTarget.name}"`);
+  });
+});
+
+// ── Keyboard ────────────────────────────────────────────
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSlideOver();
+});
+
+// ── Init ────────────────────────────────────────────────
+renderTree();
+
+// Auto-select first node to show slide-over
+setTimeout(() => selectNode(TREE_DATA[0]), 400);
+</script>
+</body>
+</html>

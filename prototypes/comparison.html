@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Design Direction Comparison</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --surface: #1e293b;
+    --surface-alt: #162032;
+    --border: #334155;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-bright: #f8fafc;
+    --a: #3b82f6;
+    --a-bg: rgba(59,130,246,0.08);
+    --a-border: rgba(59,130,246,0.25);
+    --b: #22c55e;
+    --b-bg: rgba(34,197,94,0.08);
+    --b-border: rgba(34,197,94,0.25);
+    --c: #a855f7;
+    --c-bg: rgba(168,85,247,0.08);
+    --c-border: rgba(168,85,247,0.25);
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    padding: 0 24px 80px;
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 48px 0 40px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 48px;
+  }
+  .header h1 {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+  .header p {
+    font-size: 16px;
+    color: var(--text-dim);
+  }
+
+  /* Section titles */
+  .section-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+    padding-top: 48px;
+  }
+  .section-subtitle {
+    font-size: 14px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .section-divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 48px 0 0;
+  }
+
+  /* 3-column grid */
+  .three-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+
+  /* Path cards */
+  .path-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 28px 24px;
+    border: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .path-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+  }
+  .path-card.path-a { background: var(--a-bg); border-color: var(--a-border); }
+  .path-card.path-a::before { background: var(--a); }
+  .path-card.path-b { background: var(--b-bg); border-color: var(--b-border); }
+  .path-card.path-b::before { background: var(--b); }
+  .path-card.path-c { background: var(--c-bg); border-color: var(--c-border); }
+  .path-card.path-c::before { background: var(--c); }
+
+  .path-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: 4px;
+  }
+  .path-a .path-label { color: var(--a); }
+  .path-b .path-label { color: var(--b); }
+  .path-c .path-label { color: var(--c); }
+
+  .path-name {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 20px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 14px;
+  }
+  .stat-row:last-child { border-bottom: none; }
+  .stat-label { color: var(--text-dim); }
+  .stat-value { color: var(--text-bright); font-weight: 600; text-align: right; }
+
+  .philosophy {
+    margin-top: 16px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-style: italic;
+    font-size: 14px;
+    color: var(--text-dim);
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+
+  /* Keystroke comparison table */
+  .table-wrap {
+    overflow-x: auto;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  thead th {
+    background: rgba(255,255,255,0.04);
+    padding: 14px 16px;
+    text-align: left;
+    font-weight: 700;
+    color: var(--text-bright);
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  thead th:nth-child(3) { color: var(--a); }
+  thead th:nth-child(4) { color: var(--b); }
+  thead th:nth-child(5) { color: var(--c); }
+  tbody td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    vertical-align: top;
+  }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody td:first-child {
+    font-weight: 600;
+    color: var(--text-bright);
+    white-space: nowrap;
+  }
+  tbody td:nth-child(2) { color: var(--text-dim); }
+  .key-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    font-weight: 600;
+  }
+  .key-a { background: rgba(59,130,246,0.15); color: var(--a); }
+  .key-b { background: rgba(34,197,94,0.15); color: var(--b); }
+  .key-c { background: rgba(168,85,247,0.15); color: var(--c); }
+
+  /* Page survival grid */
+  .survival-grid {
+    background: var(--surface);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+  }
+  .survival-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    background: rgba(255,255,255,0.04);
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  .survival-header span:nth-child(2) { color: var(--a); text-align: center; }
+  .survival-header span:nth-child(3) { color: var(--b); text-align: center; }
+  .survival-header span:nth-child(4) { color: var(--c); text-align: center; }
+  .survival-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 10px 20px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    align-items: center;
+  }
+  .survival-row:last-child { border-bottom: none; }
+  .survival-row:hover { background: rgba(255,255,255,0.02); }
+  .page-name { color: var(--text-bright); font-weight: 500; }
+  .status { text-align: center; font-size: 13px; }
+  .kept { color: var(--green); }
+  .merged { color: var(--yellow); }
+  .killed { color: var(--red); }
+  .survival-totals {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 14px 20px;
+    font-weight: 700;
+    font-size: 15px;
+    background: rgba(255,255,255,0.04);
+    border-top: 1px solid var(--border);
+  }
+  .survival-totals span:nth-child(2) { color: var(--a); text-align: center; }
+  .survival-totals span:nth-child(3) { color: var(--b); text-align: center; }
+  .survival-totals span:nth-child(4) { color: var(--c); text-align: center; }
+
+  /* Pros & Cons */
+  .pros-cons-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid var(--border);
+  }
+  .pros-cons-card h4 {
+    font-size: 15px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+  .pc-section { margin-bottom: 16px; }
+  .pc-section:last-child { margin-bottom: 0; }
+  .pc-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .pro-label { color: var(--green); }
+  .con-label { color: var(--red); }
+  .pc-list {
+    list-style: none;
+    padding: 0;
+  }
+  .pc-list li {
+    font-size: 13px;
+    padding: 4px 0;
+    padding-left: 18px;
+    position: relative;
+    color: var(--text);
+  }
+  .pc-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 10px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+  }
+  .pro-list li::before { background: var(--green); }
+  .con-list li::before { background: var(--red); }
+
+  /* Recommendation matrix */
+  .rec-card {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 28px 24px;
+    border: 1px solid var(--border);
+  }
+  .rec-card h4 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .rec-card ul {
+    list-style: none;
+    padding: 0;
+  }
+  .rec-card li {
+    font-size: 14px;
+    padding: 8px 0;
+    padding-left: 24px;
+    position: relative;
+    color: var(--text);
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+  }
+  .rec-card li:last-child { border-bottom: none; }
+  .rec-card li::before {
+    content: '\2192';
+    position: absolute;
+    left: 0;
+    font-weight: 700;
+  }
+  .rec-a li::before { color: var(--a); }
+  .rec-b li::before { color: var(--b); }
+  .rec-c li::before { color: var(--c); }
+
+  /* Hybrid section */
+  .hybrid-box {
+    background: linear-gradient(135deg, var(--a-bg), var(--b-bg), var(--c-bg));
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 36px 32px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hybrid-box::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--a), var(--b), var(--c));
+  }
+  .hybrid-box h3 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 8px;
+  }
+  .hybrid-box .subtitle {
+    font-size: 15px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+  }
+  .hybrid-pillars {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .hybrid-pillar {
+    background: rgba(255,255,255,0.04);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid rgba(255,255,255,0.06);
+  }
+  .hybrid-pillar .from {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 6px;
+  }
+  .hybrid-pillar.from-a .from { color: var(--a); }
+  .hybrid-pillar.from-b .from { color: var(--b); }
+  .hybrid-pillar.from-c .from { color: var(--c); }
+  .hybrid-pillar h4 {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 4px;
+  }
+  .hybrid-pillar p {
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+  .hybrid-summary {
+    font-size: 15px;
+    color: var(--text);
+    padding: 16px 20px;
+    background: rgba(255,255,255,0.03);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    line-height: 1.7;
+  }
+
+  /* Links section */
+  .links-section {
+    margin-top: 48px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+  }
+  .links-section h3 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-bright);
+    margin-bottom: 20px;
+  }
+  .link-groups {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+  }
+  .link-group {
+    background: var(--surface);
+    border-radius: 10px;
+    padding: 20px;
+    border: 1px solid var(--border);
+  }
+  .link-group h4 {
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+  }
+  .link-group.lg-a h4 { color: var(--a); }
+  .link-group.lg-b h4 { color: var(--b); }
+  .link-group.lg-c h4 { color: var(--c); }
+  .link-group a {
+    display: block;
+    padding: 6px 0;
+    font-size: 14px;
+    text-decoration: none;
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+  .link-group a:hover { color: var(--text-bright); }
+  .link-group.lg-a a:hover { color: var(--a); }
+  .link-group.lg-b a:hover { color: var(--b); }
+  .link-group.lg-c a:hover { color: var(--c); }
+
+  /* Legend */
+  .legend {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 16px;
+    font-size: 13px;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <h1>CoCo Platform &mdash; Design Direction Comparison</h1>
+  <p>Three paths, one decision. Compare structure, effort, and interaction speed side by side.</p>
+</div>
+
+<!-- Section 1: At a Glance -->
+<h2 class="section-title">1. At a Glance</h2>
+<p class="section-subtitle">Core attributes of each design direction</p>
+
+<div class="three-col">
+  <!-- Path A -->
+  <div class="path-card path-a">
+    <div class="path-label">Path A</div>
+    <div class="path-name">Patch</div>
+    <div class="stat-row"><span class="stat-label">Pages</span><span class="stat-value">17 (keep all)</span></div>
+    <div class="stat-row"><span class="stat-label">Sidebar</span><span class="stat-value">Full (text + icons)</span></div>
+    <div class="stat-row"><span class="stat-label">Key Change</span><span class="stat-value">Inline actions everywhere</span></div>
+    <div class="stat-row"><span class="stat-label">Complexity</span><span class="stat-value">Medium</span></div>
+    <div class="stat-row"><span class="stat-label">Risk</span><span class="stat-value">Low</span></div>
+    <div class="stat-row"><span class="stat-label">Effort</span><span class="stat-value">2&ndash;3 weeks</span></div>
+    <div class="philosophy">&ldquo;Fix what&rsquo;s broken&rdquo;</div>
+  </div>
+
+  <!-- Path B -->
+  <div class="path-card path-b">
+    <div class="path-label">Path B</div>
+    <div class="path-name">Collapse</div>
+    <div class="stat-row"><span class="stat-label">Pages</span><span class="stat-value">4 (merge the rest)</span></div>
+    <div class="stat-row"><span class="stat-label">Sidebar</span><span class="stat-value">Slim (icons only)</span></div>
+    <div class="stat-row"><span class="stat-label">Key Change</span><span class="stat-value">Slide-over panels</span></div>
+    <div class="stat-row"><span class="stat-label">Complexity</span><span class="stat-value">Low&ndash;Medium</span></div>
+    <div class="stat-row"><span class="stat-label">Risk</span><span class="stat-value">Medium</span></div>
+    <div class="stat-row"><span class="stat-label">Effort</span><span class="stat-value">3&ndash;4 weeks</span></div>
+    <div class="philosophy">&ldquo;Home is the command center&rdquo;</div>
+  </div>
+
+  <!-- Path C -->
+  <div class="path-card path-c">
+    <div class="path-label">Path C</div>
+    <div class="path-name">Fresh</div>
+    <div class="stat-row"><span class="stat-label">Pages</span><span class="stat-value">0 (one stream)</span></div>
+    <div class="stat-row"><span class="stat-label">Sidebar</span><span class="stat-value">None</span></div>
+    <div class="stat-row"><span class="stat-label">Key Change</span><span class="stat-value">Command bar + keyboard</span></div>
+    <div class="stat-row"><span class="stat-label">Complexity</span><span class="stat-value">Minimal</span></div>
+    <div class="stat-row"><span class="stat-label">Risk</span><span class="stat-value">High</span></div>
+    <div class="stat-row"><span class="stat-label">Effort</span><span class="stat-value">4&ndash;6 weeks (rebuild)</span></div>
+    <div class="philosophy">&ldquo;Terminal for your PM brain&rdquo;</div>
+  </div>
+</div>
+
+<!-- Section 2: Keystroke Comparison -->
+<hr class="section-divider">
+<h2 class="section-title">2. Keystroke Comparison</h2>
+<p class="section-subtitle">How many clicks or keystrokes to accomplish common actions</p>
+
+<div class="table-wrap">
+<table>
+  <thead>
+    <tr>
+      <th>Action</th>
+      <th>Current</th>
+      <th>Path A &mdash; Patch</th>
+      <th>Path B &mdash; Collapse</th>
+      <th>Path C &mdash; Fresh</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Approve draft</td>
+      <td>3 clicks, 2 pages</td>
+      <td><span class="key-badge key-a">1 click</span></td>
+      <td><span class="key-badge key-b">1 click</span></td>
+      <td><span class="key-badge key-c">1 key (x)</span></td>
+    </tr>
+    <tr>
+      <td>Complete todo</td>
+      <td>3 clicks, 2 pages</td>
+      <td><span class="key-badge key-a">1 click</span></td>
+      <td><span class="key-badge key-b">1 click</span></td>
+      <td><span class="key-badge key-c">1 key (x)</span></td>
+    </tr>
+    <tr>
+      <td>Spawn agent</td>
+      <td>4 clicks, 2 pages</td>
+      <td><span class="key-badge key-a">2 clicks (Orb)</span></td>
+      <td><span class="key-badge key-b">2 clicks (Orb)</span></td>
+      <td><span class="key-badge key-c">Type + Enter</span></td>
+    </tr>
+    <tr>
+      <td>View agent output</td>
+      <td>2 clicks, 1 page</td>
+      <td><span class="key-badge key-a">1 click</span></td>
+      <td><span class="key-badge key-b">1 click (slide-over)</span></td>
+      <td><span class="key-badge key-c">Enter (expand)</span></td>
+    </tr>
+    <tr>
+      <td>Check costs</td>
+      <td>1 click, 1 page</td>
+      <td><span class="key-badge key-a">1 click, 1 page</span></td>
+      <td><span class="key-badge key-b">Glance at Home</span></td>
+      <td><span class="key-badge key-c">Type &ldquo;cost&rdquo;</span></td>
+    </tr>
+    <tr>
+      <td>Find a todo</td>
+      <td>2 clicks, 1 page</td>
+      <td><span class="key-badge key-a">1 click + search</span></td>
+      <td><span class="key-badge key-b">Scroll stream</span></td>
+      <td><span class="key-badge key-c">Type name</span></td>
+    </tr>
+    <tr>
+      <td>Switch project scope</td>
+      <td>2 clicks</td>
+      <td><span class="key-badge key-a">2 clicks</span></td>
+      <td><span class="key-badge key-b">1 click (tree)</span></td>
+      <td><span class="key-badge key-c">Type project name</span></td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<!-- Section 3: What Each Path Kills -->
+<hr class="section-divider">
+<h2 class="section-title">3. What Each Path Kills</h2>
+<p class="section-subtitle">Fate of all 17 current pages across design directions</p>
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:var(--green)"></div> Kept</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--yellow)"></div> Merged</div>
+  <div class="legend-item"><div class="legend-dot" style="background:var(--red)"></div> Killed</div>
+</div>
+
+<div class="survival-grid">
+  <div class="survival-header">
+    <span>Page</span>
+    <span>Path A</span>
+    <span>Path B</span>
+    <span>Path C</span>
+  </div>
+
+  <div class="survival-row"><span class="page-name">Home / Dashboard</span><span class="status kept">Kept</span><span class="status kept">Kept (hub)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Inbox</span><span class="status kept">Kept</span><span class="status merged">Merged into Home</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Agents List</span><span class="status kept">Kept</span><span class="status kept">Kept</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Agent Detail</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Agent Logs</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Knowledge Hub</span><span class="status kept">Kept</span><span class="status kept">Kept</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Knowledge Detail</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Decisions Queue</span><span class="status kept">Kept</span><span class="status merged">Merged into Home</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Chat</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Tasks / Todos</span><span class="status kept">Kept</span><span class="status merged">Merged into Home</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Costs Overview</span><span class="status kept">Kept</span><span class="status merged">Merged into Home</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Cost Detail</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">People Graph</span><span class="status kept">Kept</span><span class="status kept">Kept</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Person Detail</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Settings</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Projects List</span><span class="status kept">Kept</span><span class="status merged">Merged (tree nav)</span><span class="status killed">Killed</span></div>
+  <div class="survival-row"><span class="page-name">Project Detail</span><span class="status kept">Kept</span><span class="status merged">Merged (slide-over)</span><span class="status killed">Killed</span></div>
+
+  <div class="survival-totals">
+    <span style="color:var(--text-bright)">Total Pages</span>
+    <span>17 pages</span>
+    <span>4 pages</span>
+    <span>0 pages</span>
+  </div>
+</div>
+
+<!-- Section 4: Pros & Cons -->
+<hr class="section-divider">
+<h2 class="section-title">4. Pros &amp; Cons</h2>
+<p class="section-subtitle">Trade-offs for each direction</p>
+
+<div class="three-col">
+  <!-- Path A -->
+  <div class="pros-cons-card">
+    <h4 style="color:var(--a)">Path A &mdash; Patch</h4>
+    <div class="pc-section">
+      <div class="pc-label pro-label">Pros</div>
+      <ul class="pc-list pro-list">
+        <li>Lowest risk &mdash; incremental changes only</li>
+        <li>Fastest to deliver (2&ndash;3 weeks)</li>
+        <li>No information architecture changes</li>
+        <li>Inline actions reduce click counts immediately</li>
+        <li>Easy to A/B test against current state</li>
+      </ul>
+    </div>
+    <div class="pc-section">
+      <div class="pc-label con-label">Cons</div>
+      <ul class="pc-list con-list">
+        <li>Still 17 pages &mdash; navigation overhead remains</li>
+        <li>Does not address structural complexity</li>
+        <li>Sidebar takes permanent horizontal space</li>
+        <li>Cognitive load unchanged for new users</li>
+        <li>May need Path B later anyway</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Path B -->
+  <div class="pros-cons-card">
+    <h4 style="color:var(--b)">Path B &mdash; Collapse</h4>
+    <div class="pc-section">
+      <div class="pc-label pro-label">Pros</div>
+      <ul class="pc-list pro-list">
+        <li>Dramatic simplification (17 &rarr; 4 pages)</li>
+        <li>Home becomes a true command center</li>
+        <li>Slide-overs keep context without page jumps</li>
+        <li>Slim sidebar maximizes content area</li>
+        <li>Progressive disclosure &mdash; power when needed</li>
+      </ul>
+    </div>
+    <div class="pc-section">
+      <div class="pc-label con-label">Cons</div>
+      <ul class="pc-list con-list">
+        <li>Medium risk &mdash; rearchitects information flow</li>
+        <li>Slide-over stacking can get confusing</li>
+        <li>Home page can become overloaded</li>
+        <li>3&ndash;4 weeks effort</li>
+        <li>Some deep views lose dedicated screen space</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Path C -->
+  <div class="pros-cons-card">
+    <h4 style="color:var(--c)">Path C &mdash; Fresh</h4>
+    <div class="pc-section">
+      <div class="pc-label pro-label">Pros</div>
+      <ul class="pc-list pro-list">
+        <li>Fastest possible interaction speed</li>
+        <li>Zero navigation overhead &mdash; everything is typed</li>
+        <li>Keyboard-first matches PM power-user workflow</li>
+        <li>Minimal UI surface area to maintain</li>
+        <li>Most distinctive / opinionated product identity</li>
+      </ul>
+    </div>
+    <div class="pc-section">
+      <div class="pc-label con-label">Cons</div>
+      <ul class="pc-list con-list">
+        <li>Highest risk &mdash; full rebuild required</li>
+        <li>4&ndash;6 weeks effort</li>
+        <li>Steep learning curve, not discoverable</li>
+        <li>Hard to browse &mdash; you must know what to type</li>
+        <li>Visual dashboards and graphs lose their home</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- Section 5: Recommendation Matrix -->
+<hr class="section-divider">
+<h2 class="section-title">5. Recommendation Matrix</h2>
+<p class="section-subtitle">Match your priorities to the right path</p>
+
+<div class="three-col">
+  <div class="rec-card">
+    <h4 style="color:var(--a)">Choose Path A if&hellip;</h4>
+    <ul class="rec-a">
+      <li>You want minimal disruption and fast delivery</li>
+      <li>The current page structure feels right, just slow</li>
+      <li>You plan to iterate further after shipping</li>
+      <li>You value safety over ambition right now</li>
+      <li>You have other priorities competing for time</li>
+    </ul>
+  </div>
+
+  <div class="rec-card">
+    <h4 style="color:var(--b)">Choose Path B if&hellip;</h4>
+    <ul class="rec-b">
+      <li>You want significant simplification without rebuilding</li>
+      <li>You believe Home should be the single source of truth</li>
+      <li>Slide-over panels feel natural to your workflow</li>
+      <li>You want fewer pages but still want visual richness</li>
+      <li>You can invest 3&ndash;4 weeks for a better foundation</li>
+    </ul>
+  </div>
+
+  <div class="rec-card">
+    <h4 style="color:var(--c)">Choose Path C if&hellip;</h4>
+    <ul class="rec-c">
+      <li>You want the fastest possible interaction speed</li>
+      <li>You don&rsquo;t mind rebuilding from scratch</li>
+      <li>You think in commands, not clicks</li>
+      <li>You want CoCo to feel like a terminal, not a dashboard</li>
+      <li>You are the primary (and possibly only) user</li>
+    </ul>
+  </div>
+</div>
+
+<!-- Section 6: Hybrid Option -->
+<hr class="section-divider">
+<h2 class="section-title">6. The Hybrid Option</h2>
+<p class="section-subtitle">Best of all three &mdash; the recommended direction</p>
+
+<div class="hybrid-box">
+  <h3>Path B+ &mdash; Collapse with Superpowers</h3>
+  <p class="subtitle">Take Path B's structure (4 pages + slide-overs) + Path C's command bar + Path A's inline actions on Home. Keyboard speed, minimal pages, progressive disclosure.</p>
+
+  <div class="hybrid-pillars">
+    <div class="hybrid-pillar from-b">
+      <div class="from">From Path B</div>
+      <h4>4-Page Structure</h4>
+      <p>Home as command center, slide-over panels for detail, slim icon sidebar. The foundation.</p>
+    </div>
+    <div class="hybrid-pillar from-c">
+      <div class="from">From Path C</div>
+      <h4>Command Bar</h4>
+      <p>Cmd+K to jump anywhere, approve items, spawn agents, search. Keyboard-first without losing the GUI.</p>
+    </div>
+    <div class="hybrid-pillar from-a">
+      <div class="from">From Path A</div>
+      <h4>Inline Actions</h4>
+      <p>One-click approve, complete, dismiss directly in the Home stream. No panel needed for quick actions.</p>
+    </div>
+  </div>
+
+  <div class="hybrid-summary">
+    <strong>Result:</strong> A 4-page app where Home shows everything, panels reveal depth, and the command bar lets you skip the UI entirely when you want speed. You get Path B&rsquo;s structure for browsing, Path C&rsquo;s speed for power use, and Path A&rsquo;s polish for quick wins &mdash; all in one coherent product.
+  </div>
+</div>
+
+<!-- Links to Prototypes -->
+<div class="links-section">
+  <h3>Prototype Files</h3>
+  <div class="link-groups">
+    <div class="link-group lg-a">
+      <h4>Path A &mdash; Patch</h4>
+      <a href="path-a-main.html">Main Layout</a>
+      <a href="path-a-home.html">Home Dashboard</a>
+      <a href="path-a-inbox.html">Inbox</a>
+      <a href="path-a-agents.html">Agents</a>
+      <a href="path-a-flow.html">Interaction Flow</a>
+    </div>
+    <div class="link-group lg-b">
+      <h4>Path B &mdash; Collapse</h4>
+      <a href="path-b-main.html">Main Layout</a>
+      <a href="path-b-home.html">Home Command Center</a>
+      <a href="path-b-panels.html">Slide-over Panels</a>
+      <a href="path-b-agents.html">Agents</a>
+      <a href="path-b-flow.html">Interaction Flow</a>
+    </div>
+    <div class="link-group lg-c">
+      <h4>Path C &mdash; Fresh</h4>
+      <a href="path-c-main.html">Main Layout</a>
+      <a href="path-c-command.html">Command Bar</a>
+      <a href="path-c-agents.html">Agents</a>
+      <a href="path-c-flow.html">Interaction Flow</a>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

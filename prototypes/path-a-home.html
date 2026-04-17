@@ -1,0 +1,1138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Home (Path A: Patch)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ─── Reset & Base ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:       #0b0e14;
+    --bg-surface:    #111620;
+    --bg-card:       rgba(22, 28, 40, 0.72);
+    --bg-card-hover: rgba(28, 36, 52, 0.85);
+    --border-glass:  rgba(255, 255, 255, 0.06);
+    --border-active: rgba(255, 255, 255, 0.12);
+
+    --text-primary:   #e8edf5;
+    --text-secondary: #8892a4;
+    --text-muted:     #5a6478;
+
+    --accent-blue:    #4e8cff;
+    --accent-green:   #34d399;
+    --accent-amber:   #f59e0b;
+    --accent-red:     #ef4444;
+    --accent-purple:  #a78bfa;
+    --accent-teal:    #2dd4bf;
+
+    --green-bg:  rgba(52, 211, 153, 0.10);
+    --amber-bg:  rgba(245, 158, 11, 0.10);
+    --red-bg:    rgba(239, 68, 68, 0.10);
+    --blue-bg:   rgba(78, 140, 255, 0.10);
+    --purple-bg: rgba(167, 139, 250, 0.10);
+
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  14px;
+    --radius-xl:  18px;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.15);
+    --shadow-glow: 0 0 40px rgba(78, 140, 255, 0.06);
+
+    --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+  }
+
+  /* ─── Toast ─── */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .toast {
+    background: rgba(30, 38, 56, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-md);
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: toastIn 300ms ease forwards;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 360px;
+  }
+
+  .toast.out { animation: toastOut 250ms ease forwards; }
+
+  .toast-icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+    flex-shrink: 0;
+  }
+
+  .toast-icon.success { background: var(--green-bg); color: var(--accent-green); }
+  .toast-icon.info    { background: var(--blue-bg);  color: var(--accent-blue);  }
+  .toast-icon.warn    { background: var(--amber-bg); color: var(--accent-amber); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to   { opacity: 0; transform: translateY(-8px) scale(0.96); }
+  }
+
+  /* ─── Layout ─── */
+  .app-shell {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 32px 24px 80px;
+  }
+
+  /* ─── Card System ─── */
+  .card {
+    background: var(--bg-card);
+    backdrop-filter: blur(24px) saturate(1.2);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-xl);
+    padding: 24px;
+    box-shadow: var(--shadow-card);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    margin-bottom: 16px;
+  }
+
+  .card:hover {
+    border-color: var(--border-active);
+    box-shadow: var(--shadow-card), var(--shadow-glow);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-title .icon {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 10px;
+  }
+
+  .card-badge {
+    font-size: 11px;
+    font-weight: 500;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--blue-bg);
+    color: var(--accent-blue);
+  }
+
+  /* ─── Buttons ─── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+    white-space: nowrap;
+  }
+
+  .btn-primary {
+    background: var(--accent-blue);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #5d96ff; transform: translateY(-1px); }
+
+  .btn-success {
+    background: var(--accent-green);
+    color: #0b0e14;
+  }
+  .btn-success:hover { background: #4de0a8; transform: translateY(-1px); }
+
+  .btn-danger {
+    background: var(--accent-red);
+    color: #fff;
+  }
+  .btn-danger:hover { background: #f55; transform: translateY(-1px); }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-glass);
+  }
+  .btn-ghost:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    border-color: var(--border-active);
+  }
+
+  .btn-icon {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.04);
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    transition: all var(--transition);
+  }
+  .btn-icon:hover {
+    background: rgba(255,255,255,0.08);
+    color: var(--text-primary);
+    border-color: var(--border-active);
+  }
+
+  /* Hover-reveal actions */
+  .hover-actions {
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .hoverable:hover .hover-actions { opacity: 1; }
+
+  /* ─── 1. Briefing Card ─── */
+  .briefing {
+    background: linear-gradient(135deg, rgba(78, 140, 255, 0.08) 0%, rgba(167, 139, 250, 0.06) 100%);
+    border-color: rgba(78, 140, 255, 0.12);
+    padding: 28px 28px 24px;
+  }
+
+  .briefing-greeting {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+  }
+
+  .briefing-summary {
+    font-size: 15px;
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+  }
+
+  .briefing-summary strong {
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+
+  .briefing-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .briefing-chip {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 7px 14px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+
+  .briefing-chip:hover { transform: translateY(-1px); }
+
+  .briefing-chip .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .chip-urgent  { background: var(--red-bg);    color: var(--accent-red);    }
+  .chip-urgent .dot  { background: var(--accent-red);    box-shadow: 0 0 6px var(--accent-red);   }
+  .chip-draft   { background: var(--amber-bg);  color: var(--accent-amber);  }
+  .chip-draft .dot   { background: var(--accent-amber);  box-shadow: 0 0 6px var(--accent-amber); }
+  .chip-agent   { background: var(--purple-bg); color: var(--accent-purple); }
+  .chip-agent .dot   { background: var(--accent-purple); box-shadow: 0 0 6px var(--accent-purple);}
+
+  /* ─── 2. Health Grid ─── */
+  .health-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .health-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    transition: all var(--transition);
+    cursor: default;
+  }
+
+  .health-cell:hover {
+    background: rgba(255,255,255,0.04);
+    border-color: var(--border-active);
+  }
+
+  .health-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .health-dot.green {
+    background: var(--accent-green);
+    box-shadow: 0 0 8px rgba(52, 211, 153, 0.5);
+  }
+
+  .health-label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    flex: 1;
+  }
+
+  .health-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  /* ─── 3. Priority Todos ─── */
+  .todo-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition);
+    cursor: default;
+  }
+
+  .todo-item:hover {
+    background: rgba(255,255,255,0.03);
+  }
+
+  .todo-checkbox {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--text-muted);
+    border-radius: 5px;
+    background: transparent;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    transition: all var(--transition);
+    position: relative;
+  }
+
+  .todo-checkbox:hover {
+    border-color: var(--accent-blue);
+    background: var(--blue-bg);
+  }
+
+  .todo-checkbox:checked {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+  }
+
+  .todo-checkbox:checked::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 5.5px;
+    width: 4px;
+    height: 7px;
+    border: solid #fff;
+    border-width: 0 1.5px 1.5px 0;
+    transform: rotate(45deg);
+  }
+
+  .todo-body { flex: 1; min-width: 0; }
+
+  .todo-text {
+    font-size: 14px;
+    color: var(--text-primary);
+    font-weight: 400;
+    line-height: 1.4;
+    transition: all var(--transition);
+  }
+
+  .todo-item.checked .todo-text {
+    text-decoration: line-through;
+    color: var(--text-muted);
+  }
+
+  .todo-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .priority-badge {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .priority-high   { background: var(--red-bg);   color: var(--accent-red);   }
+  .priority-medium { background: var(--amber-bg); color: var(--accent-amber); }
+  .priority-low    { background: var(--blue-bg);  color: var(--accent-blue);  }
+
+  .due-badge {
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-amber);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .todo-divider {
+    height: 1px;
+    background: var(--border-glass);
+    margin: 0 14px;
+  }
+
+  /* Select / dropdown */
+  .mini-select {
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    background: rgba(255,255,255,0.04);
+    color: var(--text-secondary);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    padding: 4px 8px;
+    cursor: pointer;
+    transition: all var(--transition);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='8' height='5' viewBox='0 0 8 5' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L4 4L7 1' stroke='%238892a4' stroke-width='1.2' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 6px center;
+    padding-right: 20px;
+  }
+
+  .mini-select:hover {
+    border-color: var(--border-active);
+    color: var(--text-primary);
+  }
+
+  /* ─── 4. Pending Drafts ─── */
+  .draft-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition);
+  }
+
+  .draft-item:hover { background: rgba(255,255,255,0.03); }
+
+  .draft-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+    background: var(--amber-bg);
+  }
+
+  .draft-body { flex: 1; min-width: 0; }
+
+  .draft-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .draft-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .draft-actions {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .draft-divider {
+    height: 1px;
+    background: var(--border-glass);
+    margin: 0 16px;
+  }
+
+  /* ─── 5. Active Agents ─── */
+  .agent-item {
+    padding: 16px;
+    border-radius: var(--radius-md);
+    transition: background var(--transition);
+  }
+
+  .agent-item:hover { background: rgba(255,255,255,0.03); }
+
+  .agent-top {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+
+  .agent-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+    flex-shrink: 0;
+  }
+
+  .agent-avatar.running {
+    background: var(--blue-bg);
+    border: 1.5px solid rgba(78, 140, 255, 0.3);
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+
+  .agent-avatar.completed {
+    background: var(--green-bg);
+    border: 1.5px solid rgba(52, 211, 153, 0.3);
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(78, 140, 255, 0); }
+    50%      { box-shadow: 0 0 12px 2px rgba(78, 140, 255, 0.15); }
+  }
+
+  .agent-info { flex: 1; min-width: 0; }
+
+  .agent-name {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-primary);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .status-pill {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+
+  .status-running   { background: var(--blue-bg);  color: var(--accent-blue);  }
+  .status-completed { background: var(--green-bg); color: var(--accent-green); }
+
+  .agent-task {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .agent-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+
+  .agent-stat {
+    font-size: 12px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .agent-summary {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: rgba(255,255,255,0.03);
+    border-left: 2px solid var(--accent-green);
+    padding: 8px 12px;
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin-bottom: 12px;
+  }
+
+  .agent-actions {
+    display: flex;
+    gap: 6px;
+  }
+
+  .agent-divider {
+    height: 1px;
+    background: var(--border-glass);
+    margin: 4px 16px;
+  }
+
+  /* ─── 6. Quick Stats Bar ─── */
+  .stats-bar {
+    background: var(--bg-card);
+    backdrop-filter: blur(24px) saturate(1.2);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-xl);
+    padding: 16px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 16px;
+    box-shadow: var(--shadow-card);
+    flex-wrap: wrap;
+  }
+
+  .stat-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+
+  .stat-value {
+    font-weight: 700;
+    color: var(--text-primary);
+  }
+
+  .stat-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+
+  .stat-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    opacity: 0.3;
+  }
+
+  .stat-healthy {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--accent-green);
+  }
+
+  .stat-healthy .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--accent-green);
+    box-shadow: 0 0 6px rgba(52, 211, 153, 0.5);
+  }
+
+  /* ─── 7. Podcast Card ─── */
+  .podcast-card {
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.08) 0%, rgba(45, 212, 191, 0.06) 100%);
+    border-color: rgba(167, 139, 250, 0.12);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 20px 24px;
+  }
+
+  .podcast-visual {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    background: linear-gradient(135deg, var(--accent-purple), var(--accent-teal));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .podcast-visual::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: calc(var(--radius-md) + 3px);
+    background: linear-gradient(135deg, rgba(167, 139, 250, 0.3), rgba(45, 212, 191, 0.3));
+    z-index: -1;
+    animation: podcastPulse 3s ease-in-out infinite;
+  }
+
+  @keyframes podcastPulse {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50%      { opacity: 0.7; transform: scale(1.05); }
+  }
+
+  .podcast-body { flex: 1; }
+
+  .podcast-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 2px;
+  }
+
+  .podcast-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .podcast-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .btn-play {
+    background: var(--accent-purple);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-sm);
+    padding: 8px 18px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all var(--transition);
+  }
+
+  .btn-play:hover { background: #b69cfc; transform: translateY(-1px); }
+
+  /* ─── Expand chevron ─── */
+  .expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+    font-size: 12px;
+    transition: all var(--transition);
+    display: flex;
+    align-items: center;
+  }
+
+  .expand-btn:hover { color: var(--text-secondary); }
+
+  /* ─── Section spacing ─── */
+  .section-gap { height: 8px; }
+
+  /* ─── Responsive ─── */
+  @media (max-width: 640px) {
+    .app-shell { padding: 16px 12px 60px; }
+    .card { padding: 18px; border-radius: var(--radius-lg); }
+    .health-grid { grid-template-columns: 1fr; }
+    .stats-bar { flex-direction: column; align-items: flex-start; gap: 10px; }
+    .stat-dot { display: none; }
+    .briefing-greeting { font-size: 20px; }
+    .draft-actions { flex-wrap: wrap; }
+    .agent-top { flex-wrap: wrap; }
+    .agent-meta { margin-top: 4px; }
+    .podcast-card { flex-wrap: wrap; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-shell">
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 1. BRIEFING CARD                                -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card briefing">
+    <div class="briefing-greeting">Good morning, Rijul.</div>
+    <div class="briefing-summary"><strong>5 items</strong> need your attention.</div>
+    <div class="briefing-chips">
+      <div class="briefing-chip chip-urgent" onclick="toast('Navigating to urgent todos...', 'info')">
+        <span class="dot"></span>2 urgent todos
+      </div>
+      <div class="briefing-chip chip-draft" onclick="toast('Opening pending drafts...', 'info')">
+        <span class="dot"></span>2 pending drafts
+      </div>
+      <div class="briefing-chip chip-agent" onclick="toast('Opening failed agent logs...', 'warn')">
+        <span class="dot"></span>1 failed agent
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 2. HEALTH GRID                                  -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon" style="background: var(--green-bg); color: var(--accent-green);">&#9679;</span>
+        System Health
+      </div>
+      <span class="card-badge">All Green</span>
+    </div>
+    <div class="health-grid">
+      <div class="health-cell">
+        <span class="health-dot green"></span>
+        <span class="health-label">Platform API</span>
+        <span class="health-meta">uptime 25h</span>
+      </div>
+      <div class="health-cell">
+        <span class="health-dot green"></span>
+        <span class="health-label">hub.db</span>
+        <span class="health-meta">synced 30s ago</span>
+      </div>
+      <div class="health-cell">
+        <span class="health-dot green"></span>
+        <span class="health-label">brain.json</span>
+        <span class="health-meta">12 people</span>
+      </div>
+      <div class="health-cell">
+        <span class="health-dot green"></span>
+        <span class="health-label">queue.json</span>
+        <span class="health-meta">0 pending</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 3. PRIORITY TODOS                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon" style="background: var(--red-bg); color: var(--accent-red);">!</span>
+        Priority Todos
+      </div>
+      <span class="card-badge">5 items</span>
+    </div>
+
+    <!-- Todo 1 -->
+    <div class="todo-item hoverable" id="todo-1">
+      <input type="checkbox" class="todo-checkbox" onchange="toggleTodo(this, 'todo-1', 'Review GitGuardian incident #29214721')">
+      <div class="todo-body">
+        <div class="todo-text">Review GitGuardian incident #29214721</div>
+      </div>
+      <div class="todo-actions">
+        <span class="priority-badge priority-high">high</span>
+        <select class="mini-select hover-actions" onchange="toast('Assigned to ' + this.value, 'success'); this.selectedIndex = 0;">
+          <option selected disabled>Assign</option>
+          <option>Developer</option>
+          <option>QA Reviewer</option>
+          <option>Security Lead</option>
+        </select>
+        <button class="btn-icon hover-actions expand-btn" onclick="toast('Expanding details...', 'info')" title="Expand">&#9662;</button>
+      </div>
+    </div>
+    <div class="todo-divider"></div>
+
+    <!-- Todo 2 -->
+    <div class="todo-item hoverable" id="todo-2">
+      <input type="checkbox" class="todo-checkbox" onchange="toggleTodo(this, 'todo-2', 'Prep Q2 risk report')">
+      <div class="todo-body">
+        <div class="todo-text">Prep Q2 risk report</div>
+      </div>
+      <div class="todo-actions">
+        <span class="priority-badge priority-high">high</span>
+        <span class="due-badge">&#128197; Apr 15</span>
+        <button class="btn-icon hover-actions expand-btn" onclick="toast('Expanding details...', 'info')" title="Expand">&#9662;</button>
+      </div>
+    </div>
+    <div class="todo-divider"></div>
+
+    <!-- Todo 3 -->
+    <div class="todo-item hoverable" id="todo-3">
+      <input type="checkbox" class="todo-checkbox" onchange="toggleTodo(this, 'todo-3', 'Update Aravo API documentation')">
+      <div class="todo-body">
+        <div class="todo-text">Update Aravo API documentation</div>
+      </div>
+      <div class="todo-actions">
+        <span class="priority-badge priority-medium">medium</span>
+        <button class="btn-icon hover-actions expand-btn" onclick="toast('Expanding details...', 'info')" title="Expand">&#9662;</button>
+      </div>
+    </div>
+    <div class="todo-divider"></div>
+
+    <!-- Todo 4 -->
+    <div class="todo-item hoverable" id="todo-4">
+      <input type="checkbox" class="todo-checkbox" onchange="toggleTodo(this, 'todo-4', 'Review AuditBoard tax config changes')">
+      <div class="todo-body">
+        <div class="todo-text">Review AuditBoard tax config changes</div>
+      </div>
+      <div class="todo-actions">
+        <span class="priority-badge priority-medium">medium</span>
+        <button class="btn-icon hover-actions expand-btn" onclick="toast('Expanding details...', 'info')" title="Expand">&#9662;</button>
+      </div>
+    </div>
+    <div class="todo-divider"></div>
+
+    <!-- Todo 5 -->
+    <div class="todo-item hoverable" id="todo-5">
+      <input type="checkbox" class="todo-checkbox" onchange="toggleTodo(this, 'todo-5', 'Clean up old analysis jobs')">
+      <div class="todo-body">
+        <div class="todo-text">Clean up old analysis jobs</div>
+      </div>
+      <div class="todo-actions">
+        <span class="priority-badge priority-low">low</span>
+        <button class="btn-icon hover-actions expand-btn" onclick="toast('Expanding details...', 'info')" title="Expand">&#9662;</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 4. PENDING DRAFTS                               -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon" style="background: var(--amber-bg); color: var(--accent-amber);">&#9998;</span>
+        Pending Drafts
+      </div>
+      <span class="card-badge" style="background: var(--amber-bg); color: var(--accent-amber);">2 awaiting</span>
+    </div>
+
+    <!-- Draft 1 -->
+    <div class="draft-item hoverable">
+      <div class="draft-icon">&#128196;</div>
+      <div class="draft-body">
+        <div class="draft-title">ACC Phase 2 Status Update</div>
+        <div class="draft-meta">Generated 12m ago &middot; 340 words</div>
+      </div>
+      <div class="draft-actions">
+        <button class="btn btn-success" onclick="toast('Draft approved! Publishing...', 'success')">Approve</button>
+        <button class="btn btn-danger" onclick="toast('Draft rejected.', 'warn')">Reject</button>
+        <button class="btn btn-ghost hover-actions" onclick="toast('Opening preview...', 'info')">Preview</button>
+      </div>
+    </div>
+    <div class="draft-divider"></div>
+
+    <!-- Draft 2 -->
+    <div class="draft-item hoverable">
+      <div class="draft-icon">&#128196;</div>
+      <div class="draft-body">
+        <div class="draft-title">AuditBoard Config Migration Plan</div>
+        <div class="draft-meta">Generated 1h ago &middot; 520 words</div>
+      </div>
+      <div class="draft-actions">
+        <button class="btn btn-success" onclick="toast('Draft approved! Publishing...', 'success')">Approve</button>
+        <button class="btn btn-danger" onclick="toast('Draft rejected.', 'warn')">Reject</button>
+        <button class="btn btn-ghost hover-actions" onclick="toast('Opening preview...', 'info')">Preview</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 5. ACTIVE AGENTS                                -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">
+        <span class="icon" style="background: var(--purple-bg); color: var(--accent-purple);">&#9881;</span>
+        Active Agents
+      </div>
+      <span class="card-badge" style="background: var(--purple-bg); color: var(--accent-purple);">2 agents</span>
+    </div>
+
+    <!-- Agent 1: Running -->
+    <div class="agent-item hoverable">
+      <div class="agent-top">
+        <div class="agent-avatar running">&#128187;</div>
+        <div class="agent-info">
+          <div class="agent-name">
+            Developer
+            <span class="status-pill status-running">Running</span>
+          </div>
+          <div class="agent-task">Implementing auth middleware refactor</div>
+        </div>
+        <div class="agent-meta">
+          <span class="agent-stat">&#9202; 2m</span>
+          <span class="agent-stat">&#128176; $0.08</span>
+        </div>
+      </div>
+      <div class="agent-actions">
+        <button class="btn btn-ghost" onclick="toast('Opening live log stream...', 'info')">&#128196; View Logs</button>
+        <button class="btn btn-danger hover-actions" onclick="toast('Sending SIGTERM to agent...', 'warn')">&#9632; Kill</button>
+      </div>
+    </div>
+
+    <div class="agent-divider"></div>
+
+    <!-- Agent 2: Completed -->
+    <div class="agent-item hoverable">
+      <div class="agent-top">
+        <div class="agent-avatar completed">&#128270;</div>
+        <div class="agent-info">
+          <div class="agent-name">
+            QA Reviewer
+            <span class="status-pill status-completed">Completed</span>
+          </div>
+          <div class="agent-task">Review PR #47</div>
+        </div>
+        <div class="agent-meta">
+          <span class="agent-stat">&#128337; 4m 12s</span>
+          <span class="agent-stat">&#128176; $0.23</span>
+        </div>
+      </div>
+      <div class="agent-summary">3 issues found, 2 critical &mdash; see full output for details</div>
+      <div class="agent-actions">
+        <button class="btn btn-primary" onclick="toast('Opening agent output...', 'info')">&#128196; View Output</button>
+        <button class="btn btn-ghost" onclick="toast('Starting conversation about PR #47 review...', 'info')">&#128172; Chat About This</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 6. QUICK STATS BAR                             -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <span class="stat-value">13</span> teams
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-value">50</span> todos
+      <span class="stat-sub">(2 overdue)</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-value">302</span> agents
+      <span class="stat-sub">(1 running)</span>
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-item">
+      <span class="stat-value">$2.40</span> spent today
+    </div>
+    <div class="stat-dot"></div>
+    <div class="stat-healthy">
+      <span class="dot"></span>All systems healthy
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════════ -->
+  <!-- 7. PODCAST CARD                                 -->
+  <!-- ═══════════════════════════════════════════════ -->
+  <div class="card podcast-card">
+    <div class="podcast-visual">&#127911;</div>
+    <div class="podcast-body">
+      <div class="podcast-title">Morning Briefing ready</div>
+      <div class="podcast-sub">6 min &middot; Generated from today's items</div>
+    </div>
+    <div class="podcast-actions">
+      <button class="btn-play" onclick="toast('Playing morning briefing...', 'success')">&#9654; Play</button>
+      <button class="btn btn-ghost" onclick="toast('Briefing skipped.', 'info')">Skip</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
+
+<script>
+  // ─── Toast system ───
+  function toast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const el = document.createElement('div');
+    el.className = 'toast';
+
+    const icons = { success: '&#10003;', info: '&#8505;', warn: '&#9888;' };
+    el.innerHTML = `
+      <span class="toast-icon ${type}">${icons[type] || icons.info}</span>
+      <span>${message}</span>
+    `;
+
+    container.appendChild(el);
+
+    setTimeout(() => {
+      el.classList.add('out');
+      setTimeout(() => el.remove(), 250);
+    }, 2800);
+  }
+
+  // ─── Todo toggle ───
+  function toggleTodo(checkbox, id, label) {
+    const item = document.getElementById(id);
+    if (checkbox.checked) {
+      item.classList.add('checked');
+      toast(`Completed: ${label}`, 'success');
+    } else {
+      item.classList.remove('checked');
+      toast(`Reopened: ${label}`, 'info');
+    }
+  }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Agent Interaction Flow (Path C)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-subtle: rgba(255,255,255,0.05);
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --text-muted: #3f3f46;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59,130,246,0.15);
+    --blue-pulse: rgba(59,130,246,0.08);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.1);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.1);
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Page Layout ── */
+  .page {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 48px 24px 120px;
+  }
+
+  .page-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .page-subtitle {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 48px;
+    color: var(--text);
+  }
+  .page-subtitle span { color: var(--blue); }
+
+  /* ── Step Sections ── */
+  .step {
+    margin-bottom: 64px;
+    opacity: 0;
+    transform: translateY(20px);
+    animation: fadeUp 0.5s ease forwards;
+  }
+  .step:nth-child(2) { animation-delay: 0.1s; }
+  .step:nth-child(3) { animation-delay: 0.2s; }
+  .step:nth-child(4) { animation-delay: 0.3s; }
+  .step:nth-child(5) { animation-delay: 0.4s; }
+  .step:nth-child(6) { animation-delay: 0.5s; }
+
+  @keyframes fadeUp {
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .step-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .step-label span { color: var(--blue); }
+
+  .step-divider {
+    width: 100%;
+    height: 1px;
+    background: var(--border-subtle);
+    margin-bottom: 64px;
+  }
+
+  /* ── Command Bar ── */
+  .command-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .command-bar .prompt {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 13px;
+    user-select: none;
+  }
+  .command-bar .typed {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text);
+    flex: 1;
+  }
+  .command-bar .typed .cmd { color: var(--blue); font-weight: 500; }
+  .command-bar .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 16px;
+    background: var(--blue);
+    margin-left: 2px;
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+  }
+  @keyframes blink {
+    50% { opacity: 0; }
+  }
+  .command-bar .shortcut {
+    font-size: 11px;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    font-family: var(--mono);
+  }
+
+  /* ── Spawn Preview Card ── */
+  .spawn-preview {
+    background: rgba(59,130,246,0.04);
+    border: 1px solid rgba(59,130,246,0.15);
+    border-radius: var(--radius);
+    padding: 20px;
+    margin-top: 12px;
+  }
+  .spawn-preview h3 {
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 14px;
+    color: var(--text);
+  }
+  .spawn-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 6px 16px;
+    font-size: 13px;
+    margin-bottom: 18px;
+  }
+  .spawn-grid .label {
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .spawn-grid .value {
+    color: var(--text);
+  }
+  .spawn-grid .value.highlight { color: var(--blue); }
+  .spawn-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    padding: 7px 18px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    border: none;
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--blue);
+    color: #fff;
+  }
+  .btn-primary:hover { background: #2563eb; }
+  .btn-ghost {
+    background: var(--surface);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--surface-hover); color: var(--text); }
+
+  /* ── Stream Items ── */
+  .stream-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+  .stream-item.running {
+    border-color: rgba(59,130,246,0.25);
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  .stream-item.done {
+    border-color: rgba(34,197,94,0.2);
+  }
+  .stream-item.failed {
+    border-color: rgba(239,68,68,0.2);
+  }
+  .stream-item.follow-up {
+    border-color: rgba(59,130,246,0.2);
+    margin-left: 24px;
+    position: relative;
+  }
+  .stream-item.follow-up::before {
+    content: '';
+    position: absolute;
+    left: -16px;
+    top: 50%;
+    width: 12px;
+    height: 1px;
+    background: rgba(59,130,246,0.25);
+  }
+
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--blue-pulse); }
+    50% { box-shadow: 0 0 16px 2px var(--blue-pulse); }
+  }
+
+  .stream-row {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .stream-row:hover { background: rgba(255,255,255,0.02); }
+
+  .status-icon { font-size: 14px; flex-shrink: 0; }
+  .status-text {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    flex-shrink: 0;
+  }
+  .status-text.running { color: var(--blue); }
+  .status-text.done { color: var(--green); }
+  .status-text.failed { color: var(--red); }
+
+  .stream-sep {
+    color: var(--text-muted);
+    font-size: 11px;
+    flex-shrink: 0;
+  }
+  .agent-name {
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .agent-task {
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+  .stream-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    font-size: 12px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .stream-actions {
+    display: flex;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .stream-btn {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 500;
+    font-family: var(--sans);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .stream-btn:hover { background: var(--surface-hover); color: var(--text); }
+  .stream-btn.active { background: var(--surface-hover); color: var(--text); }
+  .stream-btn.icon-btn { padding: 4px 6px; font-size: 13px; }
+  .stream-btn.danger { border-color: rgba(239,68,68,0.2); }
+  .stream-btn.danger:hover { background: var(--red-dim); color: var(--red); }
+
+  /* ── Expandable Panels ── */
+  .expand-panel {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+    border-top: 0 solid transparent;
+  }
+  .expand-panel.open {
+    max-height: 600px;
+    border-top: 1px solid var(--border);
+  }
+  .expand-content {
+    padding: 16px;
+  }
+
+  /* ── Logs Panel ── */
+  .log-output {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--text-dim);
+    background: rgba(0,0,0,0.3);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  .log-output .log-line {
+    display: block;
+  }
+  .log-output .log-prefix {
+    color: var(--text-muted);
+    user-select: none;
+  }
+  .log-output .log-highlight { color: var(--yellow); }
+  .log-output .log-success { color: var(--green); }
+
+  /* New log line animation */
+  .log-line.new {
+    animation: logAppear 0.3s ease;
+  }
+  @keyframes logAppear {
+    from { opacity: 0; transform: translateX(-4px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* ── Summary Panel ── */
+  .summary-content {
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .summary-content strong {
+    color: var(--text);
+    font-weight: 600;
+    display: block;
+    margin-bottom: 8px;
+  }
+  .summary-list {
+    list-style: none;
+    margin: 8px 0 14px 0;
+  }
+  .summary-list li {
+    padding: 4px 0 4px 16px;
+    position: relative;
+    font-size: 13px;
+  }
+  .summary-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    opacity: 0.5;
+  }
+  .summary-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    font-family: var(--mono);
+  }
+  .summary-meta .meta-label { color: var(--text-muted); }
+  .summary-meta .meta-value { color: var(--text-dim); margin-left: 6px; }
+  .summary-meta .meta-value.pass { color: var(--green); }
+
+  /* ── Inline Chat ── */
+  .chat-panel {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .chat-messages {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .chat-msg {
+    max-width: 80%;
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.6;
+  }
+  .chat-msg.user {
+    align-self: flex-end;
+    background: var(--blue);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .chat-msg.assistant {
+    align-self: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-bottom-left-radius: 4px;
+  }
+  .chat-msg .chat-sender {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 4px;
+    display: block;
+  }
+  .chat-msg.user .chat-sender { color: rgba(255,255,255,0.7); }
+  .chat-msg.assistant .chat-sender { color: var(--text-muted); }
+  .chat-msg .spawn-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    background: rgba(59,130,246,0.12);
+    color: var(--blue);
+    cursor: pointer;
+    border: 1px solid rgba(59,130,246,0.2);
+    transition: all 0.15s;
+  }
+  .chat-msg .spawn-link:hover { background: rgba(59,130,246,0.2); }
+
+  .chat-input-row {
+    display: flex;
+    gap: 8px;
+  }
+  .chat-input {
+    flex: 1;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,0.3);
+    color: var(--text);
+    font-size: 13px;
+    font-family: var(--sans);
+    outline: none;
+  }
+  .chat-input:focus { border-color: rgba(59,130,246,0.3); }
+  .chat-input::placeholder { color: var(--text-muted); }
+  .chat-send {
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+  }
+  .chat-send:hover { background: #2563eb; }
+
+  /* ── Error Panel ── */
+  .error-content {
+    font-family: var(--mono);
+    font-size: 12px;
+    line-height: 1.8;
+    color: var(--red);
+    background: rgba(239,68,68,0.04);
+    border-radius: var(--radius-sm);
+    padding: 14px 16px;
+    margin-bottom: 12px;
+  }
+  .error-content .error-detail { color: var(--text-dim); }
+  .error-actions {
+    display: flex;
+    gap: 8px;
+  }
+  .btn-warn {
+    background: rgba(234,179,8,0.1);
+    color: var(--yellow);
+    border: 1px solid rgba(234,179,8,0.2);
+    padding: 7px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: var(--sans);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-warn:hover { background: rgba(234,179,8,0.18); }
+
+  /* ── Follow-up link ── */
+  .follows-link {
+    font-size: 11px;
+    color: var(--text-muted);
+    padding: 0 16px 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .follows-link .arrow { color: var(--blue); opacity: 0.5; }
+
+  /* ── Keyboard hint ── */
+  .kbd-hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 10px;
+  }
+  .kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+  }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="page-title">Path C / Fresh Start</div>
+  <div class="page-subtitle">Agent Interaction <span>Flow</span></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 1: SPAWN VIA COMMAND BAR              -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step">
+    <div class="step-label"><span>Step 1</span> &mdash; Spawn via Command Bar</div>
+
+    <div class="command-bar">
+      <span class="prompt">&gt;</span>
+      <span class="typed"><span class="cmd">spawn</span> developer fix auth middleware in login.py</span>
+      <span class="cursor"></span>
+      <span class="shortcut">&#8984;K</span>
+    </div>
+
+    <div class="spawn-preview">
+      <h3>Spawn Agent</h3>
+      <div class="spawn-grid">
+        <span class="label">Agent</span>
+        <span class="value highlight">Developer</span>
+        <span class="label">Task</span>
+        <span class="value">Fix auth middleware in login.py</span>
+        <span class="label">Model</span>
+        <span class="value">sonnet</span>
+        <span class="label">Budget</span>
+        <span class="value">$5.00</span>
+      </div>
+      <div class="spawn-actions">
+        <button class="btn btn-primary">Spawn</button>
+        <button class="btn btn-ghost">Edit</button>
+        <button class="btn btn-ghost">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-divider"></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 2: AGENT APPEARS IN STREAM            -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step">
+    <div class="step-label"><span>Step 2</span> &mdash; Agent Appears in Stream</div>
+
+    <div class="stream-item running" id="step2-item">
+      <div class="stream-row" onclick="togglePanel('step2-logs')">
+        <span class="status-icon">&#129302;</span>
+        <span class="status-text running">running</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Developer</span>
+        <span class="agent-task">Fix auth middleware</span>
+        <span class="stream-meta">
+          <span>0m 12s</span>
+          <span>&middot;</span>
+          <span>$0.01</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn" id="step2-logs-btn" onclick="event.stopPropagation(); togglePanel('step2-logs')">Logs &#9662;</button>
+          <button class="stream-btn icon-btn" title="Pause">&#9208;</button>
+          <button class="stream-btn icon-btn danger" title="Stop">&#9209;</button>
+        </div>
+      </div>
+
+      <div class="expand-panel" id="step2-logs">
+        <div class="expand-content">
+          <div class="log-output" id="step2-log-output">
+            <span class="log-line"><span class="log-prefix">&gt; </span>Reading login.py...</span>
+            <span class="log-line"><span class="log-prefix">&gt; </span><span class="log-highlight">Found SQL injection vulnerability on line 47</span></span>
+            <span class="log-line"><span class="log-prefix">&gt; </span>Implementing parameterized query...</span>
+            <span class="log-line new"><span class="log-prefix">&gt; </span><span class="log-success">Running tests...</span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-divider"></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 3: AGENT COMPLETES                     -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step">
+    <div class="step-label"><span>Step 3</span> &mdash; Agent Completes</div>
+
+    <div class="stream-item done" id="step3-item">
+      <div class="stream-row" onclick="togglePanel('step3-summary')">
+        <span class="status-icon">&#9989;</span>
+        <span class="status-text done">done</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Developer</span>
+        <span class="agent-task">Fixed auth middleware</span>
+        <span class="stream-meta">
+          <span>3m 22s</span>
+          <span>&middot;</span>
+          <span>$0.18</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn" id="step3-summary-btn" onclick="event.stopPropagation(); togglePanel('step3-summary')">Summary &#9662;</button>
+          <button class="stream-btn icon-btn" title="Chat about result" onclick="event.stopPropagation(); togglePanel('step3-chat')">&#128172;</button>
+          <button class="stream-btn icon-btn" title="Open file" onclick="event.stopPropagation();">&#8594;</button>
+        </div>
+      </div>
+
+      <div class="expand-panel" id="step3-summary">
+        <div class="expand-content">
+          <div class="summary-content">
+            <strong>Fixed 2 issues in login.py:</strong>
+            <ol class="summary-list">
+              <li>SQL injection on line 47 &rarr; parameterized query</li>
+              <li>Missing rate limit &rarr; added 100 req/min</li>
+            </ol>
+            <div class="summary-meta">
+              <span><span class="meta-label">Tests:</span><span class="meta-value pass">12 passed, 0 failed</span></span>
+              <span><span class="meta-label">Files:</span><span class="meta-value">login.py, tests/test_auth.py</span></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="expand-panel" id="step3-chat" style="display: none;">
+      </div>
+    </div>
+  </div>
+
+  <div class="step-divider"></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 4: CHAT ABOUT RESULT                   -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step">
+    <div class="step-label"><span>Step 4</span> &mdash; Chat About Result</div>
+
+    <div class="stream-item done">
+      <div class="stream-row">
+        <span class="status-icon">&#9989;</span>
+        <span class="status-text done">done</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Developer</span>
+        <span class="agent-task">Fixed auth middleware</span>
+        <span class="stream-meta">
+          <span>3m 22s</span>
+          <span>&middot;</span>
+          <span>$0.18</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn">Summary &#9662;</button>
+          <button class="stream-btn icon-btn active" title="Chat">&#128172;</button>
+          <button class="stream-btn icon-btn">&#8594;</button>
+        </div>
+      </div>
+
+      <div class="chat-panel">
+        <div class="chat-messages">
+          <div class="chat-msg user">
+            <span class="chat-sender">You</span>
+            Was this the right fix for the SQL injection?
+          </div>
+          <div class="chat-msg assistant">
+            <span class="chat-sender">CoCo</span>
+            Yes &mdash; parameterized queries prevent SQL injection by separating SQL logic from user data. The database driver handles escaping, so malicious input like <code>' OR 1=1 --</code> is treated as a literal string, never as executable SQL.
+          </div>
+          <div class="chat-msg user">
+            <span class="chat-sender">You</span>
+            Can you also add input validation?
+          </div>
+          <div class="chat-msg assistant">
+            <span class="chat-sender">CoCo</span>
+            I'll spawn a follow-up agent for that.
+            <br>
+            <span class="spawn-link" onclick="document.getElementById('step5').scrollIntoView({behavior:'smooth'})">&#129302; Spawn Follow-up</span>
+          </div>
+        </div>
+        <div class="chat-input-row">
+          <input class="chat-input" placeholder="Ask about this result..." disabled>
+          <button class="chat-send" disabled>Send</button>
+        </div>
+        <div class="kbd-hint">
+          <span class="kbd">c</span> to open chat &middot;
+          <span class="kbd">esc</span> to close
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-divider"></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 5: FOLLOW-UP SPAWN                     -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step" id="step5">
+    <div class="step-label"><span>Step 5</span> &mdash; Follow-up Spawn</div>
+
+    <div class="stream-item done" style="margin-bottom: 12px;">
+      <div class="stream-row">
+        <span class="status-icon">&#9989;</span>
+        <span class="status-text done">done</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Developer</span>
+        <span class="agent-task">Fixed auth middleware</span>
+        <span class="stream-meta">
+          <span>3m 22s</span>
+          <span>&middot;</span>
+          <span>$0.18</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn">Summary &#9662;</button>
+          <button class="stream-btn icon-btn">&#128172;</button>
+          <button class="stream-btn icon-btn">&#8594;</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="stream-item running follow-up" id="step5-item">
+      <div class="stream-row" onclick="togglePanel('step5-logs')">
+        <span class="status-icon">&#129302;</span>
+        <span class="status-text running">running</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Developer</span>
+        <span class="agent-task">Add input validation (follow-up)</span>
+        <span class="stream-meta">
+          <span>0m 05s</span>
+          <span>&middot;</span>
+          <span>$0.00</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn" onclick="event.stopPropagation(); togglePanel('step5-logs')">Logs &#9662;</button>
+        </div>
+      </div>
+      <div class="follows-link">
+        <span class="arrow">&#8627;</span> follows: Fix auth middleware
+      </div>
+
+      <div class="expand-panel" id="step5-logs">
+        <div class="expand-content">
+          <div class="log-output">
+            <span class="log-line"><span class="log-prefix">&gt; </span>Reading login.py...</span>
+            <span class="log-line"><span class="log-prefix">&gt; </span>Adding Pydantic schema for LoginRequest...</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="step-divider"></div>
+
+  <!-- ════════════════════════════════════════════ -->
+  <!-- STEP 6: AGENT FAILED                        -->
+  <!-- ════════════════════════════════════════════ -->
+  <div class="step">
+    <div class="step-label"><span>Step 6</span> &mdash; Agent Failed</div>
+
+    <div class="stream-item failed" id="step6-item">
+      <div class="stream-row" onclick="togglePanel('step6-error')">
+        <span class="status-icon">&#10060;</span>
+        <span class="status-text failed">failed</span>
+        <span class="stream-sep">&middot;</span>
+        <span class="agent-name">Data Analyst</span>
+        <span class="agent-task">Q2 Cost Projections</span>
+        <span class="stream-meta">
+          <span>0m 45s</span>
+          <span>&middot;</span>
+          <span>$0.04</span>
+        </span>
+        <div class="stream-actions">
+          <button class="stream-btn" id="step6-error-btn" onclick="event.stopPropagation(); togglePanel('step6-error')">Error &#9662;</button>
+          <button class="stream-btn" onclick="event.stopPropagation();">&#128260; Retry</button>
+          <button class="stream-btn icon-btn" onclick="event.stopPropagation();">&#8594;</button>
+        </div>
+      </div>
+
+      <div class="expand-panel" id="step6-error">
+        <div class="expand-content">
+          <div class="error-content">
+            <div>Error: Budget cap exceeded for node 'cross-risk-tools'</div>
+            <div class="error-detail">Current daily spend: $4.80 / $5.00 cap</div>
+          </div>
+          <div class="error-actions">
+            <button class="btn-warn">Increase Budget to $10</button>
+            <button class="btn btn-ghost">Retry Tomorrow</button>
+            <button class="btn btn-ghost">Dismiss</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  function togglePanel(id) {
+    const panel = document.getElementById(id);
+    if (!panel) return;
+
+    // If this is a "display: none" panel, show it first
+    if (panel.style.display === 'none') {
+      panel.style.display = '';
+    }
+
+    const isOpen = panel.classList.contains('open');
+    panel.classList.toggle('open');
+
+    // Update button text
+    const btnId = id + '-btn';
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      if (isOpen) {
+        btn.innerHTML = btn.innerHTML.replace('&#9652;', '&#9662;').replace('\u25B4', '\u25BE');
+      } else {
+        btn.innerHTML = btn.innerHTML.replace('&#9662;', '&#9652;').replace('\u25BE', '\u25B4');
+      }
+    }
+  }
+
+  // Auto-open logs panel for Step 2 and error panel for Step 6 after a delay
+  setTimeout(() => togglePanel('step2-logs'), 800);
+  setTimeout(() => togglePanel('step6-error'), 1200);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path C — Fresh Start</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #0a0a0a;
+    color: #e5e5e5;
+    overflow: hidden;
+  }
+
+  /* ── Nav Bar ── */
+  .nav {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: #0a0a0a;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    z-index: 100;
+    padding: 0 16px;
+    gap: 12px;
+  }
+
+  .nav-title {
+    white-space: nowrap;
+    margin-right: 8px;
+    flex-shrink: 0;
+  }
+
+  .nav-title span {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f5f5f5;
+    letter-spacing: -0.01em;
+  }
+
+  .nav-title small {
+    font-size: 10px;
+    color: #666;
+    margin-left: 8px;
+    font-weight: 400;
+  }
+
+  .nav-divider {
+    width: 1px;
+    height: 24px;
+    background: #1a1a1a;
+    flex-shrink: 0;
+  }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+
+  .tab {
+    background: none;
+    border: none;
+    color: #666;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s ease;
+    letter-spacing: -0.01em;
+  }
+
+  .tab:hover {
+    color: #999;
+    background: #141414;
+  }
+
+  .tab.active {
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  .tab.placeholder {
+    color: #333;
+    cursor: default;
+    font-style: italic;
+  }
+  .tab.placeholder:hover {
+    color: #333;
+    background: none;
+  }
+
+  /* ── Content Area ── */
+  .content {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 24px;
+  }
+
+  .view-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    background: #0a0a0a;
+  }
+
+  .view-frame.active {
+    display: block;
+  }
+
+  /* ── Placeholder for missing tabs ── */
+  .placeholder-panel {
+    width: 100%;
+    height: 100%;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 8px;
+    color: #333;
+  }
+
+  .placeholder-panel.active {
+    display: flex;
+  }
+
+  .placeholder-panel span {
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .placeholder-panel small {
+    font-size: 11px;
+    color: #262626;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: #0a0a0a;
+    border-top: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+
+  .footer span {
+    font-size: 10px;
+    color: #333;
+    letter-spacing: 0.02em;
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav -->
+<nav class="nav">
+  <div class="nav-title">
+    <span>Path C</span>
+    <small>Command bar + stream, zero pages</small>
+  </div>
+  <div class="nav-divider"></div>
+  <div class="tabs">
+    <button class="tab active"    data-tab="main">Main App</button>
+    <button class="tab"           data-tab="stream">The Stream</button>
+    <button class="tab"           data-tab="command">Command Bar</button>
+    <button class="tab"           data-tab="agents">Agent Flow</button>
+    <button class="tab"           data-tab="settings">Settings</button>
+    <button class="tab" data-tab="mobile">Mobile</button>
+    <button class="tab" data-tab="keys">Keyboard</button>
+    <button class="tab"           data-tab="flow">User Flow</button>
+  </div>
+</nav>
+
+<!-- Content -->
+<div class="content">
+  <iframe id="frame-main"     class="view-frame active" src="path-c-main.html"></iframe>
+  <!-- Lazy-loaded on first click -->
+  <iframe id="frame-stream"   class="view-frame" data-src="path-c-stream.html"></iframe>
+  <iframe id="frame-command"  class="view-frame" data-src="path-c-command.html"></iframe>
+  <iframe id="frame-agents"   class="view-frame" data-src="path-c-agents.html"></iframe>
+  <iframe id="frame-settings" class="view-frame" data-src="path-c-settings.html"></iframe>
+  <iframe id="frame-flow"     class="view-frame" data-src="path-c-flow.html"></iframe>
+
+  <iframe id="frame-mobile"   class="view-frame" data-src="path-c-mobile.html"></iframe>
+  <iframe id="frame-keys"     class="view-frame" data-src="path-c-keys.html"></iframe>
+</div>
+
+<!-- Footer -->
+<footer class="footer">
+  <span>Path C: Zero pages. Command bar + keyboard-driven stream. Maximum speed. High risk, 4-6 weeks rebuild.</span>
+</footer>
+
+<script>
+(function () {
+  const tabs = document.querySelectorAll('.tab');
+  const frames = document.querySelectorAll('.view-frame');
+  const panels = document.querySelectorAll('.placeholder-panel');
+
+  // Map tab keys to their content element
+  const map = {
+    main:     document.getElementById('frame-main'),
+    stream:   document.getElementById('frame-stream'),
+    command:  document.getElementById('frame-command'),
+    agents:   document.getElementById('frame-agents'),
+    settings: document.getElementById('frame-settings'),
+    flow:     document.getElementById('frame-flow'),
+    mobile:   document.getElementById('frame-mobile'),
+    keys:     document.getElementById('frame-keys'),
+  };
+
+  function switchTab(key) {
+    // Deactivate everything
+    tabs.forEach(t => t.classList.remove('active'));
+    frames.forEach(f => f.classList.remove('active'));
+    panels.forEach(p => p.classList.remove('active'));
+
+    // Activate tab button
+    const btn = document.querySelector(`.tab[data-tab="${key}"]`);
+    if (btn) btn.classList.add('active');
+
+    // Activate content
+    const el = map[key];
+    if (!el) return;
+
+    // Lazy-load iframe src on first visit
+    if (el.tagName === 'IFRAME' && el.dataset.src && !el.getAttribute('src')) {
+      el.src = el.dataset.src;
+    }
+
+    el.classList.add('active');
+  }
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      switchTab(tab.dataset.tab);
+    });
+  });
+
+  // Keyboard: 1-8 to switch tabs
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    const keys = ['main', 'stream', 'command', 'agents', 'settings', 'mobile', 'keys', 'flow'];
+    const idx = parseInt(e.key) - 1;
+    if (idx >= 0 && idx < keys.length) switchTab(keys[idx]);
+  });
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path C — Settings via Command Bar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface-hover: #1a1a1a;
+    --border: #262626;
+    --text: #e5e5e5;
+    --text-dim: #737373;
+    --text-muted: #525252;
+    --accent: #3b82f6;
+    --accent-glow: rgba(59, 130, 246, 0.15);
+    --green: #22c55e;
+    --yellow: #eab308;
+    --red: #ef4444;
+    --orange: #f97316;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', -apple-system, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    transition: background 0.4s ease, color 0.4s ease;
+  }
+
+  body.light {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --surface-hover: #f5f5f5;
+    --border: #e5e5e5;
+    --text: #171717;
+    --text-dim: #737373;
+    --text-muted: #a3a3a3;
+    --accent: #2563eb;
+    --accent-glow: rgba(37, 99, 235, 0.1);
+  }
+
+  /* Header */
+  .header {
+    text-align: center;
+    padding: 40px 20px 20px;
+  }
+  .header h1 {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-dim);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .header .subtitle {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Command bar */
+  .command-bar-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .command-bar {
+    width: 500px;
+    position: relative;
+  }
+  .command-input-wrapper {
+    display: flex;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 0 16px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+  .command-input-wrapper:focus-within {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+  }
+  .command-prefix {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 14px;
+    margin-right: 8px;
+    user-select: none;
+  }
+  .command-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 14px;
+    padding: 14px 0;
+  }
+  .command-input::placeholder {
+    color: var(--text-muted);
+  }
+  .command-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  /* Results area */
+  .results-wrapper {
+    display: flex;
+    justify-content: center;
+    padding: 0 20px 40px;
+  }
+  .results {
+    width: 500px;
+  }
+
+  /* Settings card */
+  .settings-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: slideDown 0.3s ease;
+  }
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .card-header {
+    padding: 16px 20px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .card-header-icon {
+    font-size: 16px;
+  }
+  .card-header-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .card-header-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+    margin-left: 8px;
+  }
+
+  /* Setting groups */
+  .setting-group {
+    padding: 12px 20px;
+  }
+  .setting-group + .setting-group {
+    border-top: 1px solid var(--border);
+  }
+  .setting-group-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+  }
+
+  /* Setting row */
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    cursor: pointer;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .setting-row:hover {
+    background: var(--surface-hover);
+    margin: 0 -8px;
+    padding: 6px 8px;
+  }
+  .setting-label {
+    font-size: 13px;
+    color: var(--text);
+  }
+  .setting-value-area {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .setting-value {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--accent);
+  }
+  .setting-action {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: border-color 0.15s, color 0.15s;
+  }
+  .setting-action:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Status dot */
+  .dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-left: 4px;
+  }
+  .dot.active { background: var(--green); }
+  .dot.paused { background: var(--text-muted); }
+
+  /* Inline edit */
+  .inline-edit {
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .inline-edit.active {
+    display: flex;
+  }
+  .inline-edit input {
+    background: var(--bg);
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    padding: 3px 8px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    width: 80px;
+    outline: none;
+  }
+  .inline-edit .save-hint {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-family: var(--mono);
+  }
+
+  /* Confirmation card */
+  .confirm-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    animation: slideDown 0.3s ease;
+  }
+  .confirm-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 12px;
+  }
+  .confirm-change {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+    padding: 8px 12px;
+    background: var(--bg);
+    border-radius: 6px;
+    margin-bottom: 16px;
+  }
+  .confirm-change .old { color: var(--text-muted); }
+  .confirm-change .arrow { color: var(--text-muted); margin: 0 6px; }
+  .confirm-change .new { color: var(--accent); font-weight: 500; }
+  .confirm-buttons {
+    display: flex;
+    gap: 8px;
+  }
+  .btn {
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { opacity: 0.9; }
+  .btn-ghost {
+    background: transparent;
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover {
+    border-color: var(--text-dim);
+    color: var(--text);
+  }
+
+  /* Automations list */
+  .automation-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+  }
+  .automation-row + .automation-row {
+    border-top: 1px solid var(--border);
+  }
+  .automation-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .automation-num {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    width: 20px;
+  }
+  .automation-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .automation-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+  .automation-status {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+  }
+  .automation-status.active { color: var(--green); }
+  .automation-status.paused { color: var(--text-muted); }
+  .add-trigger-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    color: var(--text-dim);
+    font-size: 12px;
+    cursor: pointer;
+    font-family: var(--sans);
+    transition: all 0.15s;
+  }
+  .add-trigger-btn:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--surface);
+    border: 1px solid var(--green);
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.4);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 2s forwards;
+    z-index: 1000;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; }
+    to { opacity: 0; pointer-events: none; }
+  }
+
+  /* Demo selector */
+  .demo-nav {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    padding: 20px;
+    flex-wrap: wrap;
+  }
+  .demo-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-family: var(--mono);
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: transparent;
+    color: var(--text-dim);
+    transition: all 0.15s;
+  }
+  .demo-btn:hover, .demo-btn.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-glow);
+  }
+
+  /* Philosophy badge */
+  .philosophy {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-style: italic;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Path C -- Settings via Command Bar</h1>
+  <div class="subtitle">No settings page. Just type what you want to change.</div>
+</div>
+
+<div class="demo-nav">
+  <button class="demo-btn active" onclick="showDemo(1)">settings</button>
+  <button class="demo-btn" onclick="showDemo(2)">set max agents 5</button>
+  <button class="demo-btn" onclick="showDemo(3)">set theme light</button>
+  <button class="demo-btn" onclick="showDemo(4)">set budget 10</button>
+  <button class="demo-btn" onclick="showDemo(5)">automations</button>
+</div>
+
+<div class="command-bar-wrapper">
+  <div class="command-bar">
+    <div class="command-input-wrapper">
+      <span class="command-prefix">/</span>
+      <input type="text" class="command-input" id="commandInput" placeholder="Type a command..." autocomplete="off" />
+      <span class="command-hint">esc</span>
+    </div>
+  </div>
+</div>
+
+<div class="results-wrapper">
+  <div class="results" id="results"></div>
+</div>
+
+<div class="philosophy" id="philosophyText">A settings page is unnecessary -- just type what you want to change.</div>
+
+<script>
+const demos = {
+  1: { query: 'settings', label: 'settings' },
+  2: { query: 'set max agents 5', label: 'set max agents 5' },
+  3: { query: 'set theme light', label: 'set theme light' },
+  4: { query: 'set budget 10', label: 'set budget 10' },
+  5: { query: 'automations', label: 'automations' },
+};
+
+let currentDemo = 1;
+let settingsState = {
+  theme: 'Dark',
+  edition: 'Studio',
+  model: 'sonnet',
+  maxConcurrent: 3,
+  timeout: 30,
+  budget: 5.00,
+  hubSync: 60,
+  triggers: 2,
+  yoloStatus: 'Active (full profile)',
+  yoloThreshold: 85,
+  yoloAlwaysAsk: 'git push, delete',
+};
+
+function showDemo(num) {
+  currentDemo = num;
+  document.querySelectorAll('.demo-btn').forEach((b, i) => {
+    b.classList.toggle('active', i + 1 === num);
+  });
+
+  const input = document.getElementById('commandInput');
+  const results = document.getElementById('results');
+
+  // Reset theme for non-theme demos
+  if (num !== 3) {
+    document.body.classList.remove('light');
+    settingsState.theme = 'Dark';
+  }
+
+  input.value = '';
+  results.innerHTML = '';
+
+  // Type animation
+  typeText(input, demos[num].query, () => {
+    setTimeout(() => renderDemo(num), 200);
+  });
+}
+
+function typeText(input, text, callback) {
+  let i = 0;
+  input.value = '';
+  const interval = setInterval(() => {
+    input.value = text.substring(0, i + 1);
+    i++;
+    if (i >= text.length) {
+      clearInterval(interval);
+      if (callback) callback();
+    }
+  }, 40);
+}
+
+function renderDemo(num) {
+  const results = document.getElementById('results');
+
+  switch (num) {
+    case 1: renderSettingsPanel(results); break;
+    case 2: renderConfirmCard(results, 'Set max concurrent agents to 5', 'Max concurrent', settingsState.maxConcurrent, 5, () => { settingsState.maxConcurrent = 5; showToast('Max concurrent agents updated to 5'); showDemo(1); }); break;
+    case 3: renderConfirmCard(results, 'Set theme to Light', 'Theme', 'Dark', 'Light', () => { document.body.classList.add('light'); settingsState.theme = 'Light'; showToast('Theme changed to Light'); }); break;
+    case 4: renderConfirmCard(results, 'Set default agent budget to $10.00', 'Default budget', '$' + settingsState.budget.toFixed(2), '$10.00', () => { settingsState.budget = 10; showToast('Default budget updated to $10.00'); showDemo(1); }); break;
+    case 5: renderAutomations(results); break;
+  }
+}
+
+function renderSettingsPanel(container) {
+  container.innerHTML = `
+    <div class="settings-card">
+      <div class="card-header">
+        <span class="card-header-icon">&#9881;&#65039;</span>
+        <span class="card-header-title">Settings</span>
+        <div class="card-header-line"></div>
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-group-title">General</div>
+        ${settingRow('Theme', settingsState.theme + ' &#9679;', 'Toggle', () => toggleTheme())}
+        ${settingRow('Edition', settingsState.edition, 'Change')}
+        ${settingRow('Default model', settingsState.model, 'Change')}
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-group-title">Agents</div>
+        ${editableRow('max-concurrent', 'Max concurrent', settingsState.maxConcurrent, 'Edit')}
+        ${editableRow('timeout', 'Timeout', settingsState.timeout + ' min', 'Edit')}
+        ${editableRow('budget', 'Default budget', '$' + settingsState.budget.toFixed(2), 'Edit')}
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-group-title">Automations</div>
+        ${settingRow('Hub sync', 'every ' + settingsState.hubSync + 's &#10003;', 'Configure')}
+        ${settingRow('Triggers', settingsState.triggers + ' active', 'Manage')}
+      </div>
+
+      <div class="setting-group">
+        <div class="setting-group-title">YOLO Mode</div>
+        ${settingRow('Status', settingsState.yoloStatus, 'Deactivate')}
+        ${editableRow('yolo-threshold', 'Auto-approve above', settingsState.yoloThreshold + '%', 'Edit')}
+        ${editableRow('yolo-ask', 'Always ask', settingsState.yoloAlwaysAsk, 'Edit')}
+      </div>
+    </div>
+  `;
+
+  // Wire up inline editing
+  container.querySelectorAll('.setting-row[data-editable]').forEach(row => {
+    const key = row.dataset.editable;
+    const actionBtn = row.querySelector('.setting-action');
+    const valueEl = row.querySelector('.setting-value');
+    const editEl = row.querySelector('.inline-edit');
+    const editInput = editEl ? editEl.querySelector('input') : null;
+
+    if (actionBtn && editInput) {
+      actionBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        valueEl.style.display = 'none';
+        actionBtn.style.display = 'none';
+        editEl.classList.add('active');
+        editInput.focus();
+        editInput.select();
+      });
+
+      editInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          const newVal = editInput.value;
+          applyInlineEdit(key, newVal);
+          showToast(`${row.querySelector('.setting-label').textContent} updated to ${newVal}`);
+          showDemo(1);
+        }
+        if (e.key === 'Escape') {
+          editEl.classList.remove('active');
+          valueEl.style.display = '';
+          actionBtn.style.display = '';
+        }
+      });
+    }
+  });
+}
+
+function settingRow(label, value, action, onClick) {
+  const id = label.toLowerCase().replace(/\s/g, '-');
+  return `
+    <div class="setting-row" ${onClick ? `onclick="(${onClick})()"` : ''}>
+      <span class="setting-label">${label}</span>
+      <div class="setting-value-area">
+        <span class="setting-value">${value}</span>
+        <button class="setting-action">${action}</button>
+      </div>
+    </div>
+  `;
+}
+
+function editableRow(key, label, value, action) {
+  return `
+    <div class="setting-row" data-editable="${key}">
+      <span class="setting-label">${label}</span>
+      <div class="setting-value-area">
+        <span class="setting-value">${value}</span>
+        <div class="inline-edit">
+          <input type="text" value="${String(value).replace(/[$%]/g, '')}" />
+          <span class="save-hint">enter / esc</span>
+        </div>
+        <button class="setting-action">${action}</button>
+      </div>
+    </div>
+  `;
+}
+
+function applyInlineEdit(key, val) {
+  switch (key) {
+    case 'max-concurrent': settingsState.maxConcurrent = parseInt(val) || settingsState.maxConcurrent; break;
+    case 'timeout': settingsState.timeout = parseInt(val) || settingsState.timeout; break;
+    case 'budget': settingsState.budget = parseFloat(val) || settingsState.budget; break;
+    case 'yolo-threshold': settingsState.yoloThreshold = parseInt(val) || settingsState.yoloThreshold; break;
+    case 'yolo-ask': settingsState.yoloAlwaysAsk = val; break;
+  }
+}
+
+function toggleTheme() {
+  document.body.classList.toggle('light');
+  settingsState.theme = document.body.classList.contains('light') ? 'Light' : 'Dark';
+  showToast('Theme changed to ' + settingsState.theme);
+  setTimeout(() => showDemo(1), 300);
+}
+
+function renderConfirmCard(container, title, label, oldVal, newVal, onApply) {
+  container.innerHTML = `
+    <div class="confirm-card">
+      <div class="confirm-title">${title}</div>
+      <div class="confirm-change">
+        <span class="old">${label}: ${oldVal}</span>
+        <span class="arrow">&rarr;</span>
+        <span class="new">${newVal}</span>
+      </div>
+      <div class="confirm-buttons">
+        <button class="btn btn-primary" id="applyBtn">Apply</button>
+        <button class="btn btn-ghost" id="cancelBtn">Cancel</button>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('applyBtn').addEventListener('click', onApply);
+  document.getElementById('cancelBtn').addEventListener('click', () => {
+    container.innerHTML = '';
+  });
+}
+
+function renderAutomations(container) {
+  container.innerHTML = `
+    <div class="settings-card">
+      <div class="card-header">
+        <span class="card-header-icon">&#128260;</span>
+        <span class="card-header-title">Automations</span>
+        <div class="card-header-line"></div>
+      </div>
+
+      <div class="setting-group">
+        <div class="automation-row">
+          <div class="automation-info">
+            <span class="automation-num">1.</span>
+            <div>
+              <div class="automation-name">Hub Sync</div>
+              <div class="automation-meta">cron, every 60s</div>
+            </div>
+          </div>
+          <div class="automation-status active"><span class="dot active"></span> active</div>
+        </div>
+
+        <div class="automation-row">
+          <div class="automation-info">
+            <span class="automation-num">2.</span>
+            <div>
+              <div class="automation-name">Email Monitor</div>
+              <div class="automation-meta">file_watch</div>
+            </div>
+          </div>
+          <div class="automation-status active"><span class="dot active"></span> active</div>
+        </div>
+
+        <div class="automation-row">
+          <div class="automation-info">
+            <span class="automation-num">3.</span>
+            <div>
+              <div class="automation-name">Morning Briefing</div>
+              <div class="automation-meta">cron, 8am daily</div>
+            </div>
+          </div>
+          <div class="automation-status paused"><span class="dot paused"></span> paused</div>
+        </div>
+
+        <button class="add-trigger-btn" onclick="showToast('Trigger creation coming soon')">Add Trigger +</button>
+      </div>
+    </div>
+  `;
+}
+
+function showToast(message) {
+  // Remove any existing toast
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span>&#10003;</span> ${message}`;
+  document.body.appendChild(toast);
+  setTimeout(() => toast.remove(), 2500);
+}
+
+// Keyboard: Enter in input runs the typed command
+document.getElementById('commandInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    const val = e.target.value.trim().toLowerCase();
+    if (val === 'settings') showDemo(1);
+    else if (val.includes('max') && val.includes('5')) showDemo(2);
+    else if (val.includes('theme') && val.includes('light')) showDemo(3);
+    else if (val.includes('budget') && val.includes('10')) showDemo(4);
+    else if (val.includes('automation')) showDemo(5);
+  }
+  if (e.key === 'Escape') {
+    e.target.value = '';
+    document.getElementById('results').innerHTML = '';
+  }
+});
+
+// Boot: show demo 1
+showDemo(1);
+</script>
+
+</body>
+</html>

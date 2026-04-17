@@ -1,0 +1,1589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Command Center — Path B Home</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --card-hover-border: #475569;
+    --pill-bg: #334155;
+    --pill-active: #22c55e;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --green: #34d399;
+    --grey: #475569;
+    --yellow: #fbbf24;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --sidebar-w: 280px;
+    --attention-h: 48px;
+    --filter-h: 52px;
+  }
+
+  html { font-size: 14px; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Attention Strip ─────────────────────────────── */
+  .attention-strip {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--attention-h);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    z-index: 100;
+    gap: 10px;
+  }
+  .attention-strip .logo {
+    font-weight: 700; font-size: 15px;
+    color: #f8fafc;
+    margin-right: 20px;
+    letter-spacing: -0.3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .attention-strip .logo span {
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .metric-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px;
+    background: var(--pill-bg);
+    border: 1px solid transparent;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .metric-pill:hover { border-color: var(--card-hover-border); transform: translateY(-1px); }
+  .metric-pill.urgent { border-color: rgba(248,113,113,0.3); }
+  .metric-pill.urgent:hover { background: rgba(248,113,113,0.15); border-color: var(--red); }
+  .metric-pill.drafts { border-color: rgba(96,165,250,0.2); }
+  .metric-pill.drafts:hover { background: rgba(96,165,250,0.1); border-color: var(--blue); }
+  .metric-pill.running { border-color: rgba(52,211,153,0.2); }
+  .metric-pill.running:hover { background: rgba(52,211,153,0.1); border-color: var(--green); }
+  .metric-pill.cost:hover { background: rgba(251,191,36,0.1); border-color: var(--yellow); }
+  .metric-pill.healthy { border-color: rgba(52,211,153,0.3); }
+  .metric-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+
+  .attention-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .search-box {
+    background: var(--pill-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 5px 12px;
+    color: var(--text);
+    font-size: 12px;
+    width: 180px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-box::placeholder { color: var(--text-muted); }
+  .search-box:focus { border-color: var(--blue); }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #0f172a;
+    cursor: pointer;
+  }
+
+  /* ── Filter Bar ──────────────────────────────────── */
+  .filter-bar {
+    position: fixed;
+    top: var(--attention-h);
+    left: 0;
+    right: var(--sidebar-w);
+    height: var(--filter-h);
+    background: var(--bg);
+    border-bottom: 1px solid rgba(51,65,85,0.5);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    gap: 8px;
+    z-index: 99;
+  }
+  .filter-pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+    user-select: none;
+  }
+  .filter-pill:hover { color: var(--text); border-color: var(--card-hover-border); }
+  .filter-pill.active {
+    background: var(--pill-active);
+    color: #fff;
+    border-color: var(--pill-active);
+  }
+  .filter-pill .count {
+    font-size: 10px;
+    opacity: 0.7;
+    margin-left: 4px;
+  }
+
+  /* ── Main Content ────────────────────────────────── */
+  .main-layout {
+    position: fixed;
+    top: calc(var(--attention-h) + var(--filter-h));
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+  }
+  .action-stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    padding-bottom: 80px;
+    scroll-behavior: smooth;
+  }
+  .action-stream::-webkit-scrollbar { width: 6px; }
+  .action-stream::-webkit-scrollbar-track { background: transparent; }
+  .action-stream::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+  /* ── Stream Cards ────────────────────────────────── */
+  .stream-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    border-left: 3px solid transparent;
+    transition: all 0.2s ease;
+    position: relative;
+    cursor: default;
+  }
+  .stream-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--card-hover-border);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+  }
+  .stream-card.urgent { border-left-color: var(--red); }
+  .stream-card.draft { border-left-color: var(--blue); }
+  .stream-card.agent-result { border-left-color: var(--green); }
+  .stream-card.running { border-left-color: var(--blue); }
+  .stream-card.running .card-icon { animation: pulse 2s ease-in-out infinite; }
+  .stream-card.todo { border-left-color: transparent; }
+  .stream-card.done {
+    border-left-color: transparent;
+    opacity: 0.5;
+  }
+  .stream-card.done:hover { opacity: 0.7; }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .card-header {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .card-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+  .card-title {
+    font-size: 14px; font-weight: 600; color: #f1f5f9;
+    line-height: 1.4;
+  }
+  .card-time {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .card-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-left: 26px;
+    margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+  }
+  .card-meta .tag {
+    padding: 2px 8px;
+    background: rgba(51,65,85,0.6);
+    border-radius: 4px;
+    font-size: 10px;
+    color: var(--text-dim);
+  }
+  .card-meta .tag.high { background: rgba(248,113,113,0.15); color: var(--red); }
+  .card-meta .tag.medium { background: rgba(251,191,36,0.15); color: var(--yellow); }
+  .card-meta .sep { color: var(--text-muted); }
+
+  .card-preview {
+    margin: 8px 0 10px 26px;
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    padding: 8px 12px;
+    background: rgba(15,23,42,0.5);
+    border-radius: 8px;
+    border-left: 2px solid var(--card-border);
+  }
+  .card-actions {
+    margin-left: 26px;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .btn {
+    padding: 5px 14px;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--card-border);
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    transition: all 0.15s ease;
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .btn:hover { color: var(--text); border-color: var(--card-hover-border); background: #2d3a4f; }
+  .btn.primary {
+    background: var(--pill-active);
+    border-color: var(--pill-active);
+    color: #fff;
+  }
+  .btn.primary:hover { background: #2563eb; }
+  .btn.success {
+    background: rgba(52,211,153,0.15);
+    border-color: rgba(52,211,153,0.3);
+    color: var(--green);
+  }
+  .btn.success:hover { background: rgba(52,211,153,0.25); }
+  .btn.danger {
+    background: rgba(248,113,113,0.1);
+    border-color: rgba(248,113,113,0.2);
+    color: var(--red);
+  }
+  .btn.danger:hover { background: rgba(248,113,113,0.2); }
+  .btn.ghost { border-color: transparent; background: transparent; }
+  .btn.ghost:hover { background: var(--pill-bg); }
+
+  /* Progress bar */
+  .progress-bar-wrap {
+    margin: 8px 0 10px 26px;
+    height: 4px;
+    background: var(--pill-bg);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--blue), var(--green));
+    border-radius: 2px;
+    animation: indeterminate 2s ease-in-out infinite;
+  }
+  @keyframes indeterminate {
+    0% { width: 15%; margin-left: 0; }
+    50% { width: 45%; margin-left: 30%; }
+    100% { width: 15%; margin-left: 85%; }
+  }
+
+  /* Todo checkbox */
+  .todo-check {
+    width: 18px; height: 18px;
+    border: 2px solid var(--grey);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .todo-check:hover { border-color: var(--blue); background: rgba(96,165,250,0.1); }
+  .todo-check.checked {
+    background: var(--green);
+    border-color: var(--green);
+  }
+  .todo-check.checked::after {
+    content: ''; display: block;
+    width: 5px; height: 9px;
+    border: solid #0f172a; border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+    margin-top: -1px;
+  }
+
+  /* ── Section Header ──────────────────────────────── */
+  .section-time {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 12px 0 8px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .section-time::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--card-border);
+  }
+
+  /* ── Right Sidebar ───────────────────────────────── */
+  .right-sidebar {
+    width: var(--sidebar-w);
+    border-left: 1px solid var(--card-border);
+    background: linear-gradient(180deg, #1a2332 0%, var(--bg) 100%);
+    overflow-y: auto;
+    padding: 20px 16px;
+    flex-shrink: 0;
+  }
+  .right-sidebar::-webkit-scrollbar { width: 4px; }
+  .right-sidebar::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 2px; }
+
+  .sidebar-section {
+    margin-bottom: 24px;
+  }
+  .sidebar-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 12px;
+  }
+
+  /* Health Grid */
+  .health-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .health-item {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px;
+    transition: all 0.2s;
+  }
+  .health-item:hover { border-color: var(--card-hover-border); }
+  .health-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .health-dot.ok { background: var(--green); box-shadow: 0 0 8px rgba(52,211,153,0.4); }
+
+  /* Spend */
+  .spend-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: #f1f5f9;
+    margin-bottom: 4px;
+  }
+  .spend-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 12px;
+  }
+  .mini-chart {
+    display: flex; align-items: flex-end; gap: 4px;
+    height: 48px;
+  }
+  .mini-bar {
+    flex: 1;
+    background: linear-gradient(to top, var(--blue), rgba(96,165,250,0.3));
+    border-radius: 3px 3px 0 0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    position: relative;
+  }
+  .mini-bar:hover { background: linear-gradient(to top, var(--green), rgba(52,211,153,0.3)); }
+  .mini-bar:last-child {
+    background: linear-gradient(to top, var(--green), rgba(52,211,153,0.5));
+  }
+  .chart-labels {
+    display: flex; gap: 4px;
+    margin-top: 4px;
+  }
+  .chart-labels span {
+    flex: 1;
+    text-align: center;
+    font-size: 9px;
+    color: var(--text-muted);
+  }
+
+  /* Teams */
+  .team-row {
+    display: flex; align-items: center;
+    padding: 8px 10px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .team-row:hover { background: rgba(51,65,85,0.4); }
+  .team-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .team-name { flex: 1; font-size: 12px; font-weight: 500; }
+  .team-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--pill-bg);
+    padding: 2px 8px;
+    border-radius: 10px;
+  }
+
+  /* Recent Actions */
+  .recent-item {
+    padding: 6px 0;
+    font-size: 11px;
+    color: var(--text-dim);
+    border-bottom: 1px solid rgba(51,65,85,0.3);
+    display: flex; align-items: flex-start; gap: 8px;
+    line-height: 1.4;
+  }
+  .recent-item:last-child { border-bottom: none; }
+  .recent-icon { flex-shrink: 0; font-size: 12px; }
+  .recent-time { color: var(--text-muted); font-size: 10px; margin-top: 2px; }
+
+  /* ── Slide-Over Panel ────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .overlay.open { opacity: 1; pointer-events: all; }
+
+  .slide-over {
+    position: fixed;
+    top: 0; right: 0; bottom: 0;
+    width: 440px;
+    background: linear-gradient(180deg, #1a2332 0%, #0f172a 100%);
+    border-left: 1px solid var(--card-border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    display: flex; flex-direction: column;
+  }
+  .slide-over.open { transform: translateX(0); }
+
+  .slide-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--card-border);
+    flex-shrink: 0;
+  }
+  .slide-header h3 {
+    font-size: 15px; font-weight: 600;
+  }
+  .slide-close {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: all 0.15s;
+    border: none;
+    background: transparent;
+    font-size: 18px;
+  }
+  .slide-close:hover { background: var(--pill-bg); color: var(--text); }
+
+  .slide-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    font-size: 13px;
+    line-height: 1.7;
+    color: var(--text-dim);
+  }
+  .slide-body h4 {
+    color: var(--text);
+    font-size: 13px;
+    font-weight: 600;
+    margin: 16px 0 8px;
+  }
+  .slide-body h4:first-child { margin-top: 0; }
+  .slide-body pre {
+    background: rgba(15,23,42,0.8);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 12px;
+    overflow-x: auto;
+    margin: 8px 0;
+    color: var(--text);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .slide-body ul { margin: 8px 0; padding-left: 20px; }
+  .slide-body li { margin-bottom: 4px; }
+  .slide-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--card-border);
+    display: flex; gap: 8px;
+    flex-shrink: 0;
+  }
+
+  /* ── Toast ───────────────────────────────────────── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+  .toast {
+    background: #1e293b;
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 10px 18px;
+    font-size: 12px;
+    color: var(--text);
+    box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+    display: flex; align-items: center; gap: 8px;
+    animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 320px;
+  }
+  .toast.success { border-left: 3px solid var(--green); }
+  .toast.info { border-left: 3px solid var(--blue); }
+  .toast.warning { border-left: 3px solid var(--yellow); }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(16px) scale(0.95); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  @keyframes toastOut {
+    from { opacity: 1; transform: translateY(0) scale(1); }
+    to { opacity: 0; transform: translateY(8px) scale(0.95); }
+  }
+
+  /* ── Responsive ──────────────────────────────────── */
+  @media (max-width: 1100px) {
+    .right-sidebar { width: 240px; }
+    :root { --sidebar-w: 240px; }
+  }
+  @media (max-width: 900px) {
+    .right-sidebar { display: none; }
+    :root { --sidebar-w: 0px; }
+    .filter-bar { right: 0; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ ATTENTION STRIP ═══ -->
+<div class="attention-strip">
+  <div class="logo">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+      <circle cx="10" cy="10" r="9" stroke="url(#g)" stroke-width="2"/>
+      <circle cx="10" cy="10" r="4" fill="url(#g)"/>
+      <defs><linearGradient id="g" x1="2" y1="2" x2="18" y2="18"><stop stop-color="#60a5fa"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs>
+    </svg>
+    <span>CoCo</span>
+  </div>
+
+  <div class="metric-pill urgent" data-filter="urgent" onclick="toggleFilter('urgent')">
+    <span class="dot red"></span>
+    2 Urgent
+  </div>
+  <div class="metric-pill drafts" data-filter="draft" onclick="toggleFilter('draft')">
+    <span class="dot blue"></span>
+    5 Drafts
+  </div>
+  <div class="metric-pill running" data-filter="running" onclick="toggleFilter('running')">
+    <span class="dot green"></span>
+    1 Running
+  </div>
+  <div class="metric-pill cost" onclick="showToast('Today: $2.40 across 6 agents', 'info')">
+    &#128176; $2.40 today
+  </div>
+  <div class="metric-pill healthy">
+    <span class="dot green"></span>
+    All Healthy
+  </div>
+
+  <div class="attention-right">
+    <input type="text" class="search-box" placeholder="Search stream... &#8984;K" id="searchBox">
+    <div class="avatar" title="Rijul Kalra">RK</div>
+  </div>
+</div>
+
+<!-- ═══ FILTER BAR ═══ -->
+<div class="filter-bar">
+  <div class="filter-pill active" data-filter="all" onclick="setFilter('all')">All <span class="count">28</span></div>
+  <div class="filter-pill" data-filter="urgent" onclick="setFilter('urgent')">Urgent <span class="count">2</span></div>
+  <div class="filter-pill" data-filter="draft" onclick="setFilter('draft')">Drafts <span class="count">5</span></div>
+  <div class="filter-pill" data-filter="running" onclick="setFilter('running')">Agents <span class="count">4</span></div>
+  <div class="filter-pill" data-filter="todo" onclick="setFilter('todo')">Todos <span class="count">12</span></div>
+  <div class="filter-pill" data-filter="done" onclick="setFilter('done')">Done <span class="count">5</span></div>
+</div>
+
+<!-- ═══ MAIN LAYOUT ═══ -->
+<div class="main-layout">
+
+  <!-- ── Action Stream ── -->
+  <div class="action-stream" id="actionStream">
+
+    <div class="section-time">Now</div>
+
+    <!-- RUNNING AGENT -->
+    <div class="stream-card running" data-type="running">
+      <div class="card-header">
+        <span class="card-icon">&#128309;</span>
+        <span class="card-title">Developer running...</span>
+        <span class="card-time">2m 34s</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">ACC</span>
+        <span class="sep">&middot;</span>
+        "Implementing auth middleware refactor"
+        <span class="sep">&middot;</span>
+        $0.08
+      </div>
+      <div class="progress-bar-wrap"><div class="progress-bar-fill"></div></div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('live-log')">View Live Log</button>
+        <button class="btn" onclick="showToast('Agent paused', 'warning')">Pause &#9198;</button>
+        <button class="btn danger" onclick="showToast('Agent terminated', 'warning')">Kill &#9209;</button>
+      </div>
+    </div>
+
+    <!-- URGENT 1 -->
+    <div class="stream-card urgent" data-type="urgent">
+      <div class="card-header">
+        <span class="card-icon">&#128308;</span>
+        <span class="card-title">Review GitGuardian incident #29214721</span>
+        <span class="card-time">9d ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">email</span>
+        <span class="tag high">high priority</span>
+        <span class="tag">ACC</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('incident')">Review &rarr;</button>
+        <button class="btn" onclick="dismissCard(this)">Dismiss</button>
+        <button class="btn">Assign to Project &#9662;</button>
+      </div>
+    </div>
+
+    <!-- URGENT 2 -->
+    <div class="stream-card urgent" data-type="urgent">
+      <div class="card-header">
+        <span class="card-icon">&#128308;</span>
+        <span class="card-title">Aravo API rate limit exceeded (3PI V2)</span>
+        <span class="card-time">2h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">system alert</span>
+        <span class="tag high">high priority</span>
+        <span class="tag">3PI V2</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('rate-limit')">Investigate &rarr;</button>
+        <button class="btn" onclick="showToast('Snoozed for 4 hours', 'info')">Snooze 4h</button>
+        <button class="btn">Assign to Project &#9662;</button>
+      </div>
+    </div>
+
+    <div class="section-time">Today</div>
+
+    <!-- AGENT RESULT -->
+    <div class="stream-card agent-result" data-type="running">
+      <div class="card-header">
+        <span class="card-icon">&#9989;</span>
+        <span class="card-title">Technical Architect completed</span>
+        <span class="card-time">14m ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">ACC</span>
+        <span class="sep">&middot;</span>
+        "Review system architecture for scaling"
+        <span class="sep">&middot;</span>
+        4m 12s
+        <span class="sep">&middot;</span>
+        $0.23
+      </div>
+      <div class="card-preview">
+        <strong>Summary:</strong> Identified 3 scaling bottlenecks in the current architecture. Recommended connection pooling for PostgreSQL (expected 40% improvement), Redis caching layer for hot paths, and horizontal pod autoscaling for the API tier.
+      </div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('arch-output')">View Output &rarr;</button>
+        <button class="btn" onclick="showToast('Opening chat with context...', 'info')">Chat About This &#128172;</button>
+        <button class="btn success">Spawn Follow-up</button>
+      </div>
+    </div>
+
+    <!-- DRAFT 1 -->
+    <div class="stream-card draft" data-type="draft">
+      <div class="card-header">
+        <span class="card-icon">&#128221;</span>
+        <span class="card-title">ACC Phase 2 Status Update</span>
+        <span class="card-time">28m ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">Knowledge Hub draft</span>
+        <span class="sep">&middot;</span>
+        pending review
+        <span class="sep">&middot;</span>
+        <span class="tag">ACC</span>
+      </div>
+      <div class="card-preview">
+        "The ACC Phase 2 implementation has progressed significantly this sprint. Key milestones include the completion of the auth middleware refactor, integration testing with the Aravo API, and preliminary load testing results showing 2.3x throughput improvement..."
+      </div>
+      <div class="card-actions">
+        <button class="btn success" onclick="showToast('Draft approved and published', 'success')">Approve &#10003;</button>
+        <button class="btn danger" onclick="showToast('Draft rejected', 'warning')">Reject &#10007;</button>
+        <button class="btn primary" onclick="openSlideOver('draft-preview')">Preview Full &rarr;</button>
+      </div>
+    </div>
+
+    <!-- DRAFT 2 -->
+    <div class="stream-card draft" data-type="draft">
+      <div class="card-header">
+        <span class="card-icon">&#128221;</span>
+        <span class="card-title">3PI Vendor Comparison Matrix</span>
+        <span class="card-time">1h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">Knowledge Hub draft</span>
+        <span class="sep">&middot;</span>
+        pending review
+        <span class="sep">&middot;</span>
+        <span class="tag">3PI V2</span>
+      </div>
+      <div class="card-preview">
+        "Comparison across 6 dimensions: API reliability (99.2% vs 97.8%), cost per query ($0.003 vs $0.007), data freshness (15min vs 2hr), coverage (42 countries vs 38), compliance certifications, and support SLA..."
+      </div>
+      <div class="card-actions">
+        <button class="btn success" onclick="showToast('Draft approved and published', 'success')">Approve &#10003;</button>
+        <button class="btn danger" onclick="showToast('Draft rejected', 'warning')">Reject &#10007;</button>
+        <button class="btn primary" onclick="openSlideOver('vendor-preview')">Preview Full &rarr;</button>
+      </div>
+    </div>
+
+    <!-- DRAFT 3 -->
+    <div class="stream-card draft" data-type="draft">
+      <div class="card-header">
+        <span class="card-icon">&#128221;</span>
+        <span class="card-title">AuditBoard Migration Plan v3</span>
+        <span class="card-time">2h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">Knowledge Hub draft</span>
+        <span class="sep">&middot;</span>
+        pending review
+        <span class="sep">&middot;</span>
+        <span class="tag">AuditBoard</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn success" onclick="showToast('Draft approved and published', 'success')">Approve &#10003;</button>
+        <button class="btn danger" onclick="showToast('Draft rejected', 'warning')">Reject &#10007;</button>
+        <button class="btn" onclick="openSlideOver('migration-preview')">Preview Full &rarr;</button>
+      </div>
+    </div>
+
+    <!-- TODO 1 -->
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Prep Q2 risk report</span>
+        <span class="card-time">due Apr 15</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag high">high priority</span>
+        <span class="tag">Cross Risk Tools</span>
+      </div>
+      <div class="card-actions" style="margin-left: 28px;">
+        <button class="btn ghost">Assign &#9662;</button>
+        <button class="btn ghost">&rarr; detail</button>
+      </div>
+    </div>
+
+    <!-- TODO 2 -->
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Schedule Pankaj sync on 3PI Phase 2</span>
+        <span class="card-time">due Apr 8</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag medium">medium</span>
+        <span class="tag">3PI V2</span>
+      </div>
+      <div class="card-actions" style="margin-left: 28px;">
+        <button class="btn ghost">Assign &#9662;</button>
+        <button class="btn ghost">&rarr; detail</button>
+      </div>
+    </div>
+
+    <!-- TODO 3 -->
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Review AuditBoard SOC 2 evidence package</span>
+        <span class="card-time">due Apr 10</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag high">high priority</span>
+        <span class="tag">AuditBoard</span>
+      </div>
+      <div class="card-actions" style="margin-left: 28px;">
+        <button class="btn ghost">Assign &#9662;</button>
+        <button class="btn ghost">&rarr; detail</button>
+      </div>
+    </div>
+
+    <!-- TODO 4 -->
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Update Confluence architecture diagrams</span>
+        <span class="card-time">due Apr 12</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">ACC</span>
+      </div>
+      <div class="card-actions" style="margin-left: 28px;">
+        <button class="btn ghost">Assign &#9662;</button>
+        <button class="btn ghost">&rarr; detail</button>
+      </div>
+    </div>
+
+    <!-- DRAFT 4 -->
+    <div class="stream-card draft" data-type="draft">
+      <div class="card-header">
+        <span class="card-icon">&#128221;</span>
+        <span class="card-title">Weekly Cross Risk Digest</span>
+        <span class="card-time">3h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">Knowledge Hub draft</span>
+        <span class="sep">&middot;</span>
+        pending review
+        <span class="sep">&middot;</span>
+        <span class="tag">Cross Risk</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn success" onclick="showToast('Draft approved and published', 'success')">Approve &#10003;</button>
+        <button class="btn danger" onclick="showToast('Draft rejected', 'warning')">Reject &#10007;</button>
+        <button class="btn" onclick="openSlideOver('digest-preview')">Preview Full &rarr;</button>
+      </div>
+    </div>
+
+    <!-- DRAFT 5 -->
+    <div class="stream-card draft" data-type="draft">
+      <div class="card-header">
+        <span class="card-icon">&#128221;</span>
+        <span class="card-title">ACC Onboarding Runbook Update</span>
+        <span class="card-time">4h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">Knowledge Hub draft</span>
+        <span class="sep">&middot;</span>
+        pending review
+        <span class="sep">&middot;</span>
+        <span class="tag">ACC</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn success" onclick="showToast('Draft approved and published', 'success')">Approve &#10003;</button>
+        <button class="btn danger" onclick="showToast('Draft rejected', 'warning')">Reject &#10007;</button>
+        <button class="btn" onclick="openSlideOver('runbook-preview')">Preview Full &rarr;</button>
+      </div>
+    </div>
+
+    <div class="section-time">Earlier Today</div>
+
+    <!-- AGENT RESULT 2 -->
+    <div class="stream-card agent-result" data-type="running">
+      <div class="card-header">
+        <span class="card-icon">&#9989;</span>
+        <span class="card-title">Code Reviewer completed</span>
+        <span class="card-time">3h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">3PI V2</span>
+        <span class="sep">&middot;</span>
+        "Review PR #247: vendor abstraction layer"
+        <span class="sep">&middot;</span>
+        2m 8s
+        <span class="sep">&middot;</span>
+        $0.14
+      </div>
+      <div class="card-preview">
+        <strong>Summary:</strong> 2 blocking issues found: missing error handling in vendor fallback chain, and potential race condition in concurrent API calls. 4 suggestions for improved test coverage.
+      </div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('review-output')">View Output &rarr;</button>
+        <button class="btn">Chat About This &#128172;</button>
+        <button class="btn success">Spawn Follow-up</button>
+      </div>
+    </div>
+
+    <!-- AGENT RESULT 3 -->
+    <div class="stream-card agent-result" data-type="running">
+      <div class="card-header">
+        <span class="card-icon">&#9989;</span>
+        <span class="card-title">Research Analyst completed</span>
+        <span class="card-time">5h ago</span>
+      </div>
+      <div class="card-meta">
+        <span class="tag">AuditBoard</span>
+        <span class="sep">&middot;</span>
+        "Competitive landscape analysis for audit platforms"
+        <span class="sep">&middot;</span>
+        8m 41s
+        <span class="sep">&middot;</span>
+        $0.52
+      </div>
+      <div class="card-actions">
+        <button class="btn primary" onclick="openSlideOver('research-output')">View Output &rarr;</button>
+        <button class="btn">Chat About This &#128172;</button>
+      </div>
+    </div>
+
+    <!-- MORE TODOs -->
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Finalize 3PI V2 API contract with vendor</span>
+        <span class="card-time">due Apr 14</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag medium">medium</span>
+        <span class="tag">3PI V2</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Draft ACC Phase 3 scope proposal</span>
+        <span class="card-time">due Apr 18</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">ACC</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Set up monitoring dashboards for prod</span>
+        <span class="card-time">due Apr 20</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">Cross Risk Tools</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Write unit tests for auth middleware</span>
+        <span class="card-time">due Apr 9</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">ACC</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Review AuditBoard SSO integration docs</span>
+        <span class="card-time">due Apr 11</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">AuditBoard</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Prepare demo for Cross Risk steering committee</span>
+        <span class="card-time">due Apr 16</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag high">high priority</span>
+        <span class="tag">Cross Risk</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Update CoCo platform roadmap for Q2</span>
+        <span class="card-time">due Apr 22</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">CoCo</span>
+      </div>
+    </div>
+
+    <div class="stream-card todo" data-type="todo">
+      <div class="card-header">
+        <div class="todo-check" onclick="toggleTodo(this)"></div>
+        <span class="card-title">Triage backlog items from last sprint</span>
+        <span class="card-time">due Apr 7</span>
+      </div>
+      <div class="card-meta" style="margin-left: 28px;">
+        <span class="tag">ACC</span>
+      </div>
+    </div>
+
+    <div class="section-time">Completed</div>
+
+    <!-- DONE ITEMS -->
+    <div class="stream-card done" data-type="done">
+      <div class="card-header">
+        <span class="card-icon" style="color: var(--green);">&#10003;</span>
+        <span class="card-title" style="text-decoration: line-through; color: var(--text-muted);">Updated Aravo API documentation</span>
+        <span class="card-time">2h ago</span>
+      </div>
+    </div>
+
+    <div class="stream-card done" data-type="done">
+      <div class="card-header">
+        <span class="card-icon" style="color: var(--green);">&#10003;</span>
+        <span class="card-title" style="text-decoration: line-through; color: var(--text-muted);">Approved "3PI Vendor Comparison" draft</span>
+        <span class="card-time">4h ago</span>
+      </div>
+    </div>
+
+    <div class="stream-card done" data-type="done">
+      <div class="card-header">
+        <span class="card-icon" style="color: var(--green);">&#10003;</span>
+        <span class="card-title" style="text-decoration: line-through; color: var(--text-muted);">Resolved GitGuardian incident #29214588</span>
+        <span class="card-time">6h ago</span>
+      </div>
+    </div>
+
+    <div class="stream-card done" data-type="done">
+      <div class="card-header">
+        <span class="card-icon" style="color: var(--green);">&#10003;</span>
+        <span class="card-title" style="text-decoration: line-through; color: var(--text-muted);">Completed AuditBoard data migration dry run</span>
+        <span class="card-time">8h ago</span>
+      </div>
+    </div>
+
+    <div class="stream-card done" data-type="done">
+      <div class="card-header">
+        <span class="card-icon" style="color: var(--green);">&#10003;</span>
+        <span class="card-title" style="text-decoration: line-through; color: var(--text-muted);">Submitted Q1 cost reconciliation report</span>
+        <span class="card-time">yesterday</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ── Right Sidebar ── -->
+  <div class="right-sidebar">
+
+    <!-- Health Grid -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">System Health</div>
+      <div class="health-grid">
+        <div class="health-item">
+          <div class="health-dot ok"></div>
+          <div>
+            <div style="font-weight:600; color:var(--text);">API</div>
+            <div style="font-size:10px; color:var(--text-muted);">12ms p99</div>
+          </div>
+        </div>
+        <div class="health-item">
+          <div class="health-dot ok"></div>
+          <div>
+            <div style="font-weight:600; color:var(--text);">Database</div>
+            <div style="font-size:10px; color:var(--text-muted);">WAL ok</div>
+          </div>
+        </div>
+        <div class="health-item">
+          <div class="health-dot ok"></div>
+          <div>
+            <div style="font-weight:600; color:var(--text);">Agents</div>
+            <div style="font-size:10px; color:var(--text-muted);">1 active</div>
+          </div>
+        </div>
+        <div class="health-item">
+          <div class="health-dot ok"></div>
+          <div>
+            <div style="font-weight:600; color:var(--text);">Sync</div>
+            <div style="font-size:10px; color:var(--text-muted);">2m ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Today's Spend -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Today's Spend</div>
+      <div class="spend-amount">$2.40</div>
+      <div class="spend-label">6 agent runs &middot; avg $0.40/run</div>
+      <div class="mini-chart">
+        <div class="mini-bar" style="height: 35%;" title="Mon: $1.20"></div>
+        <div class="mini-bar" style="height: 60%;" title="Tue: $3.10"></div>
+        <div class="mini-bar" style="height: 45%;" title="Wed: $2.05"></div>
+        <div class="mini-bar" style="height: 80%;" title="Thu: $4.50"></div>
+        <div class="mini-bar" style="height: 55%;" title="Fri: $2.80"></div>
+        <div class="mini-bar" style="height: 30%;" title="Sat: $0.90"></div>
+        <div class="mini-bar" style="height: 48%;" title="Today: $2.40"></div>
+      </div>
+      <div class="chart-labels">
+        <span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span><span>Su</span>
+      </div>
+    </div>
+
+    <!-- Active Teams -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Active Teams</div>
+      <div class="team-row" onclick="showToast('Filtering to ACC...', 'info')">
+        <div class="team-dot" style="background: var(--blue);"></div>
+        <span class="team-name">ACC</span>
+        <span class="team-count">21</span>
+      </div>
+      <div class="team-row" onclick="showToast('Filtering to AuditBoard...', 'info')">
+        <div class="team-dot" style="background: var(--green);"></div>
+        <span class="team-name">AuditBoard</span>
+        <span class="team-count">40</span>
+      </div>
+      <div class="team-row" onclick="showToast('Filtering to 3PI V2...', 'info')">
+        <div class="team-dot" style="background: var(--yellow);"></div>
+        <span class="team-name">3PI V2</span>
+        <span class="team-count">15</span>
+      </div>
+      <div class="team-row" onclick="showToast('Filtering to Cross Risk...', 'info')">
+        <div class="team-dot" style="background: var(--red);"></div>
+        <span class="team-name">Cross Risk Tools</span>
+        <span class="team-count">8</span>
+      </div>
+    </div>
+
+    <!-- Recent Actions -->
+    <div class="sidebar-section">
+      <div class="sidebar-title">Recent Actions</div>
+      <div class="recent-item">
+        <span class="recent-icon">&#10003;</span>
+        <div>
+          Approved draft: ACC Status Update
+          <div class="recent-time">14 minutes ago</div>
+        </div>
+      </div>
+      <div class="recent-item">
+        <span class="recent-icon">&#128172;</span>
+        <div>
+          Chatted with Technical Architect
+          <div class="recent-time">22 minutes ago</div>
+        </div>
+      </div>
+      <div class="recent-item">
+        <span class="recent-icon">&#9654;</span>
+        <div>
+          Spawned Developer for auth refactor
+          <div class="recent-time">38 minutes ago</div>
+        </div>
+      </div>
+      <div class="recent-item">
+        <span class="recent-icon">&#128221;</span>
+        <div>
+          Dismissed 2 low-priority alerts
+          <div class="recent-time">1 hour ago</div>
+        </div>
+      </div>
+      <div class="recent-item">
+        <span class="recent-icon">&#10003;</span>
+        <div>
+          Completed todo: Update API docs
+          <div class="recent-time">2 hours ago</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY + SLIDE-OVER ═══ -->
+<div class="overlay" id="overlay" onclick="closeSlideOver()"></div>
+<div class="slide-over" id="slideOver">
+  <div class="slide-header">
+    <h3 id="slideTitle">Detail View</h3>
+    <button class="slide-close" onclick="closeSlideOver()">&times;</button>
+  </div>
+  <div class="slide-body" id="slideBody">
+    <!-- Dynamic content -->
+  </div>
+  <div class="slide-footer" id="slideFooter">
+    <button class="btn primary" onclick="showToast('Action taken', 'success'); closeSlideOver();">Take Action</button>
+    <button class="btn" onclick="closeSlideOver()">Close</button>
+  </div>
+</div>
+
+<!-- ═══ TOAST CONTAINER ═══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+  // ── Filter Logic ──
+  let activeFilter = 'all';
+
+  function setFilter(filter) {
+    activeFilter = filter;
+    document.querySelectorAll('.filter-pill').forEach(p => {
+      p.classList.toggle('active', p.dataset.filter === filter);
+    });
+    applyFilter();
+  }
+
+  function toggleFilter(filter) {
+    if (activeFilter === filter) {
+      setFilter('all');
+    } else {
+      setFilter(filter);
+    }
+  }
+
+  function applyFilter() {
+    const cards = document.querySelectorAll('.stream-card');
+    const sections = document.querySelectorAll('.section-time');
+
+    cards.forEach(card => {
+      if (activeFilter === 'all') {
+        card.style.display = '';
+      } else {
+        card.style.display = card.dataset.type === activeFilter ? '' : 'none';
+      }
+    });
+
+    // Show/hide section headers based on visible cards
+    sections.forEach(sec => {
+      let next = sec.nextElementSibling;
+      let hasVisible = false;
+      while (next && !next.classList.contains('section-time')) {
+        if (next.classList.contains('stream-card') && next.style.display !== 'none') {
+          hasVisible = true;
+          break;
+        }
+        next = next.nextElementSibling;
+      }
+      sec.style.display = hasVisible ? '' : 'none';
+    });
+  }
+
+  // ── Search ──
+  document.getElementById('searchBox').addEventListener('input', function(e) {
+    const q = e.target.value.toLowerCase();
+    if (!q) { applyFilter(); return; }
+    document.querySelectorAll('.stream-card').forEach(card => {
+      const text = card.textContent.toLowerCase();
+      card.style.display = text.includes(q) ? '' : 'none';
+    });
+  });
+
+  // Keyboard shortcut
+  document.addEventListener('keydown', function(e) {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+      e.preventDefault();
+      document.getElementById('searchBox').focus();
+    }
+    if (e.key === 'Escape') {
+      closeSlideOver();
+      document.getElementById('searchBox').blur();
+    }
+  });
+
+  // ── Todo Toggle ──
+  function toggleTodo(el) {
+    el.classList.toggle('checked');
+    const card = el.closest('.stream-card');
+    if (el.classList.contains('checked')) {
+      card.style.opacity = '0.4';
+      card.querySelector('.card-title').style.textDecoration = 'line-through';
+      showToast('Todo completed', 'success');
+    } else {
+      card.style.opacity = '1';
+      card.querySelector('.card-title').style.textDecoration = 'none';
+    }
+  }
+
+  // ── Dismiss Card ──
+  function dismissCard(btn) {
+    const card = btn.closest('.stream-card');
+    card.style.transition = 'all 0.3s ease';
+    card.style.opacity = '0';
+    card.style.transform = 'translateX(40px)';
+    setTimeout(() => { card.style.display = 'none'; showToast('Dismissed', 'info'); }, 300);
+  }
+
+  // ── Slide-Over ──
+  const slideContents = {
+    'draft-preview': {
+      title: 'ACC Phase 2 Status Update',
+      body: `
+        <h4>Status Update &mdash; ACC Phase 2</h4>
+        <p>The ACC Phase 2 implementation has progressed significantly this sprint. Key milestones include the completion of the auth middleware refactor, integration testing with the Aravo API, and preliminary load testing results showing 2.3x throughput improvement.</p>
+        <h4>Completed This Sprint</h4>
+        <ul>
+          <li>Auth middleware refactored to support JWT + session-based auth</li>
+          <li>Aravo API integration passing all 47 test cases</li>
+          <li>Load testing: 2,300 req/s sustained (up from 1,000)</li>
+          <li>Database migration scripts validated in staging</li>
+        </ul>
+        <h4>Blockers</h4>
+        <ul>
+          <li>Aravo rate limiting requires back-off strategy (in progress)</li>
+          <li>SSO certificate renewal pending IT approval</li>
+        </ul>
+        <h4>Next Sprint</h4>
+        <ul>
+          <li>Production deployment prep</li>
+          <li>Runbook finalization</li>
+          <li>Stakeholder demo on Apr 12</li>
+        </ul>
+      `,
+      footer: ['Approve', 'Reject', 'Close']
+    },
+    'arch-output': {
+      title: 'Technical Architect Output',
+      body: `
+        <h4>Architecture Review: Scaling Analysis</h4>
+        <p>Analyzed the current ACC system architecture for scaling bottlenecks. Duration: 4m 12s. Cost: $0.23.</p>
+        <h4>Bottleneck 1: Database Connection Pool</h4>
+        <p>Current pool size of 10 connections is saturating under load. Recommendation:</p>
+        <pre>pool_size: 50
+max_overflow: 20
+pool_timeout: 30
+pool_recycle: 1800</pre>
+        <p>Expected improvement: ~40% reduction in p99 latency.</p>
+        <h4>Bottleneck 2: Missing Cache Layer</h4>
+        <p>Hot paths (user auth, config lookup) hit the database on every request. Add Redis with 5-minute TTL for:</p>
+        <pre>/api/auth/validate  (1,200 calls/min)
+/api/config/:key    (800 calls/min)
+/api/teams/:id      (400 calls/min)</pre>
+        <h4>Bottleneck 3: No Horizontal Scaling</h4>
+        <p>Single API pod handling all traffic. Recommend HPA with:</p>
+        <pre>minReplicas: 2
+maxReplicas: 8
+targetCPUUtilization: 70</pre>
+        <h4>Cost Impact</h4>
+        <p>Redis: ~$15/mo. Additional pods: ~$40/mo peak. Total: ~$55/mo for 4x capacity headroom.</p>
+      `,
+      footer: ['Spawn Follow-up', 'Chat About This', 'Close']
+    },
+    'live-log': {
+      title: 'Developer — Live Log',
+      body: `
+        <h4>Agent: Developer</h4>
+        <p style="color: var(--text-muted);">Task: Implementing auth middleware refactor &bull; Running for 2m 34s</p>
+        <pre style="font-size: 11px; line-height: 1.6; max-height: 400px; overflow-y: auto;">
+[00:00] Starting task: auth middleware refactor
+[00:02] Reading current middleware: src/middleware/auth.ts
+[00:05] Analyzing 3 auth strategies: JWT, session, API key
+[00:12] Creating new middleware structure...
+[00:18] Writing: src/middleware/auth/jwt-strategy.ts
+[00:24] Writing: src/middleware/auth/session-strategy.ts
+[00:31] Writing: src/middleware/auth/api-key-strategy.ts
+[00:38] Creating strategy router: src/middleware/auth/index.ts
+[00:45] Updating route registrations...
+[01:02] Running type checks... 0 errors
+[01:15] Running existing test suite... 47/47 passing
+[01:28] Writing new tests for strategy router...
+[01:42] 12 new tests written, running...
+[01:58] All 59 tests passing
+[02:10] Updating imports across 8 files...
+[02:24] Final type check... 0 errors
+[02:30] Preparing summary...
+<span style="color: var(--green);">[02:34] Still running...</span></pre>
+      `,
+      footer: ['Pause', 'Kill', 'Close']
+    },
+    'incident': {
+      title: 'GitGuardian Incident #29214721',
+      body: `
+        <h4>Incident Details</h4>
+        <p><strong>Source:</strong> GitGuardian email alert<br>
+        <strong>Severity:</strong> High<br>
+        <strong>Detected:</strong> 9 days ago<br>
+        <strong>Project:</strong> ACC</p>
+        <h4>Description</h4>
+        <p>A potential API key was detected in commit <code>a3f8d2e</code> on the <code>feature/aravo-integration</code> branch. The detected pattern matches an Aravo API key format.</p>
+        <h4>Affected File</h4>
+        <pre>src/integrations/aravo/client.ts:47
+const API_KEY = "arv_pk_7f3d..."  // DETECTED</pre>
+        <h4>Recommended Actions</h4>
+        <ul>
+          <li>Rotate the Aravo API key immediately</li>
+          <li>Move key to environment variables / secrets manager</li>
+          <li>Rewrite git history to remove the commit</li>
+          <li>Update .gitignore to prevent future leaks</li>
+        </ul>
+      `,
+      footer: ['Start Remediation', 'Assign', 'Close']
+    },
+    'rate-limit': {
+      title: 'Aravo API Rate Limit Alert',
+      body: `
+        <h4>Alert Details</h4>
+        <p><strong>Service:</strong> Aravo REST API v2<br>
+        <strong>Team:</strong> 3PI V2<br>
+        <strong>Triggered:</strong> 2 hours ago<br>
+        <strong>Status:</strong> Active</p>
+        <h4>Details</h4>
+        <p>Rate limit of 500 requests/minute exceeded. Current rate: 847 req/min. 23% of requests returning HTTP 429.</p>
+        <h4>Impact</h4>
+        <p>Vendor data sync is degraded. Estimated 15-minute delay in data freshness.</p>
+        <h4>Suggested Fixes</h4>
+        <ul>
+          <li>Implement exponential back-off (already in backlog)</li>
+          <li>Add request batching for bulk lookups</li>
+          <li>Request rate limit increase from Aravo (current SLA allows 1,000/min)</li>
+        </ul>
+      `,
+      footer: ['Create Task', 'Snooze', 'Close']
+    },
+    'vendor-preview': {
+      title: '3PI Vendor Comparison Matrix',
+      body: `
+        <h4>Vendor Comparison: 3PI Phase 2</h4>
+        <p>Comparison of Aravo vs. alternative vendor across 6 dimensions.</p>
+        <h4>Results Summary</h4>
+        <ul>
+          <li><strong>API Reliability:</strong> Aravo 99.2% vs Alt 97.8%</li>
+          <li><strong>Cost/Query:</strong> Aravo $0.003 vs Alt $0.007</li>
+          <li><strong>Data Freshness:</strong> Aravo 15min vs Alt 2hr</li>
+          <li><strong>Coverage:</strong> Aravo 42 countries vs Alt 38</li>
+          <li><strong>Compliance:</strong> Both SOC 2 Type II certified</li>
+          <li><strong>Support SLA:</strong> Aravo 4hr vs Alt 24hr</li>
+        </ul>
+        <h4>Recommendation</h4>
+        <p>Continue with Aravo as primary vendor. Cost advantage is 2.3x and data freshness is significantly better. Consider Alt as fallback provider only.</p>
+      `,
+      footer: ['Approve', 'Reject', 'Close']
+    },
+    'review-output': {
+      title: 'Code Review: PR #247',
+      body: `
+        <h4>Review: Vendor Abstraction Layer</h4>
+        <p><strong>PR:</strong> #247 &bull; <strong>Author:</strong> auto-dev &bull; <strong>Duration:</strong> 2m 8s &bull; <strong>Cost:</strong> $0.14</p>
+        <h4>Blocking Issues (2)</h4>
+        <ul>
+          <li><strong>Missing error handling in fallback chain</strong> — <code>src/vendors/fallback.ts:34</code>: The catch block swallows errors silently. Should propagate with context.</li>
+          <li><strong>Race condition</strong> — <code>src/vendors/concurrent.ts:67</code>: Concurrent API calls share mutable state without locking. Use Promise.allSettled instead.</li>
+        </ul>
+        <h4>Suggestions (4)</h4>
+        <ul>
+          <li>Add integration test for fallback scenario</li>
+          <li>Add retry count metric to monitoring</li>
+          <li>Consider circuit breaker pattern for vendor health</li>
+          <li>Increase test coverage from 72% to 85%+</li>
+        </ul>
+      `,
+      footer: ['Spawn Fix Agent', 'Chat About This', 'Close']
+    },
+    'research-output': {
+      title: 'Research: Audit Platform Landscape',
+      body: `
+        <h4>Competitive Landscape: Audit Platforms (2026)</h4>
+        <p><strong>Duration:</strong> 8m 41s &bull; <strong>Cost:</strong> $0.52 &bull; <strong>Sources:</strong> 23 analyzed</p>
+        <h4>Key Players</h4>
+        <ul>
+          <li><strong>AuditBoard</strong> — Market leader, $2.1B valuation, strong GRC integration</li>
+          <li><strong>Workiva</strong> — SEC filing focus, $4.8B market cap</li>
+          <li><strong>Diligent</strong> — Board governance + audit, recently acquired Galvanize</li>
+          <li><strong>ServiceNow GRC</strong> — Enterprise IT risk, gaining audit share</li>
+        </ul>
+        <h4>Trends</h4>
+        <ul>
+          <li>AI-assisted evidence collection growing 40% YoY</li>
+          <li>Continuous monitoring replacing periodic audits</li>
+          <li>SOX automation is table stakes for all vendors</li>
+        </ul>
+      `,
+      footer: ['Export Report', 'Chat About This', 'Close']
+    }
+  };
+
+  // Generic fallback for unspecified slide-overs
+  function getSlideContent(id) {
+    return slideContents[id] || {
+      title: 'Detail View',
+      body: '<p>Full content would be loaded here from the Knowledge Hub.</p>',
+      footer: ['Close']
+    };
+  }
+
+  function openSlideOver(contentId) {
+    const content = getSlideContent(contentId);
+    document.getElementById('slideTitle').textContent = content.title;
+    document.getElementById('slideBody').innerHTML = content.body;
+
+    // Build footer buttons
+    const footer = document.getElementById('slideFooter');
+    footer.innerHTML = content.footer.map((label, i) => {
+      const cls = i === 0 ? 'btn primary' : (label === 'Close' ? 'btn' : 'btn');
+      const action = label === 'Close'
+        ? 'closeSlideOver()'
+        : `showToast('${label} action taken', 'success'); closeSlideOver();`;
+      return `<button class="${cls}" onclick="${action}">${label}</button>`;
+    }).join('');
+
+    document.getElementById('overlay').classList.add('open');
+    document.getElementById('slideOver').classList.add('open');
+  }
+
+  function closeSlideOver() {
+    document.getElementById('overlay').classList.remove('open');
+    document.getElementById('slideOver').classList.remove('open');
+  }
+
+  // ── Toasts ──
+  function showToast(message, type = 'info') {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    const icons = { success: '&#10003;', info: '&#8505;', warning: '&#9888;' };
+    toast.innerHTML = `<span>${icons[type] || ''}</span> ${message}`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.animation = 'toastOut 0.3s ease forwards';
+      setTimeout(() => toast.remove(), 300);
+    }, 3000);
+  }
+
+  // ── Initial greeting toast ──
+  setTimeout(() => showToast('Welcome back, Rijul. 2 items need attention.', 'info'), 800);
+</script>
+
+</body>
+</html>

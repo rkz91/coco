@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Agents View (Path B: Collapse)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --bg-deep: #0b1120;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59,130,246,0.2);
+    --blue-dim: rgba(59,130,246,0.12);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.10);
+    --yellow: #eab308;
+    --purple: #a855f7;
+    --glass: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.06);
+    --sidebar-w: 60px;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    display: flex;
+  }
+
+  /* ── Slim Icon Sidebar ── */
+  .sidebar {
+    width: var(--sidebar-w);
+    min-height: 100vh;
+    background: var(--bg-deep);
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    gap: 4px;
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 50;
+  }
+  .sidebar-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, var(--blue), #6366f1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+    color: #fff;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+  .sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+  }
+  .sidebar-item {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+    border: none;
+    background: none;
+  }
+  .sidebar-item:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--text-dim);
+  }
+  .sidebar-item.active {
+    background: var(--blue-dim);
+    color: var(--blue);
+  }
+  .sidebar-item.active::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--blue);
+    border-radius: 0 2px 2px 0;
+  }
+  .sidebar-tooltip {
+    position: absolute;
+    left: 52px;
+    background: #1e293b;
+    color: var(--text);
+    padding: 5px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateX(-4px);
+    transition: all 0.15s;
+    z-index: 100;
+  }
+  .sidebar-item:hover .sidebar-tooltip {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  /* ── Main Content ── */
+  .main {
+    flex: 1;
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: margin-right 0.3s ease;
+  }
+  .main.slide-over-open {
+    margin-right: 440px;
+  }
+
+  /* ── Top Bar ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 28px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 20;
+    background: rgba(15,23,42,0.88);
+    gap: 16px;
+  }
+  .top-bar-left { display: flex; align-items: center; gap: 20px; }
+  .top-bar h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+
+  .view-toggle {
+    display: flex;
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    overflow: hidden;
+    border: 1px solid var(--border);
+  }
+  .view-toggle button {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    padding: 5px 12px;
+    font-size: 12px;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .view-toggle button.active {
+    background: rgba(255,255,255,0.08);
+    color: var(--text);
+  }
+
+  .top-bar-center {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    max-width: 500px;
+  }
+
+  /* Filters inline */
+  .filter-chips {
+    display: flex;
+    gap: 6px;
+  }
+  .chip {
+    padding: 4px 12px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    white-space: nowrap;
+    font-family: inherit;
+  }
+  .chip:hover { background: var(--surface-hover); color: var(--text-dim); }
+  .chip.active { background: rgba(255,255,255,0.1); color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .chip .count {
+    background: rgba(255,255,255,0.1);
+    padding: 0px 6px;
+    border-radius: 999px;
+    font-size: 10px;
+  }
+
+  .search-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 6px 12px;
+    flex: 1;
+    min-width: 160px;
+  }
+  .search-box input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-size: 12px;
+    font-family: inherit;
+    outline: none;
+    width: 100%;
+  }
+  .search-box input::placeholder { color: var(--text-muted); }
+  .search-box svg { color: var(--text-muted); flex-shrink: 0; }
+
+  .top-bar-right { display: flex; align-items: center; gap: 10px; }
+
+  .btn-spawn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    color: #fff;
+    font-size: 12px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    white-space: nowrap;
+  }
+  .btn-spawn:hover { filter: brightness(1.15); transform: translateY(-1px); }
+
+  /* ── Agent Grid ── */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 14px;
+    padding: 20px 28px;
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 18px;
+    backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
+    position: relative;
+    overflow: hidden;
+    cursor: pointer;
+  }
+  .card:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.1);
+    transform: translateY(-1px);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .card-title-block { flex: 1; min-width: 0; }
+  .card-role {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-task {
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* Badges */
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    white-space: nowrap;
+  }
+  .badge-running { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-completed { background: var(--green-dim); color: var(--green); }
+  .badge-failed { background: var(--red-dim); color: var(--red); }
+
+  /* Pulse dot */
+  .pulse-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+    position: relative;
+    background: var(--blue);
+  }
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    background: var(--blue);
+    opacity: 0.4;
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.8); opacity: 0; }
+  }
+
+  /* Meta row */
+  .meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+  }
+  .meta-sep { color: var(--text-muted); font-size: 10px; }
+  .cost-live {
+    font-variant-numeric: tabular-nums;
+    color: var(--blue);
+    font-weight: 600;
+    animation: cost-tick 0.6s steps(1) infinite;
+  }
+  @keyframes cost-tick {
+    0% { opacity: 1; }
+    50% { opacity: 0.7; }
+    100% { opacity: 1; }
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    height: 3px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 12px;
+  }
+  .progress-bar .track {
+    height: 100%;
+    width: 35%;
+    background: linear-gradient(90deg, var(--blue), #60a5fa);
+    border-radius: 2px;
+    animation: indeterminate 1.8s ease-in-out infinite;
+  }
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%); width: 35%; }
+    50% { width: 55%; }
+    100% { transform: translateX(350%); width: 35%; }
+  }
+
+  /* Summary snippet */
+  .summary-snippet {
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    margin-bottom: 12px;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Error block */
+  .error-block {
+    background: rgba(239,68,68,0.06);
+    border: 1px solid rgba(239,68,68,0.12);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    margin-bottom: 12px;
+    font-size: 11px;
+    color: #fca5a5;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .error-block .err-icon { color: var(--red); flex-shrink: 0; }
+
+  /* Action buttons */
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+  }
+  .btn {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .btn:hover { background: var(--surface-hover); color: var(--text); }
+  .btn-primary { background: var(--blue-dim); border-color: rgba(59,130,246,0.2); color: var(--blue); }
+  .btn-primary:hover { background: rgba(59,130,246,0.2); }
+  .btn-danger { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.15); color: #fca5a5; }
+  .btn-danger:hover { background: rgba(239,68,68,0.15); }
+  .btn-chat { background: rgba(168,85,247,0.1); border-color: rgba(168,85,247,0.2); color: var(--purple); }
+  .btn-chat:hover { background: rgba(168,85,247,0.18); }
+  .btn-warning { background: rgba(234,179,8,0.1); border-color: rgba(234,179,8,0.2); color: var(--yellow); }
+  .btn-warning:hover { background: rgba(234,179,8,0.18); }
+
+  /* Card variants */
+  .card-running {
+    border-color: rgba(59,130,246,0.2);
+    box-shadow: 0 0 28px -6px var(--blue-glow), inset 0 1px 0 rgba(59,130,246,0.06);
+  }
+  .card-completed { border-color: rgba(34,197,94,0.15); }
+  .card-failed { border-color: rgba(239,68,68,0.2); }
+
+  /* ── Idle Agents Strip ── */
+  .idle-strip {
+    margin: 0 28px 28px;
+    padding: 14px 18px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .idle-strip:hover { background: var(--surface-hover); }
+  .idle-avatars {
+    display: flex;
+    align-items: center;
+  }
+  .idle-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    border: 2px solid var(--bg);
+    margin-left: -8px;
+  }
+  .idle-avatar:first-child { margin-left: 0; }
+  .idle-avatar:nth-child(4) { opacity: 0.6; }
+  .idle-avatar:nth-child(5) { opacity: 0.35; }
+  .idle-avatar:nth-child(6) { opacity: 0.15; }
+  .idle-text {
+    font-size: 13px;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+  .idle-text strong { color: var(--text-dim); }
+  .idle-expand {
+    margin-left: auto;
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* ── Expanded Idle Grid ── */
+  .idle-expanded {
+    display: none;
+    margin: 0 28px 28px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+  }
+  .idle-expanded.visible { display: block; }
+  .idle-expanded-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .idle-expanded-header span {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .idle-expanded-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+  }
+  .idle-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+  }
+  .idle-card {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    opacity: 0.5;
+    transition: all 0.2s;
+    cursor: pointer;
+  }
+  .idle-card:hover { opacity: 0.8; background: rgba(255,255,255,0.04); }
+  .idle-card .idle-card-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    background: rgba(255,255,255,0.06);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+  .idle-card .idle-card-name {
+    font-size: 12px;
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+
+  /* ── Slide-Over Panel ── */
+  .slide-over-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 40;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+  .slide-over-backdrop.visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .slide-over {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 440px;
+    background: var(--bg-deep);
+    border-left: 1px solid var(--border);
+    z-index: 45;
+    transform: translateX(100%);
+    transition: transform 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .slide-over.open { transform: translateX(0); }
+
+  .slide-over-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .slide-over-header-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .slide-over-title {
+    font-size: 15px;
+    font-weight: 600;
+  }
+  .slide-over-close {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .slide-over-close:hover { background: var(--surface-hover); color: var(--text); }
+
+  .slide-over-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 22px;
+  }
+  .slide-over-body::-webkit-scrollbar { width: 4px; }
+  .slide-over-body::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+  .so-section {
+    margin-bottom: 22px;
+  }
+  .so-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 8px;
+  }
+  .so-task-desc {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+  }
+  .so-summary {
+    background: rgba(34,197,94,0.06);
+    border: 1px solid rgba(34,197,94,0.12);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+  }
+  .so-summary-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .so-summary-item:last-child { margin-bottom: 0; }
+  .so-summary-bullet { color: var(--green); flex-shrink: 0; margin-top: 3px; font-size: 8px; }
+
+  .so-log {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text-dim);
+    max-height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+  }
+  .so-log::-webkit-scrollbar { width: 3px; }
+  .so-log::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+  .so-log .log-ts { color: var(--text-muted); }
+  .so-log .log-info { color: var(--blue); }
+  .so-log .log-ok { color: var(--green); }
+
+  .so-cost-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+  }
+  .so-cost-item {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 10px 14px;
+  }
+  .so-cost-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 3px;
+  }
+  .so-cost-value {
+    font-size: 14px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .so-session-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+    font-size: 12px;
+  }
+  .so-session-label { color: var(--text-muted); }
+  .so-session-value { color: var(--text); text-align: right; font-variant-numeric: tabular-nums; }
+
+  .slide-over-footer {
+    padding: 16px 22px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .slide-over-footer .btn { flex: 1; justify-content: center; padding: 8px 12px; }
+
+  /* ── Quick Spawn Modal ── */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.55);
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+  }
+  .modal-backdrop.visible { opacity: 1; pointer-events: auto; }
+  .modal {
+    background: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    width: 480px;
+    max-width: 90vw;
+    padding: 28px;
+    transform: scale(0.96) translateY(8px);
+    transition: transform 0.25s ease;
+    box-shadow: 0 24px 64px -16px rgba(0,0,0,0.5);
+  }
+  .modal-backdrop.visible .modal { transform: scale(1) translateY(0); }
+  .modal-title {
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .modal-subtitle {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 22px;
+  }
+  .form-group {
+    margin-bottom: 16px;
+  }
+  .form-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 6px;
+  }
+  .form-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-textarea:focus { border-color: var(--blue); }
+  .form-textarea::placeholder { color: var(--text-muted); }
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  .form-select, .form-input {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+  }
+  .form-select:focus, .form-input:focus { border-color: var(--blue); }
+  .form-select {
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2364748b' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 30px;
+  }
+  .form-select option { background: #1e293b; }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+  }
+  .btn-modal-cancel {
+    flex: 1;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn-modal-cancel:hover { background: var(--surface-hover); color: var(--text); }
+  .btn-modal-spawn {
+    flex: 2;
+    padding: 10px;
+    border-radius: var(--radius-sm);
+    background: var(--blue);
+    border: none;
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+  }
+  .btn-modal-spawn:hover { filter: brightness(1.15); }
+
+  /* ── Toast ── */
+  .toast-container {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: #1e293b;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 10px 16px;
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4);
+    transform: translateY(20px);
+    opacity: 0;
+    transition: all 0.3s ease;
+    pointer-events: auto;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast-icon { flex-shrink: 0; }
+
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .slide-over { width: 100%; }
+    .top-bar-center { display: none; }
+    .grid { padding: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ Slim Icon Sidebar ═══ -->
+<nav class="sidebar">
+  <div class="sidebar-logo">C</div>
+  <div class="sidebar-nav">
+    <button class="sidebar-item" onclick="showToast('Home page')">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10l7-7 7 7"/><path d="M5 8v8a1 1 0 001 1h3v-4h2v4h3a1 1 0 001-1V8"/></svg>
+      <span class="sidebar-tooltip">Home</span>
+    </button>
+    <button class="sidebar-item active">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="6" r="3"/><path d="M4 18c0-3.3 2.7-6 6-6s6 2.7 6 6"/><circle cx="16" cy="6" r="2" stroke-dasharray="2 2"/></svg>
+      <span class="sidebar-tooltip">Agents</span>
+    </button>
+    <button class="sidebar-item" onclick="showToast('Tree view')">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="6" height="4" rx="1"/><rect x="2" y="14" width="6" height="4" rx="1"/><rect x="12" y="14" width="6" height="4" rx="1"/><path d="M10 6v4M10 10H5v4M10 10h5v4"/></svg>
+      <span class="sidebar-tooltip">Tree</span>
+    </button>
+    <button class="sidebar-item" onclick="showToast('Self-Improve')">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.2 4.2l1.4 1.4M14.4 14.4l1.4 1.4M4.2 15.8l1.4-1.4M14.4 5.6l1.4-1.4"/></svg>
+      <span class="sidebar-tooltip">Self-Improve</span>
+    </button>
+  </div>
+</nav>
+
+<!-- ═══ Main Content ═══ -->
+<div class="main" id="mainContent">
+
+  <!-- ═══ Top Bar ═══ -->
+  <header class="top-bar">
+    <div class="top-bar-left">
+      <h1>Agents</h1>
+      <div class="view-toggle">
+        <button class="active">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="4" height="4" rx="0.5"/><rect x="7" y="1" width="4" height="4" rx="0.5"/><rect x="1" y="7" width="4" height="4" rx="0.5"/><rect x="7" y="7" width="4" height="4" rx="0.5"/></svg>
+          Grid
+        </button>
+        <button>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="1" y1="3" x2="11" y2="3"/><line x1="1" y1="6" x2="11" y2="6"/><line x1="1" y1="9" x2="11" y2="9"/></svg>
+          List
+        </button>
+        <button>
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="3" r="1.5"/><circle cx="3" cy="9" r="1.5"/><circle cx="9" cy="9" r="1.5"/><line x1="6" y1="4.5" x2="3" y2="7.5"/><line x1="6" y1="4.5" x2="9" y2="7.5"/></svg>
+          Org Chart
+        </button>
+      </div>
+    </div>
+    <div class="top-bar-center">
+      <div class="filter-chips">
+        <button class="chip active">All <span class="count">7</span></button>
+        <button class="chip"><span class="pulse-dot" style="width:5px;height:5px;"></span> Running <span class="count">2</span></button>
+        <button class="chip">Done <span class="count">2</span></button>
+        <button class="chip">Failed <span class="count">1</span></button>
+      </div>
+      <div class="search-box">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="6" cy="6" r="4.5"/><line x1="9.2" y1="9.2" x2="12.5" y2="12.5"/></svg>
+        <input type="text" placeholder="Search agents...">
+      </div>
+    </div>
+    <div class="top-bar-right">
+      <button class="btn-spawn" onclick="openSpawnModal()">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="6.5" y1="1.5" x2="6.5" y2="11.5"/><line x1="1.5" y1="6.5" x2="11.5" y2="6.5"/></svg>
+        Quick Spawn
+      </button>
+    </div>
+  </header>
+
+  <!-- ═══ Agent Grid ═══ -->
+  <div class="grid">
+
+    <!-- ── Running: Developer ── -->
+    <div class="card card-running" onclick="openSlideOver('running')">
+      <div class="card-header">
+        <div class="avatar" style="background:var(--blue-dim);color:var(--blue);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 14 8 6 12 10 16 4"/></svg>
+        </div>
+        <div class="card-title-block">
+          <div class="card-role">Developer <span class="badge badge-running"><span class="pulse-dot"></span> Running</span></div>
+          <div class="card-task">Auth middleware refactor</div>
+        </div>
+      </div>
+      <div class="meta">
+        <span>Elapsed: <strong id="timer1">2m 34s</strong></span>
+        <span class="meta-sep">|</span>
+        <span>Cost: <strong class="cost-live" id="cost1">$0.08</strong></span>
+      </div>
+      <div class="progress-bar"><div class="track"></div></div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn btn-primary" onclick="showToast('Live log opened')">Logs</button>
+        <button class="btn" onclick="showToast('Agent paused')">Pause</button>
+        <button class="btn btn-danger" onclick="showToast('Agent killed')">Kill</button>
+      </div>
+    </div>
+
+    <!-- ── Running: Code Reviewer ── -->
+    <div class="card card-running" onclick="openSlideOver('running2')">
+      <div class="card-header">
+        <div class="avatar" style="background:var(--blue-dim);color:var(--blue);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2l2.3 4.7 5.2.8-3.8 3.7.9 5.3L9 14l-4.6 2.5.9-5.3-3.8-3.7 5.2-.8z"/></svg>
+        </div>
+        <div class="card-title-block">
+          <div class="card-role">Code Reviewer <span class="badge badge-running"><span class="pulse-dot"></span> Running</span></div>
+          <div class="card-task">PR #52: Database migration layer</div>
+        </div>
+      </div>
+      <div class="meta">
+        <span>Elapsed: <strong id="timer2">0m 48s</strong></span>
+        <span class="meta-sep">|</span>
+        <span>Cost: <strong class="cost-live" id="cost2">$0.03</strong></span>
+      </div>
+      <div class="progress-bar"><div class="track"></div></div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn btn-primary" onclick="showToast('Live log opened')">Logs</button>
+        <button class="btn" onclick="showToast('Agent paused')">Pause</button>
+        <button class="btn btn-danger" onclick="showToast('Agent killed')">Kill</button>
+      </div>
+    </div>
+
+    <!-- ── Completed: Technical Architect ── -->
+    <div class="card card-completed" onclick="openSlideOver('completed')">
+      <div class="card-header">
+        <div class="avatar" style="background:var(--green-dim);color:var(--green);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="2"/><path d="M3 8h12"/><path d="M8 3v12"/></svg>
+        </div>
+        <div class="card-title-block">
+          <div class="card-role">Technical Architect <span class="badge badge-completed">&#10003; Done</span></div>
+          <div class="card-task">Architecture Review</div>
+        </div>
+      </div>
+      <div class="meta">
+        <span>4m 12s</span>
+        <span class="meta-sep">|</span>
+        <span>$0.23</span>
+      </div>
+      <div class="summary-snippet">3 bottlenecks found. Recommended: connection pooling, read replicas, cache layer for hub_sync service.</div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn" onclick="openSlideOver('completed')">Output</button>
+        <button class="btn btn-chat" onclick="showToast('Opening chat...')">Chat</button>
+        <button class="btn" onclick="showToast('Spawning follow-up...')">Follow-up</button>
+      </div>
+    </div>
+
+    <!-- ── Completed: QA Reviewer ── -->
+    <div class="card card-completed" onclick="openSlideOver('completed2')">
+      <div class="card-header">
+        <div class="avatar" style="background:var(--green-dim);color:var(--green);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 10l2 2 4-4"/><circle cx="10" cy="10" r="7"/></svg>
+        </div>
+        <div class="card-title-block">
+          <div class="card-role">QA Engineer <span class="badge badge-completed">&#10003; Done</span></div>
+          <div class="card-task">Test coverage for auth module</div>
+        </div>
+      </div>
+      <div class="meta">
+        <span>2m 56s</span>
+        <span class="meta-sep">|</span>
+        <span>$0.17</span>
+      </div>
+      <div class="summary-snippet">Added 14 unit tests, 3 integration tests. Coverage increased from 62% to 91%. All tests passing.</div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn" onclick="openSlideOver('completed2')">Output</button>
+        <button class="btn btn-chat" onclick="showToast('Opening chat...')">Chat</button>
+        <button class="btn" onclick="showToast('Spawning follow-up...')">Follow-up</button>
+      </div>
+    </div>
+
+    <!-- ── Failed: Data Analyst ── -->
+    <div class="card card-failed" onclick="openSlideOver('failed')">
+      <div class="card-header">
+        <div class="avatar" style="background:var(--red-dim);color:var(--red);">
+          <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="12" height="12" rx="1"/><line x1="6" y1="13" x2="6" y2="9"/><line x1="9" y1="13" x2="9" y2="6"/><line x1="12" y1="13" x2="12" y2="8"/></svg>
+        </div>
+        <div class="card-title-block">
+          <div class="card-role">Data Analyst <span class="badge badge-failed">&#10007; Failed</span></div>
+          <div class="card-task">Q2 Cost Projections</div>
+        </div>
+      </div>
+      <div class="meta">
+        <span>0m 45s</span>
+        <span class="meta-sep">|</span>
+        <span>$0.04</span>
+      </div>
+      <div class="error-block">
+        <span class="err-icon">&#x26A0;</span>
+        <span>Budget cap exceeded</span>
+      </div>
+      <div class="actions" onclick="event.stopPropagation()">
+        <button class="btn" onclick="showToast('Opening error log...')">Logs</button>
+        <button class="btn btn-primary" onclick="showToast('Retrying agent...')">Retry</button>
+        <button class="btn btn-warning" onclick="showToast('Budget settings opened')">Budget &#x25BE;</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ═══ Idle Agents Strip ═══ -->
+  <div class="idle-strip" id="idleStrip" onclick="toggleIdleExpand()">
+    <div class="idle-avatars">
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="4" r="2"/><path d="M2 12c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg>
+      </div>
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M4 5h4M4 7h2"/></svg>
+      </div>
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 9h8M4 6l2-3 2 3"/></svg>
+      </div>
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1"/></svg>
+      </div>
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2v8M2 6h8"/></svg>
+      </div>
+      <div class="idle-avatar">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h6v6H3z"/></svg>
+      </div>
+    </div>
+    <div class="idle-text"><strong>298</strong> idle agents</div>
+    <div class="idle-expand">
+      <span id="idleExpandText">Click to expand</span>
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" id="idleChevron" style="transition:transform 0.2s"><polyline points="3 5 6 8 9 5"/></svg>
+    </div>
+  </div>
+
+  <!-- ═══ Expanded Idle Roster ═══ -->
+  <div class="idle-expanded" id="idleExpanded">
+    <div class="idle-expanded-header">
+      <span>Idle Agents (298)</span>
+      <button class="idle-expanded-close" onclick="toggleIdleExpand()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+      </button>
+    </div>
+    <div class="idle-grid">
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="4" r="2"/><path d="M2 12c0-2.2 1.8-4 4-4s4 1.8 4 4"/></svg></div><div class="idle-card-name">Product Manager</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="8" height="8" rx="1"/><path d="M4 5h4M4 7h2"/></svg></div><div class="idle-card-name">Chief of Staff</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 9h8M4 6l2-3 2 3"/></svg></div><div class="idle-card-name">Scribe</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="4"/><path d="M6 4v2l1.5 1"/></svg></div><div class="idle-card-name">User Researcher</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2v8M2 6h8"/></svg></div><div class="idle-card-name">Communications</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 3h6v6H3z"/></svg></div><div class="idle-card-name">Security Auditor</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4h8M2 6h8M2 8h5"/></svg></div><div class="idle-card-name">Project Manager</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="6" r="4"/><path d="M4 6h4M6 4v4"/></svg></div><div class="idle-card-name">DevOps Engineer</div></div>
+      <div class="idle-card"><div class="idle-card-avatar"><svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="8" height="6" rx="1"/><path d="M5 6l1 1 2-2"/></svg></div><div class="idle-card-name">Technical Writer</div></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══ Slide-Over Backdrop ═══ -->
+<div class="slide-over-backdrop" id="slideOverBackdrop" onclick="closeSlideOver()"></div>
+
+<!-- ═══ Slide-Over Panel ═══ -->
+<div class="slide-over" id="slideOver">
+  <div class="slide-over-header">
+    <div class="slide-over-header-left">
+      <div class="avatar" style="background:var(--green-dim);color:var(--green);width:32px;height:32px;">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M2 7h12"/><path d="M7 2v12"/></svg>
+      </div>
+      <div>
+        <div class="slide-over-title" id="soTitle">Technical Architect</div>
+        <div style="font-size:12px;color:var(--text-dim)" id="soSubtitle">Architecture Review</div>
+      </div>
+    </div>
+    <button class="slide-over-close" onclick="closeSlideOver()">
+      <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="4" y1="4" x2="12" y2="12"/><line x1="12" y1="4" x2="4" y2="12"/></svg>
+    </button>
+  </div>
+  <div class="slide-over-body">
+
+    <div class="so-section">
+      <div class="so-section-title">Task Description</div>
+      <div class="so-task-desc">Review the current system architecture for the CoCo Platform hub_sync service. Identify performance bottlenecks, suggest improvements for horizontal scaling, and evaluate database connection strategies.</div>
+    </div>
+
+    <div class="so-section">
+      <div class="so-section-title">Structured Summary</div>
+      <div class="so-summary">
+        <div class="so-summary-item"><span class="so-summary-bullet">&#9679;</span><span>Identified 3 critical bottlenecks in hub_sync: synchronous DB writes, unbounded connection pool, missing read replica routing</span></div>
+        <div class="so-summary-item"><span class="so-summary-bullet">&#9679;</span><span>Recommended connection pooling with pgBouncer (est. 40% throughput improvement)</span></div>
+        <div class="so-summary-item"><span class="so-summary-bullet">&#9679;</span><span>Proposed read replica architecture with automatic failover for query-heavy endpoints</span></div>
+        <div class="so-summary-item"><span class="so-summary-bullet">&#9679;</span><span>Cache layer (Redis) suggested for frequently accessed knowledge graph nodes</span></div>
+      </div>
+    </div>
+
+    <div class="so-section">
+      <div class="so-section-title">Raw Log</div>
+      <div class="so-log"><span class="log-ts">[14:02:31]</span> <span class="log-info">INFO</span>  Starting architecture review...
+<span class="log-ts">[14:02:32]</span> <span class="log-info">INFO</span>  Analyzing hub_sync service (8 files)
+<span class="log-ts">[14:02:45]</span> <span class="log-info">INFO</span>  Found synchronous write pattern in sync_handler.py:142
+<span class="log-ts">[14:03:12]</span> <span class="log-info">INFO</span>  Connection pool analysis: max_connections=5, avg_wait=340ms
+<span class="log-ts">[14:03:58]</span> <span class="log-info">INFO</span>  Read/write ratio: 82:18 - read replica candidate
+<span class="log-ts">[14:04:30]</span> <span class="log-info">INFO</span>  Generating recommendations...
+<span class="log-ts">[14:06:43]</span> <span class="log-ok">OK</span>    Architecture review complete. 3 bottlenecks, 4 recommendations.</div>
+    </div>
+
+    <div class="so-section">
+      <div class="so-section-title">Cost Breakdown</div>
+      <div class="so-cost-grid">
+        <div class="so-cost-item">
+          <div class="so-cost-label">Model</div>
+          <div class="so-cost-value">Sonnet 4</div>
+        </div>
+        <div class="so-cost-item">
+          <div class="so-cost-label">Total Cost</div>
+          <div class="so-cost-value" style="color:var(--green)">$0.23</div>
+        </div>
+        <div class="so-cost-item">
+          <div class="so-cost-label">Input Tokens</div>
+          <div class="so-cost-value">12,847</div>
+        </div>
+        <div class="so-cost-item">
+          <div class="so-cost-label">Output Tokens</div>
+          <div class="so-cost-value">3,421</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="so-section">
+      <div class="so-section-title">Session Info</div>
+      <div class="so-session-grid">
+        <div class="so-session-label">Started</div>
+        <div class="so-session-value">2:02:31 PM</div>
+        <div class="so-session-label">Duration</div>
+        <div class="so-session-value">4m 12s</div>
+        <div class="so-session-label">PID</div>
+        <div class="so-session-value" style="font-family:'SF Mono',monospace;font-size:11px">48721</div>
+        <div class="so-session-label">Status</div>
+        <div class="so-session-value" style="color:var(--green)">Completed</div>
+      </div>
+    </div>
+
+  </div>
+  <div class="slide-over-footer">
+    <button class="btn btn-chat" onclick="showToast('Opening chat about output...')">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M2 2h8v6H5l-2 2V8H2z"/></svg>
+      Chat About Output
+    </button>
+    <button class="btn btn-primary" onclick="showToast('Spawning similar agent...')">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M6 2v8M2 6h8"/></svg>
+      Spawn Similar
+    </button>
+    <button class="btn btn-danger" onclick="showToast('Agent deleted')">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><polyline points="2 4 10 4"/><path d="M4 4V3a1 1 0 011-1h2a1 1 0 011 1v1M3 4v6a1 1 0 001 1h4a1 1 0 001-1V4"/></svg>
+      Delete
+    </button>
+  </div>
+</div>
+
+<!-- ═══ Quick Spawn Modal ═══ -->
+<div class="modal-backdrop" id="spawnModal">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal-title">Quick Spawn</div>
+    <div class="modal-subtitle">Describe what you need done and an agent will handle it.</div>
+
+    <div class="form-group">
+      <label class="form-label">Task Description</label>
+      <textarea class="form-textarea" placeholder="What do you need done? Be specific about the goal and constraints..."></textarea>
+    </div>
+
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">Model</label>
+        <select class="form-select">
+          <option value="sonnet" selected>Sonnet 4 (default)</option>
+          <option value="opus">Opus 4</option>
+          <option value="haiku">Haiku 4</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Budget Cap</label>
+        <input class="form-input" type="text" value="$5.00" placeholder="$5.00">
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Project Scope</label>
+      <select class="form-select">
+        <option value="coco" selected>CoCo Platform</option>
+        <option value="hub">Knowledge Hub</option>
+        <option value="crossrisk">Cross Risk Tools</option>
+        <option value="none">No project scope</option>
+      </select>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-modal-cancel" onclick="closeSpawnModal()">Cancel</button>
+      <button class="btn-modal-spawn" onclick="closeSpawnModal(); showToast('Agent spawned successfully')">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 2v10M2 7h10"/></svg>
+        Spawn Agent
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Toast Container ═══ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ═══ Scripts ═══ -->
+<script>
+  // ── Live timers ──
+  let elapsed1 = 154;
+  let elapsed2 = 48;
+  const timerEl1 = document.getElementById('timer1');
+  const timerEl2 = document.getElementById('timer2');
+
+  function fmtTime(s) {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m + 'm ' + (sec < 10 ? '0' : '') + sec + 's';
+  }
+
+  setInterval(() => {
+    elapsed1++;
+    timerEl1.textContent = fmtTime(elapsed1);
+    elapsed2++;
+    timerEl2.textContent = fmtTime(elapsed2);
+  }, 1000);
+
+  // ── Live cost counters ──
+  let cost1 = 0.08;
+  let cost2 = 0.03;
+  const costEl1 = document.getElementById('cost1');
+  const costEl2 = document.getElementById('cost2');
+
+  setInterval(() => {
+    cost1 += 0.001 + Math.random() * 0.002;
+    costEl1.textContent = '$' + cost1.toFixed(2);
+    cost2 += 0.0008 + Math.random() * 0.0015;
+    costEl2.textContent = '$' + cost2.toFixed(2);
+  }, 1200);
+
+  // ── Slide-Over ──
+  function openSlideOver(type) {
+    document.getElementById('slideOverBackdrop').classList.add('visible');
+    document.getElementById('slideOver').classList.add('open');
+  }
+  function closeSlideOver() {
+    document.getElementById('slideOverBackdrop').classList.remove('visible');
+    document.getElementById('slideOver').classList.remove('open');
+  }
+
+  // ── Quick Spawn Modal ──
+  function openSpawnModal() {
+    document.getElementById('spawnModal').classList.add('visible');
+  }
+  function closeSpawnModal() {
+    document.getElementById('spawnModal').classList.remove('visible');
+  }
+  document.getElementById('spawnModal').addEventListener('click', (e) => {
+    if (e.target === document.getElementById('spawnModal')) closeSpawnModal();
+  });
+
+  // ── Idle expand ──
+  let idleOpen = false;
+  function toggleIdleExpand() {
+    idleOpen = !idleOpen;
+    document.getElementById('idleExpanded').classList.toggle('visible', idleOpen);
+    document.getElementById('idleStrip').style.display = idleOpen ? 'none' : 'flex';
+  }
+
+  // ── Toast system ──
+  function showToast(message) {
+    const container = document.getElementById('toastContainer');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = '<span class="toast-icon"><svg width="14" height="14" fill="none" stroke="#22c55e" stroke-width="2" stroke-linecap="round"><path d="M3 7l3 3 5-5"/></svg></span>' + message;
+    container.appendChild(toast);
+    requestAnimationFrame(() => toast.classList.add('show'));
+    setTimeout(() => {
+      toast.classList.remove('show');
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
+  // ── Keyboard shortcuts ──
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeSlideOver();
+      closeSpawnModal();
+    }
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,1207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Settings Modal — Path B Collapse</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --card: #1e293b;
+    --card-border: #334155;
+    --card-hover-border: #475569;
+    --pill-bg: #334155;
+    --pill-active: #22c55e;
+    --red: #f87171;
+    --blue: #60a5fa;
+    --green: #34d399;
+    --grey: #475569;
+    --yellow: #fbbf24;
+    --purple: #a78bfa;
+    --text: #e2e8f0;
+    --text-dim: #94a3b8;
+    --text-muted: #64748b;
+    --sidebar-w: 280px;
+    --attention-h: 48px;
+    --filter-h: 52px;
+  }
+
+  html { font-size: 14px; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* ── Attention Strip (background) ────────────────── */
+  .attention-strip {
+    position: fixed; top: 0; left: 0; right: 0;
+    height: var(--attention-h);
+    background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+    border-bottom: 1px solid var(--card-border);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    z-index: 10;
+    gap: 10px;
+  }
+  .attention-strip .logo {
+    font-weight: 700; font-size: 15px;
+    color: #f8fafc;
+    margin-right: 20px;
+    letter-spacing: -0.3px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .attention-strip .logo span {
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .metric-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 14px;
+    background: var(--pill-bg);
+    border: 1px solid transparent;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    white-space: nowrap;
+  }
+  .metric-pill .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    display: inline-block;
+  }
+  .dot.red { background: var(--red); box-shadow: 0 0 6px var(--red); }
+  .dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .attention-right {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .search-box {
+    background: var(--pill-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 5px 12px;
+    color: var(--text);
+    font-size: 12px;
+    width: 180px;
+    outline: none;
+  }
+  .search-box::placeholder { color: var(--text-muted); }
+  .avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--blue), var(--green));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700; color: #0f172a;
+    cursor: pointer;
+  }
+
+  /* ── Filter Bar (background) ─────────────────────── */
+  .filter-bar {
+    position: fixed;
+    top: var(--attention-h);
+    left: 0; right: var(--sidebar-w);
+    height: var(--filter-h);
+    background: var(--bg);
+    border-bottom: 1px solid rgba(51,65,85,0.5);
+    display: flex; align-items: center;
+    padding: 0 24px;
+    gap: 8px;
+    z-index: 9;
+  }
+  .filter-pill {
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 12px; font-weight: 500;
+    cursor: pointer;
+    background: var(--pill-bg);
+    color: var(--text-dim);
+    border: 1px solid transparent;
+    user-select: none;
+  }
+  .filter-pill.active {
+    background: var(--pill-active);
+    color: #fff;
+    border-color: var(--pill-active);
+  }
+  .filter-pill .count { font-size: 10px; opacity: 0.7; margin-left: 4px; }
+
+  /* ── Main Layout (background) ────────────────────── */
+  .main-layout {
+    position: fixed;
+    top: calc(var(--attention-h) + var(--filter-h));
+    left: 0; right: 0; bottom: 0;
+    display: flex;
+  }
+  .action-stream {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 24px;
+    padding-bottom: 80px;
+  }
+  .stream-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    margin-bottom: 10px;
+    border-left: 3px solid transparent;
+  }
+  .stream-card.urgent { border-left-color: var(--red); }
+  .stream-card.draft { border-left-color: var(--blue); }
+  .stream-card.running { border-left-color: var(--green); }
+  .card-header {
+    display: flex; align-items: flex-start; gap: 10px;
+    margin-bottom: 6px;
+  }
+  .card-icon { font-size: 16px; flex-shrink: 0; line-height: 1.4; }
+  .card-title {
+    font-size: 14px; font-weight: 600; color: #f1f5f9;
+    line-height: 1.4;
+  }
+  .card-time {
+    margin-left: auto;
+    font-size: 11px; color: var(--text-muted);
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .card-meta {
+    font-size: 11px; color: var(--text-muted);
+    margin-left: 26px;
+  }
+
+  /* ── Right Sidebar (background) ──────────────────── */
+  .sidebar-right {
+    width: var(--sidebar-w);
+    border-left: 1px solid var(--card-border);
+    background: var(--card);
+    padding: 16px;
+    overflow-y: auto;
+  }
+  .sidebar-section-title {
+    font-size: 10px; font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .agent-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(51,65,85,0.3);
+    font-size: 12px;
+  }
+  .agent-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+  .agent-dot.active { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .agent-dot.idle { background: var(--text-muted); }
+  .agent-name { font-weight: 500; color: var(--text); }
+  .agent-task { color: var(--text-muted); margin-left: auto; font-size: 11px; }
+
+  /* ── Floating Settings Button ────────────────────── */
+  .settings-trigger {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 50;
+    width: 44px; height: 44px;
+    border-radius: 12px;
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    color: var(--text-dim);
+    font-size: 20px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  }
+  .settings-trigger:hover {
+    color: var(--text);
+    border-color: var(--card-hover-border);
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  }
+
+  /* ── Modal Overlay ───────────────────────────────── */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s ease;
+  }
+  .modal-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  /* ── Modal ───────────────────────────────────────── */
+  .modal {
+    width: 640px;
+    max-height: 80vh;
+    background: rgba(30, 41, 59, 0.92);
+    backdrop-filter: blur(24px) saturate(1.3);
+    -webkit-backdrop-filter: blur(24px) saturate(1.3);
+    border: 1px solid rgba(71, 85, 105, 0.6);
+    border-radius: 16px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255,255,255,0.03) inset;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.95);
+    transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .modal-overlay.open .modal {
+    transform: scale(1);
+  }
+
+  /* ── Modal Header ────────────────────────────────── */
+  .modal-header {
+    display: flex;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.6);
+    flex-shrink: 0;
+  }
+  .modal-header h2 {
+    font-size: 16px;
+    font-weight: 700;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-header h2 .icon { font-size: 18px; }
+  .modal-close {
+    margin-left: auto;
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: var(--text-muted);
+    font-size: 18px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .modal-close:hover {
+    background: var(--pill-bg);
+    color: var(--text);
+  }
+
+  /* ── Modal Body (tabs + content) ─────────────────── */
+  .modal-body {
+    display: flex;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  /* ── Vertical Tabs ───────────────────────────────── */
+  .vtabs {
+    width: 160px;
+    flex-shrink: 0;
+    border-right: 1px solid rgba(51, 65, 85, 0.4);
+    padding: 12px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    background: rgba(15, 23, 42, 0.3);
+  }
+  .vtab {
+    padding: 10px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    text-align: left;
+    position: relative;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: inherit;
+  }
+  .vtab:hover {
+    color: var(--text-dim);
+    background: rgba(51, 65, 85, 0.2);
+  }
+  .vtab.active {
+    color: var(--text);
+    background: rgba(59, 130, 246, 0.08);
+  }
+  .vtab.active::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 6px; bottom: 6px;
+    width: 3px;
+    border-radius: 0 3px 3px 0;
+    background: var(--pill-active);
+  }
+  .vtab .tab-icon {
+    font-size: 14px;
+    width: 18px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* ── Tab Content ─────────────────────────────────── */
+  .tab-panels {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    min-height: 0;
+  }
+  .tab-panels::-webkit-scrollbar { width: 5px; }
+  .tab-panels::-webkit-scrollbar-track { background: transparent; }
+  .tab-panels::-webkit-scrollbar-thumb { background: var(--card-border); border-radius: 3px; }
+
+  .tab-panel {
+    display: none;
+    animation: fadeIn 0.2s ease;
+  }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Form Elements ───────────────────────────────── */
+  .form-group {
+    margin-bottom: 20px;
+  }
+  .form-group:last-child { margin-bottom: 0; }
+  .form-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-dim);
+    margin-bottom: 8px;
+    display: block;
+  }
+  .form-hint {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Text / Number Inputs */
+  .form-input {
+    width: 100%;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .form-input:focus {
+    border-color: var(--pill-active);
+  }
+  .form-input::placeholder { color: var(--text-muted); }
+  .form-input.sm {
+    width: 120px;
+  }
+
+  /* Select Dropdown */
+  .form-select {
+    padding: 8px 32px 8px 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 13px;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1L5 5L9 1' stroke='%2394a3b8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    transition: border-color 0.2s;
+  }
+  .form-select:focus { border-color: var(--pill-active); }
+
+  /* Toggle Switch */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  }
+  .toggle-row:last-child { border-bottom: none; }
+  .toggle-label {
+    font-size: 13px;
+    color: var(--text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .toggle-label .sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 400;
+  }
+  .toggle-switch {
+    width: 40px; height: 22px;
+    background: var(--pill-bg);
+    border-radius: 11px;
+    position: relative;
+    cursor: pointer;
+    transition: background 0.2s;
+    flex-shrink: 0;
+  }
+  .toggle-switch.on { background: var(--pill-active); }
+  .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s;
+  }
+  .toggle-switch.on::after { transform: translateX(18px); }
+
+  /* Radio Group (segmented control) */
+  .segmented {
+    display: inline-flex;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .seg-btn {
+    padding: 8px 18px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-muted);
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    transition: all 0.15s;
+    position: relative;
+  }
+  .seg-btn:not(:last-child) {
+    border-right: 1px solid var(--card-border);
+  }
+  .seg-btn:hover { color: var(--text-dim); }
+  .seg-btn.active {
+    background: var(--pill-active);
+    color: #fff;
+  }
+
+  /* Badge */
+  .badge {
+    display: inline-flex;
+    padding: 3px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+  }
+  .badge.core {
+    background: rgba(96, 165, 250, 0.15);
+    color: var(--blue);
+    border: 1px solid rgba(96, 165, 250, 0.25);
+  }
+  .badge.studio {
+    background: rgba(167, 139, 250, 0.15);
+    color: var(--purple);
+    border: 1px solid rgba(167, 139, 250, 0.25);
+  }
+
+  /* Checkbox */
+  .checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .checkbox-box {
+    width: 18px; height: 18px;
+    border-radius: 4px;
+    border: 1.5px solid var(--card-border);
+    background: rgba(15, 23, 42, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.15s;
+    font-size: 11px;
+    color: transparent;
+  }
+  .checkbox-item.checked .checkbox-box {
+    background: var(--pill-active);
+    border-color: var(--pill-active);
+    color: #fff;
+  }
+
+  /* Trigger List */
+  .trigger-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .trigger-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: rgba(15, 23, 42, 0.4);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 8px;
+    font-size: 12px;
+  }
+  .trigger-name {
+    font-weight: 600;
+    color: var(--text);
+    min-width: 0;
+  }
+  .trigger-type {
+    font-size: 10px;
+    padding: 2px 8px;
+    background: rgba(51, 65, 85, 0.5);
+    border-radius: 4px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+  .trigger-schedule {
+    color: var(--text-muted);
+    font-size: 11px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+
+  /* Tool Override List */
+  .tool-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .tool-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    background: rgba(15, 23, 42, 0.3);
+    border-radius: 8px;
+  }
+  .tool-name {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text);
+    flex: 1;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+  }
+  .tool-row .form-select { font-size: 11px; padding: 5px 28px 5px 10px; }
+
+  /* Brain Stats */
+  .stat-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .stat-card {
+    padding: 14px;
+    background: rgba(15, 23, 42, 0.5);
+    border: 1px solid rgba(51, 65, 85, 0.4);
+    border-radius: 10px;
+  }
+  .stat-number {
+    font-size: 24px;
+    font-weight: 700;
+    color: #f1f5f9;
+    line-height: 1;
+  }
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+  }
+
+  /* Brain edits */
+  .edit-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .edit-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    padding: 6px 0;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.2);
+    color: var(--text-dim);
+  }
+  .edit-item .edit-time { color: var(--text-muted); font-size: 11px; margin-left: auto; white-space: nowrap; }
+  .edit-item .edit-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--blue);
+    flex-shrink: 0;
+  }
+
+  /* Link button */
+  .link-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--blue);
+    cursor: pointer;
+    padding: 6px 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    transition: color 0.15s;
+  }
+  .link-btn:hover { color: #93bbfd; }
+
+  /* Add trigger button */
+  .add-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1px dashed var(--card-border);
+    background: transparent;
+    color: var(--text-dim);
+    font-family: inherit;
+    transition: all 0.15s;
+    margin-top: 8px;
+  }
+  .add-btn:hover {
+    border-color: var(--pill-active);
+    color: var(--blue);
+    background: rgba(59, 130, 246, 0.05);
+  }
+
+  /* Section divider */
+  .section-divider {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    color: var(--text-muted);
+    margin: 20px 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.3);
+  }
+  .section-divider:first-child { margin-top: 0; }
+
+  /* YOLO mode highlight */
+  .yolo-active-note {
+    padding: 10px 14px;
+    background: rgba(251, 191, 36, 0.08);
+    border: 1px solid rgba(251, 191, 36, 0.2);
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--yellow);
+    margin-top: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* Prototype watermark */
+  .watermark {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    color: var(--text-muted);
+    opacity: 0.5;
+    z-index: 2000;
+    pointer-events: none;
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════════════════
+     BACKGROUND: Dimmed Home Command Center
+     ═══════════════════════════════════════════════════ -->
+
+<!-- Attention Strip -->
+<div class="attention-strip">
+  <div class="logo"><span>CoCo</span> Platform</div>
+  <div class="metric-pill urgent"><span class="dot red"></span> 2 Urgent</div>
+  <div class="metric-pill drafts"><span class="dot blue"></span> 5 Drafts</div>
+  <div class="metric-pill running"><span class="dot green"></span> 3 Running</div>
+  <div class="metric-pill">$4.20 today</div>
+  <div class="attention-right">
+    <input class="search-box" placeholder="Search... (Cmd+K)" readonly>
+    <div class="avatar">RK</div>
+  </div>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+  <div class="filter-pill active">All <span class="count">14</span></div>
+  <div class="filter-pill">Urgent <span class="count">2</span></div>
+  <div class="filter-pill">Drafts <span class="count">5</span></div>
+  <div class="filter-pill">Agents <span class="count">3</span></div>
+  <div class="filter-pill">Todos <span class="count">4</span></div>
+</div>
+
+<!-- Main Layout -->
+<div class="main-layout">
+  <div class="action-stream">
+    <div class="stream-card urgent">
+      <div class="card-header">
+        <span class="card-icon">&#x1F6A8;</span>
+        <span class="card-title">Budget alert: Cross Risk API exceeded $5 limit</span>
+        <span class="card-time">3m ago</span>
+      </div>
+      <div class="card-meta">Cost: $5.42 / $5.00 &middot; Sonnet 4</div>
+    </div>
+    <div class="stream-card running">
+      <div class="card-header">
+        <span class="card-icon">&#x1F916;</span>
+        <span class="card-title">PM Agent: Generating weekly status report</span>
+        <span class="card-time">8m ago</span>
+      </div>
+      <div class="card-meta">Progress: 65% &middot; ETA 4 min</div>
+    </div>
+    <div class="stream-card draft">
+      <div class="card-header">
+        <span class="card-icon">&#x1F4DD;</span>
+        <span class="card-title">Draft: Architecture decision record for auth migration</span>
+        <span class="card-time">22m ago</span>
+      </div>
+      <div class="card-meta">Source: Slack #architecture &middot; Confidence: 82%</div>
+    </div>
+    <div class="stream-card">
+      <div class="card-header">
+        <span class="card-icon">&#x2705;</span>
+        <span class="card-title">Developer Agent completed: API rate limiter</span>
+        <span class="card-time">45m ago</span>
+      </div>
+      <div class="card-meta">Duration: 12 min &middot; Cost: $1.20</div>
+    </div>
+    <div class="stream-card">
+      <div class="card-header">
+        <span class="card-icon">&#x1F4CB;</span>
+        <span class="card-title">Todo: Review Pankaj's PR #47 on data pipeline</span>
+        <span class="card-time">1h ago</span>
+      </div>
+      <div class="card-meta">Priority: Medium &middot; Due: Today</div>
+    </div>
+  </div>
+
+  <!-- Right Sidebar -->
+  <div class="sidebar-right">
+    <div class="sidebar-section-title">Active Agents</div>
+    <div class="agent-row">
+      <span class="agent-dot active"></span>
+      <span class="agent-name">PM Agent</span>
+      <span class="agent-task">Status report</span>
+    </div>
+    <div class="agent-row">
+      <span class="agent-dot active"></span>
+      <span class="agent-name">Developer</span>
+      <span class="agent-task">Tests</span>
+    </div>
+    <div class="agent-row">
+      <span class="agent-dot active"></span>
+      <span class="agent-name">Reviewer</span>
+      <span class="agent-task">PR #44</span>
+    </div>
+    <div class="agent-row">
+      <span class="agent-dot idle"></span>
+      <span class="agent-name">Triage</span>
+      <span class="agent-task">Idle</span>
+    </div>
+  </div>
+</div>
+
+<!-- Settings Trigger Button -->
+<div class="settings-trigger" onclick="openModal()" title="Settings">&#x2699;&#xFE0F;</div>
+
+<!-- ═══════════════════════════════════════════════════
+     MODAL: Settings
+     ═══════════════════════════════════════════════════ -->
+<div class="modal-overlay open" id="modalOverlay" onclick="handleOverlayClick(event)">
+  <div class="modal" onclick="event.stopPropagation()">
+
+    <!-- Header -->
+    <div class="modal-header">
+      <h2><span class="icon">&#x2699;</span> Settings</h2>
+      <button class="modal-close" onclick="closeModal()" title="Close (Esc)">&times;</button>
+    </div>
+
+    <!-- Body: vertical tabs + content -->
+    <div class="modal-body">
+
+      <!-- Vertical Tab Bar -->
+      <div class="vtabs">
+        <button class="vtab active" data-tab="general">
+          <span class="tab-icon">&#x2699;</span> General
+        </button>
+        <button class="vtab" data-tab="agents">
+          <span class="tab-icon">&#x1F916;</span> Agents
+        </button>
+        <button class="vtab" data-tab="automations">
+          <span class="tab-icon">&#x26A1;</span> Automations
+        </button>
+        <button class="vtab" data-tab="yolo">
+          <span class="tab-icon">&#x1F525;</span> YOLO
+        </button>
+        <button class="vtab" data-tab="brain">
+          <span class="tab-icon">&#x1F9E0;</span> Brain
+        </button>
+        <button class="vtab" data-tab="display">
+          <span class="tab-icon">&#x1F3A8;</span> Display
+        </button>
+      </div>
+
+      <!-- Tab Panels -->
+      <div class="tab-panels">
+
+        <!-- ── General ─────────────────────────────── -->
+        <div class="tab-panel active" id="tab-general">
+          <div class="form-group">
+            <label class="form-label">Theme</label>
+            <div class="segmented">
+              <button class="seg-btn active">Dark</button>
+              <button class="seg-btn">Light</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Edition</label>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span class="badge studio">Studio</span>
+              <span style="font-size:11px; color:var(--text-muted);">All features unlocked</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Default Model</label>
+            <select class="form-select">
+              <option>Claude Sonnet 4</option>
+              <option selected>Claude Opus 4</option>
+              <option>Claude Haiku 4</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Authentication</label>
+            <div class="toggle-row">
+              <span class="toggle-label">
+                Require PIN on launch
+                <span class="sub">4-digit PIN to access the platform</span>
+              </span>
+              <div class="toggle-switch on" onclick="this.classList.toggle('on')"></div>
+            </div>
+            <div style="margin-top:10px;">
+              <input class="form-input sm" type="password" value="****" placeholder="PIN">
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Agents ──────────────────────────────── -->
+        <div class="tab-panel" id="tab-agents">
+          <div class="form-group">
+            <label class="form-label">Max Concurrent Agents</label>
+            <input class="form-input sm" type="number" value="3" min="1" max="10">
+            <div class="form-hint">Maximum agents running simultaneously</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Timeout (minutes)</label>
+            <input class="form-input sm" type="number" value="30" min="5" max="120">
+            <div class="form-hint">Auto-terminate after this duration</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Default Budget per Agent</label>
+            <div style="position:relative; width:120px;">
+              <span style="position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:13px;">$</span>
+              <input class="form-input" type="text" value="5.00" style="padding-left:24px; width:120px;">
+            </div>
+            <div class="form-hint">Cost cap before agent pauses for approval</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Auto-Spawn Roles</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item checked" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                PM Agent
+              </label>
+              <label class="checkbox-item checked" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                Developer
+              </label>
+              <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                Reviewer
+              </label>
+              <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                Triage
+              </label>
+              <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                QA
+              </label>
+              <label class="checkbox-item" onclick="this.classList.toggle('checked')">
+                <span class="checkbox-box">&#x2713;</span>
+                Researcher
+              </label>
+            </div>
+            <div class="form-hint">These roles start automatically with new projects</div>
+          </div>
+        </div>
+
+        <!-- ── Automations ─────────────────────────── -->
+        <div class="tab-panel" id="tab-automations">
+          <div class="form-group">
+            <label class="form-label">Active Triggers</label>
+            <div class="trigger-list">
+              <div class="trigger-item">
+                <span class="trigger-name">Daily Standup</span>
+                <span class="trigger-type">Cron</span>
+                <span class="trigger-schedule">9:00 AM daily</span>
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')" style="margin-left:8px;"></div>
+              </div>
+              <div class="trigger-item">
+                <span class="trigger-name">PR Review</span>
+                <span class="trigger-type">Webhook</span>
+                <span class="trigger-schedule">On PR open</span>
+                <div class="toggle-switch on" onclick="this.classList.toggle('on')" style="margin-left:8px;"></div>
+              </div>
+              <div class="trigger-item">
+                <span class="trigger-name">Cost Alert</span>
+                <span class="trigger-type">Threshold</span>
+                <span class="trigger-schedule">&gt; $5 / agent</span>
+                <div class="toggle-switch" onclick="this.classList.toggle('on')" style="margin-left:8px;"></div>
+              </div>
+            </div>
+            <button class="add-btn">+ Add Trigger</button>
+          </div>
+        </div>
+
+        <!-- ── YOLO ────────────────────────────────── -->
+        <div class="tab-panel" id="tab-yolo">
+          <div class="form-group">
+            <label class="form-label">Approval Mode</label>
+            <div class="segmented">
+              <button class="seg-btn">Normal</button>
+              <button class="seg-btn">Careful</button>
+              <button class="seg-btn active" onclick="selectYolo(this)">YOLO</button>
+            </div>
+          </div>
+
+          <div class="form-group" id="yolo-profile">
+            <label class="form-label">YOLO Profile</label>
+            <div class="segmented">
+              <button class="seg-btn">Triage</button>
+              <button class="seg-btn active">PM</button>
+              <button class="seg-btn">Full</button>
+            </div>
+            <div class="form-hint">PM profile auto-approves safe tools, asks for destructive ones</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Per-Tool Overrides</label>
+            <div class="tool-list">
+              <div class="tool-row">
+                <span class="tool-name">Read</span>
+                <select class="form-select"><option selected>Auto</option><option>Ask</option><option>Always Ask</option></select>
+              </div>
+              <div class="tool-row">
+                <span class="tool-name">Edit</span>
+                <select class="form-select"><option selected>Auto</option><option>Ask</option><option>Always Ask</option></select>
+              </div>
+              <div class="tool-row">
+                <span class="tool-name">Bash</span>
+                <select class="form-select"><option>Auto</option><option selected>Ask</option><option>Always Ask</option></select>
+              </div>
+              <div class="tool-row">
+                <span class="tool-name">Write</span>
+                <select class="form-select"><option>Auto</option><option selected>Ask</option><option>Always Ask</option></select>
+              </div>
+              <div class="tool-row">
+                <span class="tool-name">Grep</span>
+                <select class="form-select"><option selected>Auto</option><option>Ask</option><option>Always Ask</option></select>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Duration</label>
+            <div class="segmented">
+              <button class="seg-btn">30 min</button>
+              <button class="seg-btn">1 hour</button>
+              <button class="seg-btn active">Until I stop</button>
+            </div>
+          </div>
+
+          <div class="yolo-active-note">
+            &#x1F525; YOLO mode is active &mdash; PM profile, running until you say stop
+          </div>
+        </div>
+
+        <!-- ── Brain ───────────────────────────────── -->
+        <div class="tab-panel" id="tab-brain">
+          <div class="stat-grid">
+            <div class="stat-card">
+              <div class="stat-number">12</div>
+              <div class="stat-label">People tracked</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" style="color:var(--green);">3</div>
+              <div class="stat-label">Active attention rules</div>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <button class="link-btn">&#x2197; Open Brain Viewer</button>
+          </div>
+
+          <div class="section-divider">Recent Brain Edits</div>
+          <div class="edit-list">
+            <div class="edit-item">
+              <span class="edit-dot"></span>
+              Added attention rule: "Flag Pankaj emails about contracts"
+              <span class="edit-time">2h ago</span>
+            </div>
+            <div class="edit-item">
+              <span class="edit-dot"></span>
+              Updated Rijul preferences: model = opus
+              <span class="edit-time">Yesterday</span>
+            </div>
+            <div class="edit-item">
+              <span class="edit-dot"></span>
+              New person: Sarah Kim (Design Lead)
+              <span class="edit-time">2 days ago</span>
+            </div>
+            <div class="edit-item">
+              <span class="edit-dot"></span>
+              Rule modified: "Auto-triage Jira tickets from Cross Risk"
+              <span class="edit-time">3 days ago</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── Display ─────────────────────────────── -->
+        <div class="tab-panel" id="tab-display">
+          <div class="form-group">
+            <label class="form-label">Sidebar</label>
+            <div class="segmented">
+              <button class="seg-btn">Expanded</button>
+              <button class="seg-btn">Collapsed</button>
+              <button class="seg-btn active">Auto</button>
+            </div>
+            <div class="form-hint">Auto collapses sidebar below 1200px</div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Animations</label>
+            <div class="segmented">
+              <button class="seg-btn active">On</button>
+              <button class="seg-btn">Reduced</button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Density</label>
+            <div class="segmented">
+              <button class="seg-btn active">Comfortable</button>
+              <button class="seg-btn">Compact</button>
+            </div>
+            <div class="form-hint">Compact reduces card padding and spacing</div>
+          </div>
+        </div>
+
+      </div><!-- /tab-panels -->
+    </div><!-- /modal-body -->
+  </div><!-- /modal -->
+</div><!-- /modal-overlay -->
+
+<div class="watermark">Path B &mdash; Settings as Modal &middot; Prototype</div>
+
+<script>
+  // ── Tab Switching ────────────────────────────────
+  document.querySelectorAll('.vtab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.vtab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+    });
+  });
+
+  // ── Segmented Control ───────────────────────────
+  document.querySelectorAll('.segmented').forEach(seg => {
+    seg.querySelectorAll('.seg-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        seg.querySelectorAll('.seg-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+  });
+
+  // ── Modal Open / Close ──────────────────────────
+  const overlay = document.getElementById('modalOverlay');
+
+  function openModal() {
+    overlay.classList.add('open');
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+  }
+
+  function handleOverlayClick(e) {
+    if (e.target === overlay) closeModal();
+  }
+
+  // Escape key
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeModal();
+  });
+</script>
+
+</body>
+</html>

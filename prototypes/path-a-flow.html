@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path A — Patch | CoCo Platform Design Rationale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1e293b;
+      --fg: #cbd5e1;
+      --accent: #60a5fa;
+      --muted: #64748b;
+      --surface: #334155;
+      --border: #475569;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --purple: #a78bfa;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .hero {
+      padding: 4rem 2rem 3rem;
+      text-align: center;
+      background: linear-gradient(180deg, #0f172a 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(96,165,250,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(96,165,250,0.12);
+      border: 1px solid rgba(96,165,250,0.25);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 600px;
+      margin: 0 auto;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Glass panels */
+    .panel {
+      background: rgba(51, 65, 85, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.25rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Section numbers */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: rgba(96,165,250,0.15);
+      border: 1px solid rgba(96,165,250,0.3);
+      border-radius: 10px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 0.75rem;
+    }
+    p { margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* Pain point cards */
+    .pain-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .pain-card {
+      background: rgba(30, 41, 59, 0.7);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+      position: relative;
+    }
+    .pain-card .icon {
+      font-size: 1.5rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .pain-card h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 0.4rem;
+    }
+    .pain-card p {
+      font-size: 0.82rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    /* Diagram containers */
+    .diagram-wrap {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+    .diagram-wrap svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .diagram-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Before/After grid */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .comparison-grid .diagram-wrap { margin-top: 0; }
+    .comparison-label {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .comparison-label.before {
+      background: rgba(248,113,113,0.15);
+      color: var(--danger);
+      border: 1px solid rgba(248,113,113,0.25);
+    }
+    .comparison-label.after {
+      background: rgba(52,211,153,0.15);
+      color: var(--success);
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+
+    /* Table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border);
+      background: rgba(15, 23, 42, 0.4);
+    }
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+    tbody td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+      color: var(--fg);
+      vertical-align: top;
+    }
+    tbody tr:hover td { background: rgba(51, 65, 85, 0.3); }
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 6px;
+      letter-spacing: 0.03em;
+    }
+    .tag-new { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.25); }
+    .tag-changed { background: rgba(251,191,36,0.15); color: var(--warning); border: 1px solid rgba(251,191,36,0.25); }
+    .tag-same { background: rgba(100,116,139,0.2); color: var(--muted); border: 1px solid rgba(100,116,139,0.3); }
+
+    /* Pros & Cons */
+    .proscons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .proscons-card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .proscons-card.pros { border: 1px solid rgba(52,211,153,0.25); }
+    .proscons-card.cons { border: 1px solid rgba(248,113,113,0.25); }
+    .proscons-card h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .proscons-card.pros h4 { color: var(--success); }
+    .proscons-card.cons h4 { color: var(--danger); }
+    .proscons-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .proscons-card li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--fg);
+      line-height: 1.5;
+    }
+    .proscons-card li::before {
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+    }
+    .proscons-card.pros li::before { content: '+'; color: var(--success); }
+    .proscons-card.cons li::before { content: '-'; color: var(--danger); }
+
+    /* Effort table */
+    .effort-table td:nth-child(2) { font-weight: 600; }
+    .effort-s { color: var(--success); }
+    .effort-m { color: var(--warning); }
+    .effort-l { color: var(--purple); }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .footer code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(51,65,85,0.5);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.75rem; }
+      .pain-grid, .comparison-grid, .proscons-grid { grid-template-columns: 1fr; }
+      .panel { padding: 1.5rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="badge">CoCo Platform / UX Strategy</div>
+    <h1>Path A <span>-- Patch</span></h1>
+    <p>Keep all 17 pages. Fix the 3 biggest pain points. Ship fast, learn faster.</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 1. Design Philosophy -->
+    <section class="panel">
+      <div class="section-num">1</div>
+      <h2>Design Philosophy</h2>
+      <p>
+        Path A is the conservative, low-risk approach. Rather than rearchitecting the entire navigation,
+        it patches the three most impactful friction points that users hit on every single session.
+        The goal: reduce average task completion from 6 steps to 2-3 steps without retraining anyone.
+      </p>
+      <div class="pain-grid">
+        <div class="pain-card">
+          <span class="icon" aria-hidden="true">&#x2694;&#xFE0F;</span>
+          <h4>Inline Actions</h4>
+          <p>No more page-hopping just to click a button. Approve, complete, and dismiss directly from the Home dashboard.</p>
+        </div>
+        <div class="pain-card">
+          <span class="icon" aria-hidden="true">&#x1F4E5;</span>
+          <h4>Simplified Inbox</h4>
+          <p>3 tabs instead of 8. Consolidate noise into Actionable, Informational, and Archived streams.</p>
+        </div>
+        <div class="pain-card">
+          <span class="icon" aria-hidden="true">&#x1F4CB;</span>
+          <h4>Structured Agent Output</h4>
+          <p>Summary first, raw log on expand. Stop forcing users to parse streaming JSON to understand what happened.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. User Flow Diagram -->
+    <section class="panel">
+      <div class="section-num">2</div>
+      <h2>User Flow Diagram</h2>
+      <p>
+        The improved journey centers everything on the Home dashboard. Most actions complete without
+        leaving the page. Detail pages exist for deep-dives, not for basic operations.
+      </p>
+      <div class="diagram-wrap">
+        <div class="diagram-label">Improved User Journey</div>
+        <div id="flow-main"></div>
+      </div>
+    </section>
+
+    <!-- 3. Before/After Comparison -->
+    <section class="panel">
+      <div class="section-num">3</div>
+      <h2>Before / After Comparison</h2>
+      <p>
+        The critical metric: steps to complete the most common action (approve a decision from Home).
+      </p>
+      <div class="comparison-grid">
+        <div class="diagram-wrap">
+          <span class="comparison-label before">Before (6 steps)</span>
+          <div id="flow-before"></div>
+        </div>
+        <div class="diagram-wrap">
+          <span class="comparison-label after">After (2-3 steps)</span>
+          <div id="flow-after"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. What Changed vs What Stayed -->
+    <section class="panel">
+      <div class="section-num">4</div>
+      <h2>What Changed vs What Stayed</h2>
+      <p>A complete inventory of every surface in the current app and its Path A treatment.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Feature</th>
+              <th>Before</th>
+              <th>After</th>
+              <th>Change</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Home dashboard</td>
+              <td>Briefing display only</td>
+              <td>Briefing + inline action cards</td>
+              <td><span class="tag tag-changed">Changed</span></td>
+            </tr>
+            <tr>
+              <td>Inbox / Notifications</td>
+              <td>8 separate filter tabs</td>
+              <td>3 tabs: Actionable, Info, Archived</td>
+              <td><span class="tag tag-changed">Changed</span></td>
+            </tr>
+            <tr>
+              <td>Agent output view</td>
+              <td>Raw streaming log</td>
+              <td>Summary card + expandable raw log</td>
+              <td><span class="tag tag-changed">Changed</span></td>
+            </tr>
+            <tr>
+              <td>Decision queue</td>
+              <td>Separate page, click to act</td>
+              <td>Inline approve/reject on Home</td>
+              <td><span class="tag tag-changed">Changed</span></td>
+            </tr>
+            <tr>
+              <td>Orb (agent spawn)</td>
+              <td>Floating action button</td>
+              <td>Floating action button (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Team hierarchy</td>
+              <td>Teams &gt; Projects &gt; Agents</td>
+              <td>Teams &gt; Projects &gt; Agents (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Knowledge Hub</td>
+              <td>Search + browse knowledge</td>
+              <td>Search + browse (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Chat interface</td>
+              <td>Claude subprocess chat</td>
+              <td>Claude subprocess chat (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Cost ledger</td>
+              <td>Table + charts page</td>
+              <td>Table + charts (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>People graph</td>
+              <td>Org chart view</td>
+              <td>Org chart view (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Todos</td>
+              <td>Todo list page</td>
+              <td>Todo list (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Settings / Prefs</td>
+              <td>Settings page</td>
+              <td>Settings page (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Navigation (sidebar)</td>
+              <td>17 page links</td>
+              <td>17 page links (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+            <tr>
+              <td>Page count</td>
+              <td>17 pages</td>
+              <td>17 pages (unchanged)</td>
+              <td><span class="tag tag-same">Same</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 5. Pros & Cons -->
+    <section class="panel">
+      <div class="section-num">5</div>
+      <h2>Pros & Cons</h2>
+      <div class="proscons-grid">
+        <div class="proscons-card pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Low risk -- incremental changes, easy to roll back individually</li>
+            <li>Preserves familiarity -- zero retraining needed for existing users</li>
+            <li>No data migration -- all existing data stores untouched</li>
+            <li>Fast to ship -- each fix is an independent PR, can deploy one at a time</li>
+            <li>Validates assumptions -- if inline actions don't help, we learn cheaply</li>
+          </ul>
+        </div>
+        <div class="proscons-card cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Still 17 pages -- structural complexity is reduced but not eliminated</li>
+            <li>Cognitive overhead remains -- "where is this?" question persists</li>
+            <li>Navigation debt untouched -- sidebar still has 17 links</li>
+            <li>Diminishing returns -- further patches will yield smaller gains</li>
+            <li>Doesn't address discoverability of less-used features</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Effort Estimate -->
+    <section class="panel">
+      <div class="section-num">6</div>
+      <h2>Effort Estimate</h2>
+      <p>Sizing assumes a single developer familiar with the codebase. Each change is independently shippable.</p>
+      <div class="table-wrap">
+        <table class="effort-table">
+          <thead>
+            <tr>
+              <th>Change</th>
+              <th>Size</th>
+              <th>Reasoning</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Inline action cards on Home</td>
+              <td class="effort-m">Medium</td>
+              <td>New component + wiring approve/complete/dismiss handlers to existing API endpoints. Needs optimistic UI updates via TanStack Query.</td>
+            </tr>
+            <tr>
+              <td>Simplified inbox (3 tabs)</td>
+              <td class="effort-s">Small</td>
+              <td>Purely frontend filter logic. Collapse 8 categories into 3 buckets. No backend changes.</td>
+            </tr>
+            <tr>
+              <td>Structured agent output</td>
+              <td class="effort-m">Medium</td>
+              <td>Requires summary extraction from agent stream (backend) + collapsible card component (frontend). May need an LLM summarization pass on completion.</td>
+            </tr>
+            <tr>
+              <td>Decision queue inline on Home</td>
+              <td class="effort-s">Small</td>
+              <td>Subset of inline action cards. Reuses the same component pattern with approve/reject variants.</td>
+            </tr>
+            <tr>
+              <td style="font-weight:600; color:#e2e8f0;">Total</td>
+              <td class="effort-m" style="font-weight:700;">Medium</td>
+              <td>Roughly 1-2 weeks of focused work. No backend schema changes. No migrations.</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    CoCo Platform -- Path A Design Rationale &middot; Generated <code>2026-04-06</code>
+  </footer>
+
+  <script type="module">
+    import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+    const theme = {
+      bg: '#1e293b',
+      fg: '#cbd5e1',
+      accent: '#60a5fa',
+      muted: '#64748b',
+      surface: '#334155',
+      border: '#475569',
+      transparent: true
+    }
+
+    async function render(elementId, diagram) {
+      const el = document.getElementById(elementId)
+      try {
+        const svg = await renderMermaidSVGAsync(diagram, { theme })
+        if (typeof svg === 'string') {
+          el.innerHTML = svg
+        } else if (svg instanceof SVGElement || svg instanceof HTMLElement) {
+          el.appendChild(svg)
+        } else if (svg?.outerHTML) {
+          el.innerHTML = svg.outerHTML
+        }
+      } catch (err) {
+        el.innerHTML = `<pre style="color:#f87171;font-size:0.8rem;">Diagram render error: ${err.message}</pre>`
+        console.error(`Error rendering ${elementId}:`, err)
+      }
+    }
+
+    // 2. Main user flow
+    const flowMain = `flowchart TD
+  A["Open CoCo"] --> B["Home Dashboard"]
+  B --> C{"See briefing +\\naction cards"}
+  C -->|"Quick action"| D["Act inline\\n(approve / complete / dismiss)"]
+  D --> B
+  C -->|"Need detail?"| E["Navigate to\\nspecific page"]
+  E --> F["Act on detail page"]
+  F --> B
+  B --> G["Spawn agent\\nvia Orb"]
+  G --> H["Monitor agent\\n(summary cards)"]
+  H --> B
+  B --> I["Check inbox\\n(3 tabs)"]
+  I --> J["Actionable"]
+  I --> K["Informational"]
+  I --> L["Archived"]
+  J --> D
+  K --> B
+  L --> B`
+
+    // 3a. Before flow
+    const flowBefore = `flowchart TD
+  A1["Home"] --> B1["Navigate to\\nDecisions page"]
+  B1 --> C1["Find the\\ncorrect tab"]
+  C1 --> D1["Locate item\\nin list"]
+  D1 --> E1["Click to open\\ndetail view"]
+  E1 --> F1["Click Approve"]
+  F1 --> G1["Navigate back\\nto Home"]
+
+  style A1 fill:#334155,stroke:#475569,color:#cbd5e1
+  style G1 fill:#334155,stroke:#475569,color:#cbd5e1`
+
+    // 3b. After flow
+    const flowAfter = `flowchart TD
+  A2["Home"] --> B2["See decision\\nin action card"]
+  B2 --> C2["Click Approve\\ninline"]
+  C2 --> D2["Done &#10003;"]
+
+  A2 --> E2["Need details?\\nClick card"]
+  E2 --> F2["Act on\\ndetail page"]
+  F2 --> G2["Back to Home"]
+
+  style A2 fill:#334155,stroke:#475569,color:#cbd5e1
+  style D2 fill:#064e3b,stroke:#34d399,color:#34d399
+  style G2 fill:#334155,stroke:#475569,color:#cbd5e1`
+
+    // Render all diagrams
+    await Promise.all([
+      render('flow-main', flowMain),
+      render('flow-before', flowBefore),
+      render('flow-after', flowAfter)
+    ])
+  </script>
+
+</body>
+</html>

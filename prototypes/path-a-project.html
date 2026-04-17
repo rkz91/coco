@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Project Detail (Path A)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f172a;
+    --bg-deep: #0c0e14;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --text-muted: #52525b;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59,130,246,0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.12);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.12);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.12);
+    --purple: #a855f7;
+    --purple-dim: rgba(168,85,247,0.12);
+    --orange: #f97316;
+    --orange-dim: rgba(249,115,22,0.12);
+    --glass: rgba(255,255,255,0.03);
+    --glass-border: rgba(255,255,255,0.06);
+    --radius: 12px;
+    --radius-sm: 8px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── Top Bar ── */
+  .top-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 32px;
+    border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(16px);
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: rgba(15,23,42,0.88);
+  }
+  .top-bar-left { display: flex; align-items: center; gap: 16px; }
+  .back-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: none; border: none; color: var(--text-dim);
+    font-size: 13px; font-family: inherit; cursor: pointer;
+    padding: 6px 12px; border-radius: var(--radius-sm);
+    transition: all 0.2s;
+  }
+  .back-btn:hover { color: var(--text); background: var(--surface); }
+  .back-btn svg { width: 16px; height: 16px; }
+
+  /* ── Project Header ── */
+  .project-header {
+    padding: 24px 32px 0;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+  }
+  .project-header-left { display: flex; align-items: center; gap: 16px; }
+  .project-icon {
+    width: 48px; height: 48px;
+    border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--blue), var(--purple));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; flex-shrink: 0;
+  }
+  .project-title-block { display: flex; flex-direction: column; gap: 6px; }
+  .project-name {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+    display: flex; align-items: center; gap: 10px;
+  }
+  .project-meta {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 12px; color: var(--text-dim);
+  }
+  .project-meta-sep { color: var(--text-muted); }
+  .project-header-right { display: flex; align-items: center; gap: 10px; }
+  .dropdown-btn {
+    display: flex; align-items: center; gap: 6px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text-dim); padding: 7px 14px;
+    border-radius: var(--radius-sm); font-size: 12px;
+    font-family: inherit; cursor: pointer; transition: all 0.2s;
+  }
+  .dropdown-btn:hover { background: var(--surface-hover); color: var(--text); }
+
+  /* ── Status Badge ── */
+  .badge {
+    font-size: 11px; font-weight: 600;
+    padding: 2px 10px; border-radius: 999px;
+    display: inline-flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .badge-active { background: var(--green-dim); color: var(--green); }
+  .badge-running { background: rgba(59,130,246,0.15); color: var(--blue); }
+  .badge-idle { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+  .badge-completed { background: var(--green-dim); color: var(--green); }
+  .badge-high { background: var(--red-dim); color: var(--red); }
+  .badge-medium { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-low { background: rgba(255,255,255,0.06); color: var(--text-dim); }
+  .badge-pdf { background: var(--red-dim); color: var(--red); }
+  .badge-email { background: var(--blue-glow); color: var(--blue); }
+  .badge-doc { background: var(--purple-dim); color: var(--purple); }
+  .badge-chat { background: var(--green-dim); color: var(--green); }
+  .badge-confluence { background: var(--orange-dim); color: var(--orange); }
+
+  /* ── Pulse Dot ── */
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    display: inline-block; position: relative;
+  }
+  .pulse-dot.green { background: var(--green); }
+  .pulse-dot.green::after {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%; background: var(--green);
+    opacity: 0.4; animation: pulse 1.5s ease-in-out infinite;
+  }
+  .pulse-dot.blue { background: var(--blue); }
+  .pulse-dot.blue::after {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%; background: var(--blue);
+    opacity: 0.4; animation: pulse 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 0.4; }
+    50% { transform: scale(1.8); opacity: 0; }
+  }
+
+  /* ── Tabs ── */
+  .tab-bar {
+    display: flex; gap: 0; padding: 0 32px;
+    border-bottom: 1px solid var(--border);
+    margin-top: 20px;
+  }
+  .tab {
+    padding: 12px 20px; font-size: 13px; font-weight: 500;
+    color: var(--text-dim); cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all 0.2s; font-family: inherit;
+    background: none; border-top: none; border-left: none; border-right: none;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--text); border-bottom-color: var(--blue); }
+  .tab .tab-count {
+    background: rgba(255,255,255,0.08); padding: 1px 7px;
+    border-radius: 999px; font-size: 11px; font-weight: 600;
+  }
+
+  /* ── Tab Content ── */
+  .tab-content {
+    padding: 24px 32px 48px;
+    display: none;
+    animation: fadeIn 0.25s ease;
+  }
+  .tab-content.active { display: block; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Card ── */
+  .card {
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    padding: 20px;
+    backdrop-filter: blur(12px);
+    transition: all 0.25s ease;
+  }
+  .card:hover {
+    background: var(--surface-hover);
+    border-color: rgba(255,255,255,0.1);
+  }
+  .card-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 10px;
+  }
+
+  /* ── Overview Grid ── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .overview-grid .card-full { grid-column: 1 / -1; }
+
+  /* ── Health Card ── */
+  .health-card {
+    display: flex; align-items: center; gap: 24px;
+    padding: 24px;
+  }
+  .health-indicator {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--green-dim); border: 2px solid var(--green);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; flex-shrink: 0;
+  }
+  .health-stats {
+    display: flex; gap: 32px; flex: 1;
+  }
+  .health-stat { display: flex; flex-direction: column; gap: 2px; }
+  .health-stat-value {
+    font-size: 20px; font-weight: 700; letter-spacing: -0.02em;
+    font-variant-numeric: tabular-nums;
+  }
+  .health-stat-label { font-size: 11px; color: var(--text-dim); }
+  .cost-value { color: var(--green); }
+
+  /* ── Quick Stats ── */
+  .quick-stats {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat-card {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 16px; text-align: center;
+  }
+  .stat-number {
+    font-size: 24px; font-weight: 700; letter-spacing: -0.02em;
+    margin-bottom: 2px;
+  }
+  .stat-label { font-size: 11px; color: var(--text-dim); }
+
+  /* ── Activity List ── */
+  .activity-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .activity-item:last-child { border-bottom: none; }
+  .activity-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    margin-top: 5px; flex-shrink: 0;
+  }
+  .activity-dot.blue { background: var(--blue); }
+  .activity-dot.green { background: var(--green); }
+  .activity-dot.purple { background: var(--purple); }
+  .activity-dot.yellow { background: var(--yellow); }
+  .activity-dot.red { background: var(--red); }
+  .activity-text { font-size: 13px; line-height: 1.5; flex: 1; }
+  .activity-text strong { font-weight: 600; }
+  .activity-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; margin-top: 2px; }
+
+  /* ── Agent Strip ── */
+  .agent-strip {
+    display: flex; gap: 12px; overflow-x: auto;
+    padding: 4px 0 8px; scrollbar-width: thin;
+    scrollbar-color: rgba(255,255,255,0.1) transparent;
+  }
+  .agent-strip::-webkit-scrollbar { height: 4px; }
+  .agent-strip::-webkit-scrollbar-track { background: transparent; }
+  .agent-strip::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+  .agent-mini {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 14px 18px;
+    min-width: 220px; flex-shrink: 0;
+    transition: all 0.2s; cursor: pointer;
+  }
+  .agent-mini:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.1); }
+  .agent-mini-header { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .agent-mini-icon {
+    width: 28px; height: 28px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; flex-shrink: 0;
+  }
+  .agent-mini-name { font-size: 13px; font-weight: 600; }
+  .agent-mini-task { font-size: 11px; color: var(--text-dim); margin-bottom: 6px; }
+  .agent-mini-meta { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--text-muted); }
+
+  /* ── Agents Grid ── */
+  .agents-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;
+  }
+  .agent-card { padding: 20px; cursor: pointer; }
+  .agent-card-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 12px; }
+  .agent-card-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .agent-card-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; display: flex; align-items: center; gap: 8px; }
+  .agent-card-task { font-size: 12px; color: var(--text-dim); }
+  .agent-card-summary {
+    font-size: 12px; color: var(--text-dim); line-height: 1.5;
+    margin-bottom: 12px; padding: 10px;
+    background: rgba(255,255,255,0.02); border-radius: var(--radius-sm);
+    border-left: 2px solid var(--border);
+  }
+  .agent-card-meta { display: flex; align-items: center; gap: 12px; font-size: 12px; color: var(--text-dim); }
+  .agent-card-meta .meta-sep { color: var(--text-muted); }
+  .cost-live {
+    font-variant-numeric: tabular-nums; color: var(--blue); font-weight: 600;
+  }
+  .progress-bar {
+    height: 3px; background: rgba(255,255,255,0.06);
+    border-radius: 2px; overflow: hidden; margin-bottom: 14px;
+  }
+  .progress-bar .track {
+    height: 100%; background: linear-gradient(90deg, var(--blue), #60a5fa);
+    border-radius: 2px; animation: indeterminate 1.8s ease-in-out infinite;
+  }
+  @keyframes indeterminate {
+    0% { transform: translateX(-100%); width: 35%; }
+    50% { width: 55%; }
+    100% { transform: translateX(350%); width: 35%; }
+  }
+
+  /* ── Todos List ── */
+  .todo-list { display: flex; flex-direction: column; gap: 0; }
+  .todo-item {
+    display: flex; align-items: center; gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    transition: background 0.15s;
+    cursor: pointer;
+  }
+  .todo-item:hover { background: var(--surface); }
+  .todo-item:last-child { border-bottom: none; }
+  .todo-checkbox {
+    width: 18px; height: 18px; border-radius: 4px;
+    border: 2px solid var(--border); background: transparent;
+    cursor: pointer; flex-shrink: 0; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .todo-checkbox:hover { border-color: var(--blue); }
+  .todo-checkbox.checked {
+    background: var(--green); border-color: var(--green);
+  }
+  .todo-checkbox.checked::after {
+    content: '\2713'; color: #fff; font-size: 11px; font-weight: 700;
+  }
+  .todo-body { flex: 1; min-width: 0; }
+  .todo-title { font-size: 13px; font-weight: 500; margin-bottom: 3px; }
+  .todo-title.done { text-decoration: line-through; color: var(--text-muted); }
+  .todo-sub { font-size: 11px; color: var(--text-dim); display: flex; align-items: center; gap: 8px; }
+  .todo-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+  .todo-due { font-size: 11px; color: var(--text-dim); }
+  .todo-due.overdue { color: var(--red); }
+
+  /* ── Knowledge Grid ── */
+  .knowledge-bar {
+    display: flex; align-items: center; gap: 12px; margin-bottom: 16px;
+  }
+  .search-input {
+    flex: 1; padding: 9px 14px 9px 36px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); color: var(--text);
+    font-size: 13px; font-family: inherit; outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-input:focus { border-color: var(--blue); }
+  .search-wrapper {
+    position: relative; flex: 1;
+  }
+  .search-wrapper svg {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    width: 14px; height: 14px; color: var(--text-muted);
+  }
+  .filter-chip {
+    padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 500;
+    border: 1px solid var(--border); background: var(--surface);
+    color: var(--text-dim); cursor: pointer; transition: all 0.2s;
+  }
+  .filter-chip:hover { background: var(--surface-hover); color: var(--text); }
+  .filter-chip.active { background: rgba(255,255,255,0.1); color: var(--text); border-color: rgba(255,255,255,0.15); }
+  .knowledge-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  .knowledge-item {
+    background: var(--glass); border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm); padding: 16px;
+    transition: all 0.2s; cursor: pointer;
+  }
+  .knowledge-item:hover { background: var(--surface-hover); border-color: rgba(255,255,255,0.1); }
+  .knowledge-item-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .knowledge-item-title { font-size: 13px; font-weight: 600; }
+  .knowledge-item-snippet { font-size: 12px; color: var(--text-dim); line-height: 1.5; margin-bottom: 10px; }
+  .knowledge-item-meta { display: flex; align-items: center; gap: 10px; font-size: 11px; color: var(--text-muted); }
+
+  /* ── Section Headers ── */
+  .section-label {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; color: var(--text-muted); margin-bottom: 12px;
+  }
+
+  /* ── Killed Tabs Banner ── */
+  .killed-banner {
+    margin-top: 24px; padding: 16px 20px;
+    background: rgba(239,68,68,0.06); border: 1px solid rgba(239,68,68,0.12);
+    border-radius: var(--radius-sm); font-size: 12px; color: var(--text-dim);
+    line-height: 1.6;
+  }
+  .killed-banner strong { color: var(--red); font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="top-bar">
+  <div class="top-bar-left">
+    <button class="back-btn" onclick="history.back()" aria-label="Back to Projects">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 12L6 8l4-4"/>
+      </svg>
+      Projects
+    </button>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text-muted);">
+    <span>Path A</span>
+    <span style="color:var(--text-muted);">|</span>
+    <span>Slimmed Project Detail (4 tabs)</span>
+  </div>
+</div>
+
+<!-- ── Project Header ── -->
+<div class="project-header">
+  <div class="project-header-left">
+    <div class="project-icon">&#x1F6E1;</div>
+    <div class="project-title-block">
+      <div class="project-name">
+        Anti-Corruption (ACC)
+        <span class="badge badge-active"><span class="pulse-dot green"></span> Active</span>
+      </div>
+      <div class="project-meta">
+        <span>21 items</span>
+        <span class="project-meta-sep">&middot;</span>
+        <span>3 agents</span>
+        <span class="project-meta-sep">&middot;</span>
+        <span>Lead: <strong style="color:var(--text);font-weight:500;">Rijul Kalra</strong></span>
+      </div>
+    </div>
+  </div>
+  <div class="project-header-right">
+    <button class="dropdown-btn" onclick="alert('Project settings coming soon')" aria-label="Project Settings">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="8" cy="4" r="1"/><circle cx="8" cy="8" r="1"/><circle cx="8" cy="12" r="1"/></svg>
+      Settings
+    </button>
+  </div>
+</div>
+
+<!-- ── Tabs ── -->
+<div class="tab-bar">
+  <button class="tab active" data-tab="overview">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="5" height="5" rx="1"/><rect x="9" y="2" width="5" height="5" rx="1"/><rect x="2" y="9" width="5" height="5" rx="1"/><rect x="9" y="9" width="5" height="5" rx="1"/></svg>
+    Overview
+  </button>
+  <button class="tab" data-tab="agents">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6"/></svg>
+    Agents <span class="tab-count">3</span>
+  </button>
+  <button class="tab" data-tab="todos">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8l3 3 7-7"/></svg>
+    Todos <span class="tab-count">8</span>
+  </button>
+  <button class="tab" data-tab="knowledge">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12M2 7h8M2 11h10M2 15h6"/></svg>
+    Knowledge <span class="tab-count">5</span>
+  </button>
+</div>
+
+<!-- ═══════════════════════ OVERVIEW TAB ═══════════════════════ -->
+<div class="tab-content active" id="tab-overview">
+
+  <!-- Health Card -->
+  <div class="section-label" style="margin-top:0;">Project Health</div>
+  <div class="card health-card" style="margin-bottom:24px;">
+    <div class="health-indicator">&#x2714;</div>
+    <div class="health-stats">
+      <div class="health-stat">
+        <div class="health-stat-value" style="color:var(--green);">Healthy</div>
+        <div class="health-stat-label">Status</div>
+      </div>
+      <div class="health-stat">
+        <div class="health-stat-value">21</div>
+        <div class="health-stat-label">Total Items</div>
+      </div>
+      <div class="health-stat">
+        <div class="health-stat-value">3</div>
+        <div class="health-stat-label">Active Agents</div>
+      </div>
+      <div class="health-stat">
+        <div class="health-stat-value cost-value">$1.20</div>
+        <div class="health-stat-label">Cost This Week</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quick Stats -->
+  <div class="quick-stats">
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--yellow);">8</div>
+      <div class="stat-label">Open Todos</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--blue);">2</div>
+      <div class="stat-label">Running Agents</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--purple);">5</div>
+      <div class="stat-label">Knowledge Items</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number" style="color:var(--green);">$1.20</div>
+      <div class="stat-label">Weekly Spend</div>
+    </div>
+  </div>
+
+  <!-- Recent Activity -->
+  <div class="section-label">Recent Activity</div>
+  <div class="card" style="margin-bottom:24px;">
+    <div class="activity-item">
+      <div class="activity-dot blue"></div>
+      <div class="activity-text"><strong>Policy Reviewer</strong> completed analysis of 3 new compliance documents</div>
+      <div class="activity-time">12 min ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot green"></div>
+      <div class="activity-text"><strong>Rijul</strong> marked "Review FCPA training materials" as complete</div>
+      <div class="activity-time">1h ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot purple"></div>
+      <div class="activity-text"><strong>Knowledge Hub</strong> classified 2 new items into ACC project</div>
+      <div class="activity-time">2h ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot yellow"></div>
+      <div class="activity-text"><strong>Risk Scanner</strong> flagged potential gap in vendor due diligence checklist</div>
+      <div class="activity-time">5h ago</div>
+    </div>
+    <div class="activity-item">
+      <div class="activity-dot green"></div>
+      <div class="activity-text"><strong>Rijul</strong> added new todo: "Draft ACC quarterly summary for SteerCo"</div>
+      <div class="activity-time">Yesterday</div>
+    </div>
+  </div>
+
+  <!-- Active Agents Strip -->
+  <div class="section-label">Active Agents</div>
+  <div class="agent-strip">
+    <div class="agent-mini">
+      <div class="agent-mini-header">
+        <div class="agent-mini-icon" style="background:var(--blue-glow);">&#x1F50D;</div>
+        <div class="agent-mini-name">Policy Reviewer</div>
+        <span class="badge badge-running"><span class="pulse-dot blue"></span> Running</span>
+      </div>
+      <div class="agent-mini-task">Analyzing Q1 compliance batch...</div>
+      <div class="agent-mini-meta">
+        <span class="cost-live">$0.42</span>
+        <span style="color:var(--text-muted);">&middot;</span>
+        <span>14 min</span>
+      </div>
+    </div>
+    <div class="agent-mini">
+      <div class="agent-mini-header">
+        <div class="agent-mini-icon" style="background:var(--red-dim);">&#x26A0;</div>
+        <div class="agent-mini-name">Risk Scanner</div>
+        <span class="badge badge-running"><span class="pulse-dot blue"></span> Running</span>
+      </div>
+      <div class="agent-mini-task">Scanning vendor contracts for red flags...</div>
+      <div class="agent-mini-meta">
+        <span class="cost-live">$0.38</span>
+        <span style="color:var(--text-muted);">&middot;</span>
+        <span>22 min</span>
+      </div>
+    </div>
+    <div class="agent-mini">
+      <div class="agent-mini-header">
+        <div class="agent-mini-icon" style="background:var(--green-dim);">&#x1F4DD;</div>
+        <div class="agent-mini-name">Report Drafter</div>
+        <span class="badge badge-idle">Idle</span>
+      </div>
+      <div class="agent-mini-task">Last run: Drafted ACC summary memo</div>
+      <div class="agent-mini-meta">
+        <span>$0.40 total</span>
+        <span style="color:var(--text-muted);">&middot;</span>
+        <span>3h ago</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Killed Tabs Info -->
+  <div class="killed-banner">
+    <strong>6 tabs removed</strong> from original 10-tab layout &mdash;
+    <strong>Costs</strong> merged into health card above,
+    <strong>Activity</strong> merged into recent activity,
+    <strong>Collaboration</strong> removed (0% usage),
+    <strong>Goals</strong> accessible from Goals page,
+    <strong>Comments</strong> moved to slide-over on individual items,
+    <strong>Settings</strong> moved to project dropdown menu.
+  </div>
+</div>
+
+<!-- ═══════════════════════ AGENTS TAB ═══════════════════════ -->
+<div class="tab-content" id="tab-agents">
+  <div class="agents-grid">
+
+    <!-- Agent 1: Policy Reviewer (Running) -->
+    <div class="card agent-card">
+      <div class="agent-card-header">
+        <div class="agent-card-icon" style="background:var(--blue-glow);">&#x1F50D;</div>
+        <div>
+          <div class="agent-card-title">Policy Reviewer <span class="badge badge-running"><span class="pulse-dot blue"></span> Running</span></div>
+          <div class="agent-card-task">Analyzing Q1 compliance batch</div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="track"></div></div>
+      <div class="agent-card-summary">
+        Processing 3 new FCPA compliance documents. Found 2 minor gaps in vendor screening protocol. Generating detailed findings report with recommendations.
+      </div>
+      <div class="agent-card-meta">
+        <span class="cost-live">$0.42 live</span>
+        <span class="meta-sep">&middot;</span>
+        <span>14 min elapsed</span>
+        <span class="meta-sep">&middot;</span>
+        <span>ACC</span>
+      </div>
+    </div>
+
+    <!-- Agent 2: Risk Scanner (Running) -->
+    <div class="card agent-card">
+      <div class="agent-card-header">
+        <div class="agent-card-icon" style="background:var(--red-dim);">&#x26A0;</div>
+        <div>
+          <div class="agent-card-title">Risk Scanner <span class="badge badge-running"><span class="pulse-dot blue"></span> Running</span></div>
+          <div class="agent-card-task">Scanning vendor contracts</div>
+        </div>
+      </div>
+      <div class="progress-bar"><div class="track"></div></div>
+      <div class="agent-card-summary">
+        Reviewing 8 vendor contracts for anti-corruption red flags. Currently on contract #5 (GlobalTech Services). 1 high-risk finding so far in intermediary fee structures.
+      </div>
+      <div class="agent-card-meta">
+        <span class="cost-live">$0.38 live</span>
+        <span class="meta-sep">&middot;</span>
+        <span>22 min elapsed</span>
+        <span class="meta-sep">&middot;</span>
+        <span>ACC</span>
+      </div>
+    </div>
+
+    <!-- Agent 3: Report Drafter (Idle) -->
+    <div class="card agent-card">
+      <div class="agent-card-header">
+        <div class="agent-card-icon" style="background:var(--green-dim);">&#x1F4DD;</div>
+        <div>
+          <div class="agent-card-title">Report Drafter <span class="badge badge-idle">Idle</span></div>
+          <div class="agent-card-task">Last: ACC summary memo</div>
+        </div>
+      </div>
+      <div class="agent-card-summary">
+        Last run drafted a 4-page ACC quarterly summary covering policy updates, training completion rates (94%), and vendor screening outcomes. Awaiting review approval.
+      </div>
+      <div class="agent-card-meta">
+        <span>$0.40 total</span>
+        <span class="meta-sep">&middot;</span>
+        <span>3h ago</span>
+        <span class="meta-sep">&middot;</span>
+        <span>8 runs total</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ═══════════════════════ TODOS TAB ═══════════════════════ -->
+<div class="tab-content" id="tab-todos">
+  <div class="card" style="padding:0;">
+    <div class="todo-list">
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Draft ACC quarterly summary for SteerCo</div>
+          <div class="todo-sub">
+            <span class="badge badge-high">High</span>
+            <span>Assigned to Rijul</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due overdue">Due Apr 4 (overdue)</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Review Risk Scanner findings on vendor contracts</div>
+          <div class="todo-sub">
+            <span class="badge badge-high">High</span>
+            <span>From Risk Scanner agent</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due">Due Apr 8</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Update FCPA training materials for Q2</div>
+          <div class="todo-sub">
+            <span class="badge badge-medium">Medium</span>
+            <span>Compliance team</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due">Due Apr 12</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Schedule vendor due diligence refresher session</div>
+          <div class="todo-sub">
+            <span class="badge badge-medium">Medium</span>
+            <span>Assigned to Rijul</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due">Due Apr 15</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Finalize intermediary fee policy amendments</div>
+          <div class="todo-sub">
+            <span class="badge badge-high">High</span>
+            <span>Legal review pending</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due">Due Apr 10</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox"></div>
+        <div class="todo-body">
+          <div class="todo-title">Map ACC controls to new regulatory framework</div>
+          <div class="todo-sub">
+            <span class="badge badge-low">Low</span>
+            <span>Policy Reviewer to assist</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due">Due Apr 20</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox checked"></div>
+        <div class="todo-body">
+          <div class="todo-title done">Review FCPA training materials</div>
+          <div class="todo-sub">
+            <span class="badge badge-medium">Medium</span>
+            <span>Completed by Rijul</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due" style="color:var(--green);">Completed</div>
+        </div>
+      </div>
+
+      <div class="todo-item">
+        <div class="todo-checkbox checked"></div>
+        <div class="todo-body">
+          <div class="todo-title done">Onboard Policy Reviewer agent to ACC</div>
+          <div class="todo-sub">
+            <span class="badge badge-low">Low</span>
+            <span>Setup task</span>
+          </div>
+        </div>
+        <div class="todo-right">
+          <div class="todo-due" style="color:var(--green);">Completed</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════ KNOWLEDGE TAB ═══════════════════════ -->
+<div class="tab-content" id="tab-knowledge">
+
+  <!-- Search + Filters -->
+  <div class="knowledge-bar">
+    <div class="search-wrapper">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="7" cy="7" r="4.5"/><path d="M11 11l3 3"/>
+      </svg>
+      <input class="search-input" placeholder="Search knowledge in ACC..." />
+    </div>
+    <button class="filter-chip active">All</button>
+    <button class="filter-chip">PDF</button>
+    <button class="filter-chip">Email</button>
+    <button class="filter-chip">Docs</button>
+    <button class="filter-chip">Chat</button>
+  </div>
+
+  <div class="knowledge-grid">
+
+    <div class="knowledge-item">
+      <div class="knowledge-item-header">
+        <div class="knowledge-item-title">FCPA Compliance Guidelines v3.2</div>
+        <span class="badge badge-pdf">PDF</span>
+      </div>
+      <div class="knowledge-item-snippet">Updated Foreign Corrupt Practices Act compliance procedures including vendor screening requirements, gift and entertainment thresholds, and escalation protocols...</div>
+      <div class="knowledge-item-meta">
+        <span>42 pages</span>
+        <span>&middot;</span>
+        <span>Ingested Mar 28</span>
+        <span>&middot;</span>
+        <span>Cited 6x</span>
+      </div>
+    </div>
+
+    <div class="knowledge-item">
+      <div class="knowledge-item-header">
+        <div class="knowledge-item-title">Vendor Due Diligence Checklist</div>
+        <span class="badge badge-doc">Doc</span>
+      </div>
+      <div class="knowledge-item-snippet">Standard checklist for third-party vendor assessments including beneficial ownership verification, PEP screening, sanctions checks, and compliance history review...</div>
+      <div class="knowledge-item-meta">
+        <span>8 pages</span>
+        <span>&middot;</span>
+        <span>Ingested Apr 1</span>
+        <span>&middot;</span>
+        <span>Cited 4x</span>
+      </div>
+    </div>
+
+    <div class="knowledge-item">
+      <div class="knowledge-item-header">
+        <div class="knowledge-item-title">RE: Q1 ACC Review Meeting Notes</div>
+        <span class="badge badge-email">Email</span>
+      </div>
+      <div class="knowledge-item-snippet">Key decisions from the Q1 review: approved updated intermediary fee thresholds, flagged 3 vendors for enhanced due diligence, training completion at 94%...</div>
+      <div class="knowledge-item-meta">
+        <span>From Pankaj</span>
+        <span>&middot;</span>
+        <span>Ingested Mar 30</span>
+        <span>&middot;</span>
+        <span>Cited 2x</span>
+      </div>
+    </div>
+
+    <div class="knowledge-item">
+      <div class="knowledge-item-header">
+        <div class="knowledge-item-title">ACC Risk Heat Map (March 2026)</div>
+        <span class="badge badge-confluence">Confluence</span>
+      </div>
+      <div class="knowledge-item-snippet">Monthly risk assessment with heat map visualization. High-risk areas: intermediary payments in APAC, gifts and entertainment in EMEA. 2 items moved from amber to green...</div>
+      <div class="knowledge-item-meta">
+        <span>Confluence page</span>
+        <span>&middot;</span>
+        <span>Ingested Apr 2</span>
+        <span>&middot;</span>
+        <span>Cited 3x</span>
+      </div>
+    </div>
+
+    <div class="knowledge-item">
+      <div class="knowledge-item-header">
+        <div class="knowledge-item-title">Agent Briefing: Contract Review Findings</div>
+        <span class="badge badge-chat">Chat</span>
+      </div>
+      <div class="knowledge-item-snippet">Risk Scanner agent's summary of contract review batch #12. Flagged GlobalTech Services for unusual intermediary fee structure ($45K routing through HK subsidiary)...</div>
+      <div class="knowledge-item-meta">
+        <span>Agent output</span>
+        <span>&middot;</span>
+        <span>Ingested today</span>
+        <span>&middot;</span>
+        <span>Cited 1x</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Tab switching
+  document.querySelectorAll('.tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+      tab.classList.add('active');
+      const target = tab.getAttribute('data-tab');
+      const panel = document.getElementById('tab-' + target);
+      // Re-trigger animation
+      panel.style.animation = 'none';
+      panel.offsetHeight;
+      panel.style.animation = '';
+      panel.classList.add('active');
+    });
+  });
+
+  // Todo checkbox toggling
+  document.querySelectorAll('.todo-checkbox').forEach(cb => {
+    cb.addEventListener('click', (e) => {
+      e.stopPropagation();
+      cb.classList.toggle('checked');
+      const title = cb.closest('.todo-item').querySelector('.todo-title');
+      title.classList.toggle('done');
+    });
+  });
+
+  // Filter chip toggling (knowledge tab)
+  document.querySelectorAll('.filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+    });
+  });
+
+  // Simulate live cost ticking for running agents
+  document.querySelectorAll('.cost-live').forEach(el => {
+    const base = parseFloat(el.textContent.replace('$','').replace(' live',''));
+    if (isNaN(base)) return;
+    let current = base;
+    setInterval(() => {
+      current += 0.001;
+      el.textContent = '$' + current.toFixed(3) + (el.textContent.includes('live') ? ' live' : '');
+    }, 3000 + Math.random() * 2000);
+  });
+</script>
+
+</body>
+</html>

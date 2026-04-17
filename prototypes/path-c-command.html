@@ -1,0 +1,1367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path C — Universal Command Bar | CoCo Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0C0F17;
+      --surface: rgba(255,255,255,0.04);
+      --surface-hover: rgba(255,255,255,0.07);
+      --surface-active: rgba(255,255,255,0.10);
+      --fg: #E8ECF4;
+      --fg-muted: #7A839A;
+      --fg-dim: #454D64;
+      --accent: #4F7BF7;
+      --accent-glow: rgba(79,123,247,0.25);
+      --accent-dim: rgba(79,123,247,0.10);
+      --green: #34D399;
+      --yellow: #FBBF24;
+      --red: #F87171;
+      --orange: #FB923C;
+      --purple: #A78BFA;
+      --radius: 16px;
+      --radius-lg: 20px;
+      --radius-sm: 10px;
+      --transition: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+
+    /* ── Grid Background ── */
+    .grid-bg {
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+      background-size: 60px 60px;
+      z-index: 0;
+    }
+
+    .grid-bg::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(ellipse 800px 500px at 50% 35%, rgba(79,123,247,0.04) 0%, transparent 70%);
+    }
+
+    /* ── Ambient Glow ── */
+    .ambient-orb {
+      position: fixed;
+      top: 18%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 350px;
+      background: radial-gradient(ellipse, rgba(79,123,247,0.06) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+      filter: blur(40px);
+    }
+
+    /* ── Main Container ── */
+    .container {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding-top: 60px;
+    }
+
+    /* ── Demo Tabs ── */
+    .demo-tabs {
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: var(--surface);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.06);
+      margin-bottom: 48px;
+    }
+
+    .demo-tab {
+      padding: 8px 16px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--fg-muted);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--transition);
+      white-space: nowrap;
+    }
+
+    .demo-tab:hover {
+      color: var(--fg);
+      background: rgba(255,255,255,0.04);
+    }
+
+    .demo-tab.active {
+      color: var(--fg);
+      background: rgba(255,255,255,0.08);
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* ── Command Bar Wrapper ── */
+    .command-wrapper {
+      width: 580px;
+      position: relative;
+    }
+
+    /* ── Command Bar ── */
+    .command-bar {
+      width: 100%;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 20px;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03) inset,
+        0 1px 0 rgba(255,255,255,0.05) inset,
+        0 4px 24px rgba(0,0,0,0.3),
+        0 1px 3px rgba(0,0,0,0.2);
+      transition: all var(--transition);
+      position: relative;
+      z-index: 20;
+    }
+
+    .command-bar::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(135deg, rgba(255,255,255,0.04) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    .command-bar.active {
+      border-color: rgba(79,123,247,0.3);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03) inset,
+        0 1px 0 rgba(255,255,255,0.05) inset,
+        0 4px 24px rgba(0,0,0,0.3),
+        0 1px 3px rgba(0,0,0,0.2),
+        0 0 30px rgba(79,123,247,0.08);
+    }
+
+    .command-icon {
+      color: var(--fg-muted);
+      flex-shrink: 0;
+      opacity: 0.6;
+    }
+
+    .command-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: var(--fg);
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 400;
+      outline: none;
+      letter-spacing: -0.01em;
+    }
+
+    .command-input::placeholder {
+      color: var(--fg-dim);
+      font-weight: 400;
+    }
+
+    .shortcut-badge {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.06);
+      flex-shrink: 0;
+      transition: opacity var(--transition);
+    }
+
+    .shortcut-badge kbd {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      color: var(--fg-muted);
+      font-weight: 500;
+    }
+
+    .shortcut-badge span {
+      font-size: 11px;
+      color: var(--fg-dim);
+    }
+
+    /* ── Category Pill ── */
+    .category-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+      margin-top: 12px;
+      opacity: 0;
+      transform: translateY(-4px);
+      transition: all var(--transition);
+      border: 1px solid transparent;
+    }
+
+    .category-pill.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .category-pill.search {
+      background: rgba(79,123,247,0.12);
+      color: #7DA3FF;
+      border-color: rgba(79,123,247,0.15);
+    }
+    .category-pill.agent {
+      background: rgba(167,139,250,0.12);
+      color: #C4B5FD;
+      border-color: rgba(167,139,250,0.15);
+    }
+    .category-pill.action {
+      background: rgba(251,146,60,0.12);
+      color: #FDBA74;
+      border-color: rgba(251,146,60,0.15);
+    }
+    .category-pill.view {
+      background: rgba(52,211,153,0.12);
+      color: #6EE7B7;
+      border-color: rgba(52,211,153,0.15);
+    }
+    .category-pill.nav {
+      background: rgba(251,191,36,0.12);
+      color: #FDE68A;
+      border-color: rgba(251,191,36,0.15);
+    }
+
+    /* ── Results Panel ── */
+    .results-panel {
+      width: 100%;
+      max-height: 420px;
+      margin-top: 8px;
+      background: rgba(255,255,255,0.04);
+      backdrop-filter: blur(40px);
+      -webkit-backdrop-filter: blur(40px);
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,0.07);
+      box-shadow:
+        0 0 0 1px rgba(255,255,255,0.02) inset,
+        0 8px 40px rgba(0,0,0,0.4),
+        0 2px 8px rgba(0,0,0,0.2);
+      overflow: hidden;
+      opacity: 0;
+      transform: translateY(-8px) scale(0.98);
+      transition: all var(--transition);
+      pointer-events: none;
+    }
+
+    .results-panel.visible {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+      pointer-events: all;
+    }
+
+    .results-panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: var(--radius);
+      background: linear-gradient(180deg, rgba(255,255,255,0.03) 0%, transparent 30%);
+      pointer-events: none;
+    }
+
+    .results-inner {
+      padding: 8px;
+      overflow-y: auto;
+      max-height: 420px;
+    }
+
+    .results-inner::-webkit-scrollbar { width: 4px; }
+    .results-inner::-webkit-scrollbar-track { background: transparent; }
+    .results-inner::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 2px; }
+
+    /* ── Section Header ── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 12px 6px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--fg-muted);
+    }
+
+    .section-header .count {
+      font-size: 10px;
+      padding: 1px 6px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      color: var(--fg-dim);
+      font-weight: 500;
+    }
+
+    /* ── Result Row ── */
+    .result-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 150ms ease;
+      position: relative;
+    }
+
+    .result-row::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: height 150ms ease;
+    }
+
+    .result-row:hover {
+      background: var(--surface-hover);
+    }
+
+    .result-row.selected {
+      background: rgba(79,123,247,0.08);
+    }
+
+    .result-row.selected::before {
+      height: 20px;
+    }
+
+    .result-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+
+    .result-icon.urgent {
+      background: rgba(248,113,113,0.12);
+    }
+    .result-icon.todo {
+      background: rgba(251,191,36,0.12);
+    }
+    .result-icon.knowledge {
+      background: rgba(79,123,247,0.12);
+    }
+    .result-icon.draft {
+      background: rgba(167,139,250,0.12);
+    }
+    .result-icon.team {
+      background: rgba(52,211,153,0.12);
+    }
+
+    .result-content {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .result-title {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.3;
+    }
+
+    .result-meta {
+      font-size: 12px;
+      color: var(--fg-muted);
+      margin-top: 1px;
+    }
+
+    .result-action {
+      opacity: 0;
+      padding: 4px 10px;
+      border-radius: 6px;
+      background: rgba(79,123,247,0.15);
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      transition: all 150ms ease;
+      flex-shrink: 0;
+    }
+
+    .result-row:hover .result-action,
+    .result-row.selected .result-action {
+      opacity: 1;
+    }
+
+    .result-action:hover {
+      background: rgba(79,123,247,0.25);
+    }
+
+    /* ── Quick Actions ── */
+    .quick-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 20px;
+      justify-content: center;
+      max-width: 580px;
+      transition: opacity var(--transition);
+    }
+
+    .quick-pill {
+      padding: 8px 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+      color: var(--fg-muted);
+      font-size: 13px;
+      font-weight: 450;
+      cursor: pointer;
+      transition: all var(--transition);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+    }
+
+    .quick-pill:hover {
+      background: rgba(255,255,255,0.08);
+      color: var(--fg);
+      border-color: rgba(255,255,255,0.12);
+      box-shadow: 0 0 20px rgba(79,123,247,0.08);
+      transform: translateY(-1px);
+    }
+
+    .quick-pill .pill-count {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      padding: 1px 5px;
+      border-radius: 8px;
+      background: rgba(79,123,247,0.15);
+      color: var(--accent);
+      margin-left: 6px;
+    }
+
+    /* ── Spawn Card ── */
+    .spawn-card {
+      margin: 8px;
+      padding: 20px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .spawn-card .spawn-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+
+    .spawn-card .spawn-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, rgba(167,139,250,0.2), rgba(79,123,247,0.2));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+    }
+
+    .spawn-card .spawn-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    .spawn-card .spawn-subtitle {
+      font-size: 12px;
+      color: var(--fg-muted);
+      margin-top: 1px;
+    }
+
+    .spawn-field {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+      margin-bottom: 8px;
+    }
+
+    .spawn-field .field-label {
+      font-size: 12px;
+      color: var(--fg-muted);
+      width: 60px;
+      flex-shrink: 0;
+    }
+
+    .spawn-field .field-value {
+      font-size: 13px;
+      color: var(--fg);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .spawn-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .spawn-btn {
+      padding: 9px 18px;
+      border-radius: 10px;
+      border: none;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .spawn-btn.primary {
+      background: linear-gradient(135deg, var(--accent), #6C5CE7);
+      color: white;
+      box-shadow: 0 2px 12px rgba(79,123,247,0.3);
+    }
+
+    .spawn-btn.primary:hover {
+      box-shadow: 0 4px 20px rgba(79,123,247,0.4);
+      transform: translateY(-1px);
+    }
+
+    .spawn-btn.secondary {
+      background: rgba(255,255,255,0.06);
+      color: var(--fg-muted);
+    }
+
+    .spawn-btn.secondary:hover {
+      background: rgba(255,255,255,0.10);
+      color: var(--fg);
+    }
+
+    /* ── Batch Action ── */
+    .batch-header {
+      padding: 16px 16px 12px;
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    .batch-actions {
+      display: flex;
+      gap: 8px;
+      padding: 12px 16px 16px;
+    }
+
+    /* ── Cost Chart ── */
+    .cost-summary {
+      padding: 16px 16px 8px;
+    }
+
+    .cost-total {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+
+    .cost-total .amount {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--fg);
+      letter-spacing: -0.02em;
+    }
+
+    .cost-total .label {
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    .cost-chart {
+      padding: 8px 16px 12px;
+    }
+
+    .chart-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 5px 0;
+    }
+
+    .chart-day {
+      width: 32px;
+      font-size: 12px;
+      color: var(--fg-muted);
+      font-weight: 500;
+    }
+
+    .chart-bar-track {
+      flex: 1;
+      height: 22px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.02);
+      overflow: hidden;
+      position: relative;
+    }
+
+    .chart-bar {
+      height: 100%;
+      border-radius: 6px;
+      transition: width 600ms cubic-bezier(0.16, 1, 0.3, 1);
+      position: relative;
+    }
+
+    .chart-bar.mon { width: 28%; background: linear-gradient(90deg, rgba(79,123,247,0.5), rgba(79,123,247,0.3)); }
+    .chart-bar.tue { width: 33%; background: linear-gradient(90deg, rgba(79,123,247,0.55), rgba(79,123,247,0.35)); }
+    .chart-bar.wed { width: 53%; background: linear-gradient(90deg, rgba(79,123,247,0.65), rgba(79,123,247,0.4)); }
+    .chart-bar.thu { width: 44%; background: linear-gradient(90deg, rgba(79,123,247,0.6), rgba(79,123,247,0.35)); }
+    .chart-bar.fri { width: 38%; background: linear-gradient(90deg, rgba(79,123,247,0.55), rgba(79,123,247,0.3)); }
+    .chart-bar.zero { width: 2%; background: rgba(255,255,255,0.04); }
+
+    .chart-amount {
+      font-size: 12px;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--fg-muted);
+      width: 48px;
+      text-align: right;
+    }
+
+    .budget-bar {
+      margin: 12px 16px 16px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .budget-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--fg-muted);
+      margin-bottom: 8px;
+    }
+
+    .budget-track {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255,255,255,0.06);
+      overflow: hidden;
+    }
+
+    .budget-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--accent), var(--purple));
+      transition: width 800ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    /* ── Teams Grid ── */
+    .teams-list {
+      padding: 4px 8px;
+    }
+
+    .team-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: all 150ms ease;
+      position: relative;
+    }
+
+    .team-row::before {
+      content: '';
+      position: absolute;
+      left: 4px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 3px;
+      height: 0;
+      border-radius: 2px;
+      background: var(--accent);
+      transition: height 150ms ease;
+    }
+
+    .team-row:hover {
+      background: var(--surface-hover);
+    }
+
+    .team-row.selected {
+      background: rgba(79,123,247,0.08);
+    }
+
+    .team-row.selected::before {
+      height: 20px;
+    }
+
+    .team-name {
+      flex: 1;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .team-stat {
+      font-size: 12px;
+      color: var(--fg-muted);
+      font-family: 'JetBrains Mono', monospace;
+      padding: 3px 8px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.04);
+    }
+
+    .team-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .team-dot.active { background: var(--green); box-shadow: 0 0 6px rgba(52,211,153,0.4); }
+    .team-dot.idle { background: var(--fg-dim); }
+
+    .teams-more {
+      padding: 8px 12px;
+      font-size: 12px;
+      color: var(--fg-dim);
+      cursor: pointer;
+    }
+
+    .teams-more:hover {
+      color: var(--fg-muted);
+    }
+
+    /* ── Keyboard Bar ── */
+    .keyboard-bar {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 20px;
+      padding: 10px 20px;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.05);
+      z-index: 100;
+    }
+
+    .key-hint {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .key-cap {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 3px 7px;
+      border-radius: 5px;
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.08);
+      color: var(--fg-muted);
+      line-height: 1;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .key-label {
+      font-size: 11px;
+      color: var(--fg-dim);
+    }
+
+    /* ── Dim overlay ── */
+    .dim-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0);
+      transition: background var(--transition);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .dim-overlay.active {
+      background: rgba(0,0,0,0.15);
+    }
+
+    /* ── Fade transitions for tab content ── */
+    .tab-content {
+      opacity: 0;
+      transition: opacity 180ms ease;
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+      opacity: 1;
+    }
+
+    /* ── Separator ── */
+    .separator {
+      height: 1px;
+      background: rgba(255,255,255,0.05);
+      margin: 4px 12px;
+    }
+
+    /* ── Select dropdown look ── */
+    .field-select {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+      color: var(--fg-muted);
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 6px;
+      padding: 4px 8px;
+      cursor: pointer;
+    }
+
+    /* ── Panel Header ── */
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px 16px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .panel-header-icon {
+      font-size: 16px;
+    }
+
+    .panel-header-title {
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--fg);
+    }
+
+    .panel-header-subtitle {
+      font-size: 12px;
+      color: var(--fg-muted);
+      margin-left: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="grid-bg"></div>
+  <div class="ambient-orb"></div>
+  <div class="dim-overlay" id="dimOverlay"></div>
+
+  <div class="container">
+    <!-- Demo Tabs -->
+    <div class="demo-tabs">
+      <button class="demo-tab active" data-tab="initial">Initial</button>
+      <button class="demo-tab" data-tab="search">Search</button>
+      <button class="demo-tab" data-tab="spawn">Spawn</button>
+      <button class="demo-tab" data-tab="action">Action</button>
+      <button class="demo-tab" data-tab="view">View</button>
+      <button class="demo-tab" data-tab="nav">Navigation</button>
+    </div>
+
+    <!-- Command Bar -->
+    <div class="command-wrapper">
+      <div class="command-bar" id="commandBar">
+        <svg class="command-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>
+        </svg>
+        <input class="command-input" id="commandInput" type="text" placeholder="What do you need?" readonly>
+        <div class="shortcut-badge" id="shortcutBadge">
+          <kbd>/</kbd>
+          <span>to focus</span>
+        </div>
+      </div>
+
+      <!-- Category Pill -->
+      <div id="categoryPill" class="category-pill"></div>
+
+      <!-- Results Panel -->
+      <div class="results-panel" id="resultsPanel">
+
+        <!-- Tab: Search -->
+        <div class="tab-content" id="tab-search">
+          <div class="panel-header">
+            <span class="panel-header-icon">&#128269;</span>
+            <span class="panel-header-title">Searching: gitguardian</span>
+          </div>
+          <div class="results-inner">
+            <div class="section-header">Urgent <span class="count">2</span></div>
+            <div class="result-row selected">
+              <div class="result-icon urgent">&#128308;</div>
+              <div class="result-content">
+                <div class="result-title">Review incident #29214721</div>
+                <div class="result-meta">ACC &middot; 9 days ago</div>
+              </div>
+              <button class="result-action">Open</button>
+            </div>
+            <div class="result-row">
+              <div class="result-icon urgent">&#128308;</div>
+              <div class="result-content">
+                <div class="result-title">Review incident #29214720</div>
+                <div class="result-meta">ACC &middot; 9 days ago</div>
+              </div>
+              <button class="result-action">Open</button>
+            </div>
+
+            <div class="separator"></div>
+            <div class="section-header">Todos <span class="count">1</span></div>
+            <div class="result-row">
+              <div class="result-icon todo">&#9744;</div>
+              <div class="result-content">
+                <div class="result-title">Triage GitGuardian alerts</div>
+                <div class="result-meta">Priority: medium</div>
+              </div>
+              <button class="result-action">View</button>
+            </div>
+
+            <div class="separator"></div>
+            <div class="section-header">Knowledge <span class="count">1</span></div>
+            <div class="result-row">
+              <div class="result-icon knowledge">&#128196;</div>
+              <div class="result-content">
+                <div class="result-title">GitGuardian Integration Guide</div>
+                <div class="result-meta">Source: email &middot; Last updated 2 weeks ago</div>
+              </div>
+              <button class="result-action">Read</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Spawn -->
+        <div class="tab-content" id="tab-spawn">
+          <div class="panel-header">
+            <span class="panel-header-icon">&#129302;</span>
+            <span class="panel-header-title">Spawn Agent</span>
+          </div>
+          <div class="spawn-card">
+            <div class="spawn-header">
+              <div class="spawn-avatar">&#128187;</div>
+              <div>
+                <div class="spawn-title">Developer</div>
+                <div class="spawn-subtitle">Code generation &amp; bug fixes</div>
+              </div>
+            </div>
+            <div class="spawn-field">
+              <span class="field-label">Task</span>
+              <span class="field-value">"fix auth middleware in login.py"</span>
+            </div>
+            <div class="spawn-field">
+              <span class="field-label">Model</span>
+              <span class="field-value">sonnet</span>
+              <span class="field-select">&#9662;</span>
+            </div>
+            <div class="spawn-field">
+              <span class="field-label">Budget</span>
+              <span class="field-value">$5.00</span>
+              <span class="field-select">&#9662;</span>
+            </div>
+            <div class="spawn-actions">
+              <button class="spawn-btn primary">Spawn Now</button>
+              <button class="spawn-btn secondary">Edit Details</button>
+              <button class="spawn-btn secondary">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Action -->
+        <div class="tab-content" id="tab-action">
+          <div class="panel-header">
+            <span class="panel-header-icon">&#9889;</span>
+            <span class="panel-header-title">Batch Action</span>
+          </div>
+          <div class="batch-header">Approve 5 pending drafts:</div>
+          <div class="results-inner" style="padding-top: 0;">
+            <div class="result-row selected">
+              <div class="result-icon draft">&#128221;</div>
+              <div class="result-content">
+                <div class="result-title">ACC Phase 2 Status Update</div>
+                <div class="result-meta">Draft &middot; Ready for review</div>
+              </div>
+            </div>
+            <div class="result-row">
+              <div class="result-icon draft">&#128221;</div>
+              <div class="result-content">
+                <div class="result-title">AuditBoard Config Migration Plan</div>
+                <div class="result-meta">Draft &middot; Ready for review</div>
+              </div>
+            </div>
+            <div class="result-row">
+              <div class="result-icon draft">&#128221;</div>
+              <div class="result-content">
+                <div class="result-title">3PI V2 Vendor Comparison</div>
+                <div class="result-meta">Draft &middot; Ready for review</div>
+              </div>
+            </div>
+            <div class="result-row">
+              <div class="result-icon draft">&#128221;</div>
+              <div class="result-content">
+                <div class="result-title">Cross Risk Q2 Planning Doc</div>
+                <div class="result-meta">Draft &middot; Ready for review</div>
+              </div>
+            </div>
+            <div class="result-row">
+              <div class="result-icon draft">&#128221;</div>
+              <div class="result-content">
+                <div class="result-title">Aravo API Integration Guide</div>
+                <div class="result-meta">Draft &middot; Ready for review</div>
+              </div>
+            </div>
+          </div>
+          <div class="batch-actions">
+            <button class="spawn-btn primary">Approve All (5)</button>
+            <button class="spawn-btn secondary">Review Each</button>
+          </div>
+        </div>
+
+        <!-- Tab: View (Cost) -->
+        <div class="tab-content" id="tab-view">
+          <div class="panel-header">
+            <span class="panel-header-icon">&#128065;</span>
+            <span class="panel-header-title">Cost Summary</span>
+            <span class="panel-header-subtitle">This Week</span>
+          </div>
+          <div class="cost-summary">
+            <div class="cost-total">
+              <span class="amount">$14.80</span>
+              <span class="label">this week</span>
+            </div>
+          </div>
+          <div class="cost-chart">
+            <div class="chart-row">
+              <span class="chart-day">Mon</span>
+              <div class="chart-bar-track"><div class="chart-bar mon"></div></div>
+              <span class="chart-amount">$1.80</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Tue</span>
+              <div class="chart-bar-track"><div class="chart-bar tue"></div></div>
+              <span class="chart-amount">$2.10</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Wed</span>
+              <div class="chart-bar-track"><div class="chart-bar wed"></div></div>
+              <span class="chart-amount">$3.40</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Thu</span>
+              <div class="chart-bar-track"><div class="chart-bar thu"></div></div>
+              <span class="chart-amount">$2.80</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Fri</span>
+              <div class="chart-bar-track"><div class="chart-bar fri"></div></div>
+              <span class="chart-amount">$2.40</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Sat</span>
+              <div class="chart-bar-track"><div class="chart-bar zero"></div></div>
+              <span class="chart-amount" style="color: var(--fg-dim);">&mdash;</span>
+            </div>
+            <div class="chart-row">
+              <span class="chart-day">Sun</span>
+              <div class="chart-bar-track"><div class="chart-bar zero"></div></div>
+              <span class="chart-amount" style="color: var(--fg-dim);">&mdash;</span>
+            </div>
+          </div>
+          <div class="budget-bar">
+            <div class="budget-label">
+              <span>Budget: 48% used</span>
+              <span>$35.20 remaining</span>
+            </div>
+            <div class="budget-track">
+              <div class="budget-fill" id="budgetFill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab: Nav (Teams) -->
+        <div class="tab-content" id="tab-nav">
+          <div class="panel-header">
+            <span class="panel-header-icon">&#127970;</span>
+            <span class="panel-header-title">Teams</span>
+            <span class="panel-header-subtitle">13 total</span>
+          </div>
+          <div class="teams-list">
+            <div class="team-row selected">
+              <div class="team-name">ACC</div>
+              <span class="team-stat">21 items</span>
+              <span class="team-stat">3 agents</span>
+              <div class="team-dot active"></div>
+            </div>
+            <div class="team-row">
+              <div class="team-name">AuditBoard</div>
+              <span class="team-stat">40 items</span>
+              <span class="team-stat">5 agents</span>
+              <div class="team-dot active"></div>
+            </div>
+            <div class="team-row">
+              <div class="team-name">AB Tax</div>
+              <span class="team-stat">23 items</span>
+              <span class="team-stat">2 agents</span>
+              <div class="team-dot active"></div>
+            </div>
+            <div class="team-row">
+              <div class="team-name">3PI V2</div>
+              <span class="team-stat">18 items</span>
+              <span class="team-stat">4 agents</span>
+              <div class="team-dot active"></div>
+            </div>
+            <div class="team-row">
+              <div class="team-name">Cross Risk</div>
+              <span class="team-stat">15 items</span>
+              <span class="team-stat">2 agents</span>
+              <div class="team-dot active"></div>
+            </div>
+            <div class="team-row">
+              <div class="team-name">Aravo</div>
+              <span class="team-stat">8 items</span>
+              <span class="team-stat">1 agent</span>
+              <div class="team-dot idle"></div>
+            </div>
+            <div class="teams-more">+ 7 more teams...</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Actions (initial state) -->
+      <div class="quick-actions" id="quickActions">
+        <div class="quick-pill">Approve drafts <span class="pill-count">5</span></div>
+        <div class="quick-pill">Check agents</div>
+        <div class="quick-pill">Show urgent</div>
+        <div class="quick-pill">Cost today</div>
+        <div class="quick-pill">Spawn agent</div>
+        <div class="quick-pill">Show teams</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Keyboard Bar -->
+  <div class="keyboard-bar">
+    <div class="key-hint">
+      <span class="key-cap">/</span>
+      <span class="key-label">Focus</span>
+    </div>
+    <div class="key-hint">
+      <span class="key-cap">&uarr;&darr;</span>
+      <span class="key-label">Navigate</span>
+    </div>
+    <div class="key-hint">
+      <span class="key-cap">&crarr;</span>
+      <span class="key-label">Select</span>
+    </div>
+    <div class="key-hint">
+      <span class="key-cap">esc</span>
+      <span class="key-label">Close</span>
+    </div>
+    <div class="key-hint">
+      <span class="key-cap">&Command;K</span>
+      <span class="key-label">Alt Focus</span>
+    </div>
+  </div>
+
+  <script>
+    const tabs = document.querySelectorAll('.demo-tab');
+    const commandBar = document.getElementById('commandBar');
+    const commandInput = document.getElementById('commandInput');
+    const resultsPanel = document.getElementById('resultsPanel');
+    const categoryPill = document.getElementById('categoryPill');
+    const shortcutBadge = document.getElementById('shortcutBadge');
+    const quickActions = document.getElementById('quickActions');
+    const dimOverlay = document.getElementById('dimOverlay');
+    const budgetFill = document.getElementById('budgetFill');
+
+    const tabConfig = {
+      initial: {
+        input: '',
+        placeholder: 'What do you need?',
+        category: null,
+        showResults: false,
+        showQuickActions: true,
+        showBadge: true,
+      },
+      search: {
+        input: 'gitguardian',
+        placeholder: 'What do you need?',
+        category: { label: 'Search', cls: 'search', icon: '&#128269;' },
+        showResults: true,
+        showQuickActions: false,
+        showBadge: false,
+      },
+      spawn: {
+        input: 'spawn developer fix auth',
+        placeholder: 'What do you need?',
+        category: { label: 'Agent', cls: 'agent', icon: '&#129302;' },
+        showResults: true,
+        showQuickActions: false,
+        showBadge: false,
+      },
+      action: {
+        input: 'approve all drafts',
+        placeholder: 'What do you need?',
+        category: { label: 'Action', cls: 'action', icon: '&#9889;' },
+        showResults: true,
+        showQuickActions: false,
+        showBadge: false,
+      },
+      view: {
+        input: 'show cost this week',
+        placeholder: 'What do you need?',
+        category: { label: 'View', cls: 'view', icon: '&#128065;' },
+        showResults: true,
+        showQuickActions: false,
+        showBadge: false,
+      },
+      nav: {
+        input: 'teams',
+        placeholder: 'What do you need?',
+        category: { label: 'Navigation', cls: 'nav', icon: '&#127970;' },
+        showResults: true,
+        showQuickActions: false,
+        showBadge: false,
+      },
+    };
+
+    function switchTab(tabName) {
+      const config = tabConfig[tabName];
+      if (!config) return;
+
+      // Update tab buttons
+      tabs.forEach(t => t.classList.toggle('active', t.dataset.tab === tabName));
+
+      // Update input
+      commandInput.value = config.input;
+      commandInput.placeholder = config.placeholder;
+
+      // Command bar active state
+      commandBar.classList.toggle('active', config.showResults);
+
+      // Shortcut badge
+      shortcutBadge.style.display = config.showBadge ? 'flex' : 'none';
+
+      // Category pill
+      if (config.category) {
+        categoryPill.className = 'category-pill visible ' + config.category.cls;
+        categoryPill.innerHTML = config.category.icon + ' ' + config.category.label;
+      } else {
+        categoryPill.className = 'category-pill';
+        categoryPill.innerHTML = '';
+      }
+
+      // Results panel
+      resultsPanel.classList.toggle('visible', config.showResults);
+
+      // Hide all tab contents then show current
+      document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+      const tabEl = document.getElementById('tab-' + tabName);
+      if (tabEl) {
+        setTimeout(() => tabEl.classList.add('active'), 20);
+      }
+
+      // Quick actions
+      quickActions.style.opacity = config.showQuickActions ? '1' : '0';
+      quickActions.style.pointerEvents = config.showQuickActions ? 'auto' : 'none';
+
+      // Dim overlay
+      dimOverlay.classList.toggle('active', config.showResults);
+
+      // Animate budget bar on view tab
+      if (tabName === 'view') {
+        budgetFill.style.width = '0%';
+        setTimeout(() => { budgetFill.style.width = '48%'; }, 100);
+      }
+
+      // Animate chart bars
+      if (tabName === 'view') {
+        document.querySelectorAll('.chart-bar').forEach(bar => {
+          const originalWidth = bar.style.width || window.getComputedStyle(bar).width;
+          bar.style.width = '0%';
+        });
+        setTimeout(() => {
+          document.querySelectorAll('.chart-bar').forEach(bar => {
+            bar.style.removeProperty('width');
+          });
+        }, 50);
+      }
+    }
+
+    // Tab click handlers
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+    });
+
+    // Quick action pill clicks
+    document.querySelectorAll('.quick-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        const text = pill.textContent.trim();
+        if (text.startsWith('Approve')) switchTab('action');
+        else if (text.startsWith('Check') || text.startsWith('Spawn')) switchTab('spawn');
+        else if (text.startsWith('Show urgent')) switchTab('search');
+        else if (text.startsWith('Cost')) switchTab('view');
+        else if (text.startsWith('Show teams')) switchTab('nav');
+      });
+    });
+
+    // Row hover interactions
+    document.querySelectorAll('.result-row, .team-row').forEach(row => {
+      row.addEventListener('mouseenter', () => {
+        const parent = row.closest('.results-inner, .teams-list');
+        if (parent) {
+          parent.querySelectorAll('.result-row, .team-row').forEach(r => r.classList.remove('selected'));
+        }
+        row.classList.add('selected');
+      });
+    });
+
+    // Initialize
+    switchTab('initial');
+  </script>
+</body>
+</html>

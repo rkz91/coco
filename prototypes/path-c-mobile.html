@@ -1,0 +1,1580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Path C Mobile/Tablet (iPhone + iPad)</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0a;
+    --surface: rgba(255,255,255,0.04);
+    --surface-hover: rgba(255,255,255,0.07);
+    --border: rgba(255,255,255,0.08);
+    --border-subtle: rgba(255,255,255,0.05);
+    --text: #e4e4e7;
+    --text-dim: #71717a;
+    --text-muted: #3f3f46;
+    --blue: #3b82f6;
+    --blue-glow: rgba(59,130,246,0.15);
+    --blue-pulse: rgba(59,130,246,0.08);
+    --green: #22c55e;
+    --green-dim: rgba(34,197,94,0.1);
+    --red: #ef4444;
+    --red-dim: rgba(239,68,68,0.1);
+    --yellow: #eab308;
+    --yellow-dim: rgba(234,179,8,0.1);
+    --orange: #f97316;
+    --purple: #a855f7;
+    --mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+    --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --radius: 10px;
+    --radius-sm: 6px;
+  }
+
+  body {
+    font-family: var(--sans);
+    background: #111;
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* ── Page Header ── */
+  .page-header {
+    text-align: center;
+    padding: 48px 24px 12px;
+  }
+  .page-header .label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .page-header h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    margin-bottom: 8px;
+  }
+  .page-header h1 span { color: var(--blue); }
+  .page-header p {
+    font-size: 14px;
+    color: var(--text-dim);
+    max-width: 640px;
+    margin: 0 auto;
+    line-height: 1.6;
+  }
+
+  /* ── Frames Container ── */
+  .frames-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 48px;
+    padding: 40px 24px 60px;
+    flex-wrap: wrap;
+  }
+
+  .device-group {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 24px;
+  }
+
+  .device-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    text-align: center;
+  }
+  .device-label strong {
+    color: var(--text-dim);
+    font-weight: 700;
+  }
+
+  /* ── Section Titles ── */
+  .section-title {
+    text-align: center;
+    padding: 32px 24px 16px;
+  }
+  .section-title h2 {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+  .section-title h2 span { color: var(--blue); }
+  .section-title p {
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-top: 4px;
+  }
+
+  /* ── Device Frame ── */
+  .phone-frame {
+    width: 390px;
+    height: 844px;
+    background: #000;
+    border-radius: 48px;
+    border: 3px solid #2a2a2a;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+
+  .tablet-frame {
+    width: 820px;
+    height: 600px;
+    background: #000;
+    border-radius: 24px;
+    border: 3px solid #2a2a2a;
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.05), 0 20px 60px rgba(0,0,0,0.5);
+    flex-shrink: 0;
+  }
+
+  /* ── Status Bar (iOS) ── */
+  .status-bar {
+    height: 54px;
+    padding: 14px 24px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar .time {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    width: 60px;
+  }
+  .status-bar .notch {
+    width: 126px;
+    height: 34px;
+    background: #000;
+    border-radius: 0 0 20px 20px;
+    position: absolute;
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .status-bar .icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text);
+    width: 60px;
+    justify-content: flex-end;
+  }
+
+  /* battery icon */
+  .battery {
+    width: 24px;
+    height: 11px;
+    border: 1.5px solid var(--text);
+    border-radius: 3px;
+    position: relative;
+    display: inline-block;
+  }
+  .battery::after {
+    content: '';
+    position: absolute;
+    right: -4px;
+    top: 2px;
+    width: 2px;
+    height: 5px;
+    background: var(--text);
+    border-radius: 0 1px 1px 0;
+  }
+  .battery .fill {
+    position: absolute;
+    left: 1.5px;
+    top: 1.5px;
+    bottom: 1.5px;
+    width: 70%;
+    background: var(--text);
+    border-radius: 1px;
+  }
+
+  /* signal bars */
+  .signal {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.5px;
+    height: 11px;
+  }
+  .signal span {
+    width: 3px;
+    background: var(--text);
+    border-radius: 1px;
+  }
+  .signal span:nth-child(1) { height: 3px; }
+  .signal span:nth-child(2) { height: 5px; }
+  .signal span:nth-child(3) { height: 7px; }
+  .signal span:nth-child(4) { height: 11px; }
+
+  /* ── iPad Status Bar ── */
+  .status-bar-ipad {
+    height: 28px;
+    padding: 6px 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+  .status-bar-ipad .time {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .status-bar-ipad .icons {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text);
+  }
+
+  /* ── App Content Area ── */
+  .app-content {
+    background: var(--bg);
+    height: calc(100% - 54px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .app-content-ipad {
+    background: var(--bg);
+    height: calc(100% - 28px);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ── Top Nav (iPhone) ── */
+  .top-nav {
+    padding: 8px 16px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .top-nav .logo {
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .top-nav .logo span { color: var(--blue); }
+  .top-nav .nav-icons {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  .top-nav .nav-icon {
+    width: 20px;
+    height: 20px;
+    color: var(--text-dim);
+    cursor: pointer;
+  }
+
+  /* Status dots + cost */
+  .status-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .status-dot.yellow { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); }
+  .status-dot.blue { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+  .cost-badge {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+    background: var(--surface);
+    padding: 2px 8px;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Top Nav (iPad) ── */
+  .top-nav-ipad {
+    padding: 8px 20px 12px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .top-nav-ipad .logo {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  .top-nav-ipad .logo span { color: var(--blue); }
+
+  /* ── iPad Command Bar ── */
+  .ipad-cmd-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: 380px;
+    flex-shrink: 0;
+  }
+  .ipad-cmd-bar .prompt {
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 12px;
+  }
+  .ipad-cmd-bar .typed {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    flex: 1;
+  }
+  .ipad-cmd-bar .typed .cmd { color: var(--blue); font-weight: 500; }
+  .ipad-cmd-bar .typed .active { color: var(--text); }
+  .ipad-cmd-bar .cursor-blink {
+    display: inline-block;
+    width: 2px;
+    height: 14px;
+    background: var(--blue);
+    animation: blink 1s step-end infinite;
+    vertical-align: middle;
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  /* ── Stream Area ── */
+  .stream-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 12px;
+  }
+  .stream-area-ipad {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px 20px;
+  }
+
+  /* ── Stream Item ── */
+  .stream-item {
+    position: relative;
+    margin-bottom: 6px;
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+
+  /* Swipe reveal layers */
+  .swipe-reveal-left {
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 80px;
+    background: var(--green);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius) 0 0 var(--radius);
+    opacity: 0;
+  }
+  .swipe-reveal-right {
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 80px;
+    background: var(--red);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0 var(--radius) var(--radius) 0;
+    opacity: 0;
+  }
+  .stream-item.swiped-right .swipe-reveal-left { opacity: 1; }
+  .stream-item.swiped-left .swipe-reveal-right { opacity: 1; }
+
+  .item-content {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    position: relative;
+    z-index: 1;
+    transition: transform 0.3s ease;
+  }
+  .stream-item.swiped-right .item-content { transform: translateX(70px); }
+  .stream-item.swiped-left .item-content { transform: translateX(-70px); }
+
+  .item-row {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 56px;
+  }
+  .item-row-ipad {
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 56px;
+  }
+
+  /* Type indicators */
+  .type-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+  .type-dot.todo { background: var(--blue); }
+  .type-dot.decision { background: var(--yellow); }
+  .type-dot.agent { background: var(--green); }
+  .type-dot.alert { background: var(--red); }
+  .type-dot.cost { background: var(--orange); }
+  .type-dot.knowledge { background: var(--purple); }
+
+  .item-text {
+    flex: 1;
+    min-width: 0;
+  }
+  .item-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .item-meta {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .item-time {
+    font-size: 11px;
+    font-family: var(--mono);
+    color: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  /* Swipe hint arrows */
+  .swipe-hint {
+    position: absolute;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 10px;
+    color: rgba(255,255,255,0.12);
+    z-index: 2;
+    pointer-events: none;
+  }
+  .swipe-hint.left { left: 6px; }
+  .swipe-hint.right { right: 6px; }
+
+  /* Running state */
+  .item-content.running {
+    border-color: rgba(59,130,246,0.25);
+    animation: pulseGlow 2s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { box-shadow: 0 0 0 0 var(--blue-pulse); }
+    50% { box-shadow: 0 0 12px 2px var(--blue-pulse); }
+  }
+  .item-content.done {
+    border-color: rgba(34,197,94,0.2);
+  }
+
+  /* ── Expanded Item ── */
+  .expanded-detail {
+    background: rgba(59,130,246,0.03);
+    border-top: 1px solid var(--border-subtle);
+    padding: 12px 14px 14px;
+  }
+  .expanded-detail-ipad {
+    background: rgba(59,130,246,0.03);
+    border-top: 1px solid var(--border-subtle);
+    padding: 14px 16px 16px;
+  }
+  .detail-text {
+    font-size: 12px;
+    color: var(--text-dim);
+    line-height: 1.5;
+    margin-bottom: 12px;
+  }
+  .detail-text-ipad {
+    font-size: 13px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-bottom: 14px;
+  }
+  .detail-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 12px;
+  }
+  .chip {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .chip.priority { background: var(--red-dim); color: var(--red); }
+  .chip.project { background: rgba(168,85,247,0.1); color: var(--purple); }
+  .chip.agent { background: var(--green-dim); color: var(--green); }
+  .chip.due { background: var(--yellow-dim); color: var(--yellow); }
+
+  /* Full-width pill buttons (mobile) */
+  .action-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .pill-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 12px;
+    border-radius: var(--radius);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--sans);
+    min-height: 44px;
+  }
+  .pill-btn.primary {
+    background: var(--blue);
+    color: #fff;
+  }
+  .pill-btn.approve {
+    background: rgba(34,197,94,0.12);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+  .pill-btn.dismiss {
+    background: var(--surface);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  /* iPad inline action buttons */
+  .action-row {
+    display: flex;
+    gap: 8px;
+  }
+  .action-btn {
+    padding: 8px 20px;
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--sans);
+    min-height: 36px;
+  }
+  .action-btn.primary {
+    background: var(--blue);
+    color: #fff;
+  }
+  .action-btn.success {
+    background: rgba(34,197,94,0.12);
+    color: var(--green);
+    border: 1px solid rgba(34,197,94,0.25);
+  }
+  .action-btn.ghost {
+    background: var(--surface);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
+  }
+
+  /* ── Bottom Nav (iPhone) ── */
+  .bottom-nav {
+    height: 80px;
+    padding: 6px 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    background: rgba(10,10,10,0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-subtle);
+    flex-shrink: 0;
+  }
+  .nav-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    min-width: 60px;
+  }
+  .nav-tab svg {
+    width: 22px;
+    height: 22px;
+    color: var(--text-muted);
+  }
+  .nav-tab.active svg { color: var(--blue); }
+  .nav-tab .tab-label {
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-muted);
+  }
+  .nav-tab.active .tab-label { color: var(--blue); }
+
+  /* ── Agent Notification Banner ── */
+  .agent-banner {
+    padding: 10px 14px;
+    background: rgba(59,130,246,0.08);
+    border-bottom: 1px solid rgba(59,130,246,0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-shrink: 0;
+    animation: slideDown 0.3s ease;
+  }
+  @keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  .agent-banner .pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--blue);
+    box-shadow: 0 0 8px var(--blue);
+    animation: pulse 1.5s ease-in-out infinite;
+    flex-shrink: 0;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.6; transform: scale(0.85); }
+  }
+  .agent-banner .banner-text {
+    flex: 1;
+    font-size: 12px;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .agent-banner .banner-text span { color: var(--blue); }
+  .agent-banner .banner-time {
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--text-dim);
+  }
+  .agent-banner .banner-close {
+    color: var(--text-muted);
+    font-size: 14px;
+    cursor: pointer;
+    padding: 4px;
+  }
+
+  /* ── Search View ── */
+  .search-bar {
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .search-input {
+    flex: 1;
+    background: var(--surface);
+    border: 1px solid rgba(59,130,246,0.3);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-size: 15px;
+    font-family: var(--sans);
+    color: var(--text);
+    outline: none;
+  }
+  .search-cancel {
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 500;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .search-results {
+    padding: 0 12px;
+    flex: 1;
+    overflow-y: auto;
+  }
+  .search-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 12px 0 6px;
+  }
+  .search-result-item {
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+  }
+  .search-result-item .highlight {
+    background: rgba(59,130,246,0.15);
+    color: var(--blue);
+    padding: 0 2px;
+    border-radius: 2px;
+  }
+
+  /* ── iOS Keyboard ── */
+  .ios-keyboard {
+    height: 260px;
+    background: #1c1c1e;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding: 8px 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .kb-row {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+  }
+  .kb-key {
+    min-width: 32px;
+    height: 42px;
+    background: rgba(255,255,255,0.12);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    color: var(--text);
+    font-family: var(--sans);
+  }
+  .kb-key.wide { min-width: 44px; font-size: 12px; background: rgba(255,255,255,0.06); }
+  .kb-key.space { flex: 1; max-width: 180px; font-size: 13px; }
+  .kb-key.blue { background: var(--blue); color: #fff; min-width: 72px; font-size: 13px; font-weight: 600; }
+
+  /* ── iPad Command Dropdown ── */
+  .cmd-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: rgba(20,20,20,0.98);
+    border: 1px solid var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    border-top: none;
+    padding: 8px;
+    z-index: 20;
+  }
+  .cmd-result {
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .cmd-result:hover, .cmd-result.highlighted {
+    background: var(--surface-hover);
+  }
+  .cmd-result .cmd-name {
+    color: var(--blue);
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .cmd-result .cmd-desc {
+    color: var(--text-dim);
+    font-size: 12px;
+  }
+
+  /* ── Annotation Badges ── */
+  .annotation {
+    position: absolute;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--blue);
+    background: rgba(59,130,246,0.1);
+    border: 1px solid rgba(59,130,246,0.2);
+    border-radius: 12px;
+    padding: 3px 10px;
+    white-space: nowrap;
+    z-index: 30;
+    pointer-events: none;
+  }
+  .annotation.green {
+    color: var(--green);
+    background: var(--green-dim);
+    border-color: rgba(34,197,94,0.25);
+  }
+  .annotation.red {
+    color: var(--red);
+    background: var(--red-dim);
+    border-color: rgba(239,68,68,0.25);
+  }
+
+  /* ── Tagline ── */
+  .tagline {
+    text-align: center;
+    padding: 24px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-style: italic;
+  }
+
+  /* ── Home Indicator ── */
+  .home-indicator {
+    height: 4px;
+    width: 134px;
+    background: rgba(255,255,255,0.15);
+    border-radius: 2px;
+    margin: 0 auto 8px;
+  }
+
+  /* ── Scale for fit ── */
+  @media (max-width: 1400px) {
+    .tablet-frame { transform: scale(0.85); transform-origin: top center; }
+  }
+  @media (max-width: 900px) {
+    .phone-frame { transform: scale(0.75); transform-origin: top center; }
+    .tablet-frame { transform: scale(0.65); transform-origin: top center; }
+  }
+
+  /* iPad expanded detail extras */
+  .detail-grid {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 4px 14px;
+    font-size: 12px;
+    margin-bottom: 12px;
+  }
+  .detail-grid .label { color: var(--text-muted); font-weight: 500; }
+  .detail-grid .value { color: var(--text-dim); }
+  .detail-grid .value.blue { color: var(--blue); }
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  PAGE HEADER                                 -->
+<!-- ════════════════════════════════════════════ -->
+<div class="page-header">
+  <div class="label">Path C / Responsive</div>
+  <h1>Mobile + Tablet: <span>Free Win</span></h1>
+  <p>Path C's single stream works at ANY viewport. No sidebar to hide, no tabs to reorganize, no pages to collapse. Radical simplicity makes responsive a non-issue.</p>
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  SECTION 1: iPhone Screens                   -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section-title">
+  <h2>iPhone 14 Pro <span>(390 x 844)</span></h2>
+  <p>Three core screens: Stream, Search, and Agent Notification</p>
+</div>
+
+<div class="frames-row">
+
+  <!-- ── iPhone Screen 1: Stream with Expanded Item ── -->
+  <div class="device-group">
+    <div class="device-label"><strong>Screen 1</strong> Stream + Expanded Todo</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <div class="time">9:41</div>
+        <div class="notch"></div>
+        <div class="icons">
+          <div class="signal"><span></span><span></span><span></span><span></span></div>
+          <div class="battery"><div class="fill"></div></div>
+        </div>
+      </div>
+      <div class="app-content">
+        <div class="top-nav">
+          <div class="logo">Co<span>Co</span></div>
+          <div class="status-strip">
+            <div class="status-dot green" title="3 agents running"></div>
+            <div class="status-dot yellow" title="2 decisions pending"></div>
+            <div class="cost-badge">$1.47</div>
+            <!-- Search icon -->
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+        </div>
+
+        <div class="stream-area">
+          <!-- Item 1: Todo (expanded) -->
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title">Review Q2 risk model outputs</div>
+                  <div class="item-meta">Cross Risk / Due tomorrow</div>
+                </div>
+                <div class="item-time">2m</div>
+              </div>
+              <div class="expanded-detail">
+                <div class="detail-text">Validate stress scenarios against updated macro assumptions. Sarah flagged discrepancy in emerging markets tail risk.</div>
+                <div class="detail-chips">
+                  <span class="chip priority">High Priority</span>
+                  <span class="chip project">Cross Risk</span>
+                  <span class="chip due">Due Apr 7</span>
+                </div>
+                <div class="action-pills">
+                  <button class="pill-btn primary">Mark Complete</button>
+                  <button class="pill-btn approve">Delegate to Sarah</button>
+                  <button class="pill-btn dismiss">Snooze 1 day</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 2: Agent running -->
+          <div class="stream-item">
+            <div class="item-content running">
+              <div class="item-row">
+                <div class="type-dot agent"></div>
+                <div class="item-text">
+                  <div class="item-title">Ingesting 14 Confluence pages...</div>
+                  <div class="item-meta">Knowledge Agent / 68% complete</div>
+                </div>
+                <div class="item-time">5m</div>
+              </div>
+            </div>
+            <div class="swipe-hint right">&larr;</div>
+          </div>
+
+          <!-- Item 3: Decision -->
+          <div class="stream-item">
+            <div class="swipe-reveal-left">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot decision"></div>
+                <div class="item-text">
+                  <div class="item-title">Approve: Add Aravo API endpoint</div>
+                  <div class="item-meta">Governance / Waiting since yesterday</div>
+                </div>
+                <div class="item-time">1h</div>
+              </div>
+            </div>
+            <div class="swipe-hint left">&rarr;</div>
+            <div class="swipe-hint right">&larr;</div>
+          </div>
+
+          <!-- Item 4: Cost alert -->
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot cost"></div>
+                <div class="item-text">
+                  <div class="item-title">Daily budget 80% used ($3.84)</div>
+                  <div class="item-meta">Cost Monitor / 4 agents active</div>
+                </div>
+                <div class="item-time">12m</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 5: Knowledge -->
+          <div class="stream-item">
+            <div class="item-content done">
+              <div class="item-row">
+                <div class="type-dot knowledge"></div>
+                <div class="item-text">
+                  <div class="item-title">Indexed: 3Pi Phase 2 Contract</div>
+                  <div class="item-meta">Knowledge Hub / 23 chunks stored</div>
+                </div>
+                <div class="item-time">18m</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 6: Alert (swiped right demo) -->
+          <div class="stream-item swiped-right" style="position:relative;">
+            <div class="swipe-reveal-left" style="opacity:1;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div class="item-content" style="transform: translateX(70px);">
+              <div class="item-row">
+                <div class="type-dot alert"></div>
+                <div class="item-text">
+                  <div class="item-title">Agent failed: retry Aravo sync</div>
+                  <div class="item-meta">Alert / Error code 503</div>
+                </div>
+                <div class="item-time">22m</div>
+              </div>
+            </div>
+            <div class="annotation green" style="top: -8px; left: 78px;">Swipe right = Approve</div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M4 6h16M4 18h10"/></svg>
+            <div class="tab-label">Stream</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
+            <div class="tab-label">Agents</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <div class="tab-label">Search</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div class="tab-label">Profile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── iPhone Screen 2: Search View ── -->
+  <div class="device-group">
+    <div class="device-label"><strong>Screen 2</strong> Search with Keyboard</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <div class="time">9:41</div>
+        <div class="notch"></div>
+        <div class="icons">
+          <div class="signal"><span></span><span></span><span></span><span></span></div>
+          <div class="battery"><div class="fill"></div></div>
+        </div>
+      </div>
+      <div class="app-content">
+        <div class="search-bar">
+          <div class="search-input" style="display:flex; align-items:center; gap:8px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#71717a" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <span style="color:var(--text);">aravo</span>
+            <span style="display:inline-block;width:2px;height:16px;background:var(--blue);animation:blink 1s step-end infinite;"></span>
+          </div>
+          <div class="search-cancel">Cancel</div>
+        </div>
+
+        <div class="search-results">
+          <div class="search-section-label">Stream Items (3)</div>
+          <div class="search-result-item">
+            <div class="type-dot decision"></div>
+            <div class="item-text">
+              <div class="item-title">Approve: Add <span class="highlight">Aravo</span> API endpoint</div>
+              <div class="item-meta">Decision / 1h ago</div>
+            </div>
+          </div>
+          <div class="search-result-item">
+            <div class="type-dot alert"></div>
+            <div class="item-text">
+              <div class="item-title">Agent failed: retry <span class="highlight">Aravo</span> sync</div>
+              <div class="item-meta">Alert / 22m ago</div>
+            </div>
+          </div>
+          <div class="search-result-item">
+            <div class="type-dot todo"></div>
+            <div class="item-text">
+              <div class="item-title">Draft <span class="highlight">Aravo</span> integration PRD</div>
+              <div class="item-meta">Todo / Due next week</div>
+            </div>
+          </div>
+
+          <div class="search-section-label">Knowledge (2)</div>
+          <div class="search-result-item">
+            <div class="type-dot knowledge"></div>
+            <div class="item-text">
+              <div class="item-title"><span class="highlight">Aravo</span> Vendor Risk Platform</div>
+              <div class="item-meta">Knowledge Hub / Indexed 3 days ago</div>
+            </div>
+          </div>
+          <div class="search-result-item">
+            <div class="type-dot knowledge"></div>
+            <div class="item-text">
+              <div class="item-title"><span class="highlight">Aravo</span> API Documentation v2.1</div>
+              <div class="item-meta">Knowledge Hub / Indexed 1 week ago</div>
+            </div>
+          </div>
+
+          <div class="search-section-label">Agents (1)</div>
+          <div class="search-result-item">
+            <div class="type-dot agent"></div>
+            <div class="item-text">
+              <div class="item-title"><span class="highlight">Aravo</span> Sync Agent</div>
+              <div class="item-meta">Last run 22m ago / Failed</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- iOS Keyboard -->
+        <div class="ios-keyboard">
+          <div class="kb-row">
+            <div class="kb-key">Q</div><div class="kb-key">W</div><div class="kb-key">E</div><div class="kb-key">R</div><div class="kb-key">T</div><div class="kb-key">Y</div><div class="kb-key">U</div><div class="kb-key">I</div><div class="kb-key">O</div><div class="kb-key">P</div>
+          </div>
+          <div class="kb-row">
+            <div class="kb-key">A</div><div class="kb-key">S</div><div class="kb-key">D</div><div class="kb-key">F</div><div class="kb-key">G</div><div class="kb-key">H</div><div class="kb-key">J</div><div class="kb-key">K</div><div class="kb-key">L</div>
+          </div>
+          <div class="kb-row">
+            <div class="kb-key wide">&uarr;</div>
+            <div class="kb-key">Z</div><div class="kb-key">X</div><div class="kb-key">C</div><div class="kb-key">V</div><div class="kb-key">B</div><div class="kb-key">N</div><div class="kb-key">M</div>
+            <div class="kb-key wide">&larr;</div>
+          </div>
+          <div class="kb-row">
+            <div class="kb-key wide">123</div>
+            <div class="kb-key" style="min-width:36px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>
+            </div>
+            <div class="kb-key space">space</div>
+            <div class="kb-key blue">Search</div>
+          </div>
+          <div class="home-indicator" style="margin-top:8px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── iPhone Screen 3: Agent Running Banner ── -->
+  <div class="device-group">
+    <div class="device-label"><strong>Screen 3</strong> Agent Running Banner</div>
+    <div class="phone-frame">
+      <div class="status-bar">
+        <div class="time">9:42</div>
+        <div class="notch"></div>
+        <div class="icons">
+          <div class="signal"><span></span><span></span><span></span><span></span></div>
+          <div class="battery"><div class="fill"></div></div>
+        </div>
+      </div>
+      <div class="app-content">
+        <div class="top-nav">
+          <div class="logo">Co<span>Co</span></div>
+          <div class="status-strip">
+            <div class="status-dot green"></div>
+            <div class="status-dot blue" style="animation: pulse 1.5s ease-in-out infinite;"></div>
+            <div class="cost-badge">$1.52</div>
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="width:20px;height:20px;color:var(--text-dim);"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+          </div>
+        </div>
+
+        <!-- Agent running banner -->
+        <div class="agent-banner">
+          <div class="pulse"></div>
+          <div class="banner-text"><span>Research Agent</span> analyzing Q2 macro data</div>
+          <div class="banner-time">14s</div>
+          <div class="banner-close">&times;</div>
+        </div>
+
+        <div class="stream-area">
+          <!-- New item just appeared from agent -->
+          <div class="stream-item">
+            <div class="item-content running" style="border-color: rgba(59,130,246,0.35);">
+              <div class="item-row">
+                <div class="type-dot agent"></div>
+                <div class="item-text">
+                  <div class="item-title" style="color:var(--blue);">Research Agent: generating report...</div>
+                  <div class="item-meta">Analyzing 12 sources / 45% complete</div>
+                </div>
+                <div class="item-time" style="color:var(--blue);">now</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Regular stream items -->
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title">Review Q2 risk model outputs</div>
+                  <div class="item-meta">Cross Risk / Due tomorrow</div>
+                </div>
+                <div class="item-time">4m</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stream-item">
+            <div class="item-content done">
+              <div class="item-row">
+                <div class="type-dot agent"></div>
+                <div class="item-text">
+                  <div class="item-title">Confluence ingest complete (14 pages)</div>
+                  <div class="item-meta">Knowledge Agent / Finished just now</div>
+                </div>
+                <div class="item-time">7m</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot decision"></div>
+                <div class="item-text">
+                  <div class="item-title">Approve: Add Aravo API endpoint</div>
+                  <div class="item-meta">Governance / Waiting since yesterday</div>
+                </div>
+                <div class="item-time">1h</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot cost"></div>
+                <div class="item-text">
+                  <div class="item-title">Daily budget 80% used ($3.84)</div>
+                  <div class="item-meta">Cost Monitor / 4 agents active</div>
+                </div>
+                <div class="item-time">14m</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="stream-item">
+            <div class="item-content">
+              <div class="item-row">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title">Prepare steerco slides for Monday</div>
+                  <div class="item-meta">Cross Risk / Due Apr 7</div>
+                </div>
+                <div class="item-time">28m</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="bottom-nav">
+          <div class="nav-tab active">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12h16M4 6h16M4 18h10"/></svg>
+            <div class="tab-label">Stream</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4m0 12v4m-7.07-15.07 2.83 2.83m8.48 8.48 2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48 2.83-2.83"/></svg>
+            <div class="tab-label">Agents</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <div class="tab-label">Search</div>
+          </div>
+          <div class="nav-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <div class="tab-label">Profile</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ════════════════════════════════════════════ -->
+<!--  SECTION 2: iPad Screens                     -->
+<!-- ════════════════════════════════════════════ -->
+<div class="section-title">
+  <h2>iPad Air <span>(820 x 1180)</span></h2>
+  <p>Same stream, more breathing room. Command bar replaces bottom nav.</p>
+</div>
+
+<div class="frames-row">
+
+  <!-- ── iPad Screen 1: Full Stream with Expanded Item ── -->
+  <div class="device-group">
+    <div class="device-label"><strong>Screen 1</strong> Stream + Expanded Detail</div>
+    <div class="tablet-frame">
+      <div class="status-bar-ipad">
+        <div class="time">9:41 AM</div>
+        <div class="icons">
+          <div class="signal"><span></span><span></span><span></span><span></span></div>
+          <span style="font-size:11px; color:var(--text-dim);">Wi-Fi</span>
+          <div class="battery"><div class="fill"></div></div>
+        </div>
+      </div>
+      <div class="app-content-ipad">
+        <div class="top-nav-ipad">
+          <div class="logo">Co<span>Co</span></div>
+          <div class="ipad-cmd-bar">
+            <span class="prompt">&gt;</span>
+            <span class="typed">Type a command or search...</span>
+          </div>
+          <div class="status-strip">
+            <div class="status-dot green"></div>
+            <div class="status-dot yellow"></div>
+            <div class="cost-badge">$1.47 today</div>
+          </div>
+        </div>
+
+        <div class="stream-area-ipad" style="max-width:720px; margin:0 auto; width:100%;">
+          <!-- Item 1: Expanded todo with full detail -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Review Q2 risk model outputs</div>
+                  <div class="item-meta">Cross Risk / Due tomorrow / Assigned to you</div>
+                </div>
+                <div class="item-time">2m ago</div>
+              </div>
+              <div class="expanded-detail-ipad">
+                <div class="detail-text-ipad">Validate stress scenarios against updated macro assumptions. Sarah flagged discrepancy in emerging markets tail risk. The VaR model shows 15% higher exposure than expected under Scenario 3.</div>
+                <div class="detail-grid">
+                  <span class="label">Project</span><span class="value blue">Cross Risk</span>
+                  <span class="label">Priority</span><span class="value">High</span>
+                  <span class="label">Due</span><span class="value">April 7, 2026</span>
+                  <span class="label">Assigned</span><span class="value">Rijul Kalra</span>
+                  <span class="label">Created by</span><span class="value blue">Sarah via Research Agent</span>
+                  <span class="label">Linked</span><span class="value">3Pi Phase 2 Contract, Macro Assumptions Q2</span>
+                </div>
+                <div class="detail-chips">
+                  <span class="chip priority">High Priority</span>
+                  <span class="chip project">Cross Risk</span>
+                  <span class="chip agent">Research Agent</span>
+                  <span class="chip due">Due Apr 7</span>
+                </div>
+                <div class="action-row">
+                  <button class="action-btn primary">Mark Complete</button>
+                  <button class="action-btn success">Delegate</button>
+                  <button class="action-btn ghost">Snooze</button>
+                  <button class="action-btn ghost">Open in Hub</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 2: Agent running -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content running">
+              <div class="item-row-ipad">
+                <div class="type-dot agent"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Ingesting 14 Confluence pages...</div>
+                  <div class="item-meta">Knowledge Agent / 68% complete / ~2m remaining</div>
+                </div>
+                <div class="item-time">5m ago</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 3: Decision -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot decision"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Approve: Add Aravo API endpoint to production</div>
+                  <div class="item-meta">Governance / Waiting since yesterday / No blockers</div>
+                </div>
+                <div class="item-time">1h ago</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 4: Cost -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot cost"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Daily budget 80% used ($3.84 / $5.00)</div>
+                  <div class="item-meta">Cost Monitor / 4 agents active / Projected $4.70 end of day</div>
+                </div>
+                <div class="item-time">12m ago</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 5: Done -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content done">
+              <div class="item-row-ipad">
+                <div class="type-dot knowledge"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Indexed: 3Pi Phase 2 Contract Data</div>
+                  <div class="item-meta">Knowledge Hub / 23 chunks stored / 4 entities extracted</div>
+                </div>
+                <div class="item-time">18m ago</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Item 6 -->
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Prepare steerco slides for Monday standup</div>
+                  <div class="item-meta">Cross Risk / Due Apr 7 / Low priority</div>
+                </div>
+                <div class="item-time">28m ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── iPad Screen 2: Command Bar Active ── -->
+  <div class="device-group">
+    <div class="device-label"><strong>Screen 2</strong> Command Bar Active</div>
+    <div class="tablet-frame">
+      <div class="status-bar-ipad">
+        <div class="time">9:42 AM</div>
+        <div class="icons">
+          <div class="signal"><span></span><span></span><span></span><span></span></div>
+          <span style="font-size:11px; color:var(--text-dim);">Wi-Fi</span>
+          <div class="battery"><div class="fill"></div></div>
+        </div>
+      </div>
+      <div class="app-content-ipad">
+        <div class="top-nav-ipad">
+          <div class="logo">Co<span>Co</span></div>
+          <div style="position:relative;">
+            <div class="ipad-cmd-bar" style="border-color:rgba(59,130,246,0.4);">
+              <span class="prompt" style="color:var(--blue);">&gt;</span>
+              <span class="typed"><span class="cmd">spawn</span> <span class="active">research</span><span class="cursor-blink"></span></span>
+            </div>
+            <!-- Dropdown results -->
+            <div class="cmd-dropdown">
+              <div class="cmd-result highlighted">
+                <div class="type-dot agent"></div>
+                <div>
+                  <div class="cmd-name">spawn research-agent</div>
+                  <div class="cmd-desc">Run deep research on a topic using web + knowledge base</div>
+                </div>
+              </div>
+              <div class="cmd-result">
+                <div class="type-dot agent"></div>
+                <div>
+                  <div class="cmd-name">spawn research-summarizer</div>
+                  <div class="cmd-desc">Summarize existing research findings into brief</div>
+                </div>
+              </div>
+              <div class="cmd-result">
+                <div class="type-dot todo"></div>
+                <div>
+                  <div class="cmd-name">search "research"</div>
+                  <div class="cmd-desc">Find stream items matching "research" (3 results)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="status-strip">
+            <div class="status-dot green"></div>
+            <div class="status-dot yellow"></div>
+            <div class="cost-badge">$1.47 today</div>
+          </div>
+        </div>
+
+        <!-- Dimmed stream behind -->
+        <div class="stream-area-ipad" style="max-width:720px; margin:0 auto; width:100%; opacity:0.4;">
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot todo"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Review Q2 risk model outputs</div>
+                  <div class="item-meta">Cross Risk / Due tomorrow</div>
+                </div>
+                <div class="item-time">2m ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content running">
+              <div class="item-row-ipad">
+                <div class="type-dot agent"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Ingesting 14 Confluence pages...</div>
+                  <div class="item-meta">Knowledge Agent / 68% complete</div>
+                </div>
+                <div class="item-time">5m ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot decision"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Approve: Add Aravo API endpoint</div>
+                  <div class="item-meta">Governance / Waiting since yesterday</div>
+                </div>
+                <div class="item-time">1h ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content">
+              <div class="item-row-ipad">
+                <div class="type-dot cost"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Daily budget 80% used ($3.84)</div>
+                  <div class="item-meta">Cost Monitor / 4 agents active</div>
+                </div>
+                <div class="item-time">12m ago</div>
+              </div>
+            </div>
+          </div>
+          <div class="stream-item" style="margin-bottom:8px;">
+            <div class="item-content done">
+              <div class="item-row-ipad">
+                <div class="type-dot knowledge"></div>
+                <div class="item-text">
+                  <div class="item-title" style="font-size:14px;">Indexed: 3Pi Phase 2 Contract</div>
+                  <div class="item-meta">Knowledge Hub / 23 chunks stored</div>
+                </div>
+                <div class="item-time">18m ago</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div class="tagline">
+  One stream. Every viewport. Zero responsive gymnastics.
+</div>
+
+</body>
+</html>

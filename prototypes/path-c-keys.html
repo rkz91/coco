@@ -1,0 +1,1240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path C — Keyboard Shortcut Overlay | CoCo Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0a;
+      --surface: #1a1a1a;
+      --surface-hover: #222222;
+      --surface-active: #2a2a2a;
+      --fg: #e5e5e5;
+      --fg-muted: #666666;
+      --fg-dim: #444444;
+      --accent: #3b82f6;
+      --accent-glow: rgba(59, 130, 246, 0.3);
+      --accent-dim: rgba(59, 130, 246, 0.15);
+      --green: #22c55e;
+      --yellow: #eab308;
+      --yellow-glow: rgba(234, 179, 8, 0.4);
+      --red: #ef4444;
+      --orange: #f97316;
+      --purple: #a855f7;
+      --border: #2a2a2a;
+      --mono: 'JetBrains Mono', 'Menlo', monospace;
+      --sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--fg);
+      min-height: 100vh;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    /* ── Ambient glow ── */
+    .ambient {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 500px;
+      background: radial-gradient(ellipse, rgba(59,130,246,0.04) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* ── Main Container ── */
+    .container {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: 48px 24px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Header ── */
+    .header {
+      text-align: center;
+      margin-bottom: 48px;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+      margin-bottom: 8px;
+    }
+
+    .header h1 .accent { color: var(--accent); }
+
+    .header p {
+      color: var(--fg-muted);
+      font-size: 14px;
+    }
+
+    /* ── Key Cap ── */
+    .key {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 28px;
+      height: 28px;
+      padding: 0 7px;
+      background: linear-gradient(180deg, #2a2a2a 0%, #1e1e1e 100%);
+      border: 1px solid #3a3a3a;
+      border-bottom: 3px solid #1a1a1a;
+      border-radius: 6px;
+      font-family: var(--mono);
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--fg);
+      transition: all 0.08s ease;
+      white-space: nowrap;
+    }
+
+    .key.flash {
+      background: linear-gradient(180deg, rgba(234, 179, 8, 0.4) 0%, rgba(234, 179, 8, 0.2) 100%);
+      border-color: var(--yellow);
+      color: #fff;
+      box-shadow: 0 0 12px var(--yellow-glow), 0 0 4px var(--yellow-glow);
+    }
+
+    .key.active-accent {
+      background: linear-gradient(180deg, rgba(59, 130, 246, 0.4) 0%, rgba(59, 130, 246, 0.2) 100%);
+      border-color: var(--accent);
+      color: #fff;
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    /* ── Quick Reference Bar ── */
+    .quick-ref {
+      display: flex;
+      justify-content: center;
+      gap: 32px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+      padding: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .quick-ref-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .quick-ref-item .keys {
+      display: flex;
+      gap: 4px;
+    }
+
+    .quick-ref-item .label {
+      font-size: 12px;
+      color: var(--fg-muted);
+      font-weight: 500;
+    }
+
+    /* ── Shortcut Map ── */
+    .shortcut-map {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 28px 32px;
+      margin-bottom: 40px;
+    }
+
+    .shortcut-map h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 24px;
+      color: var(--fg);
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 32px;
+    }
+
+    .map-section h3 {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 4px;
+    }
+
+    .map-section .divider {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--fg-dim);
+      margin-bottom: 12px;
+      user-select: none;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 5px 8px;
+      border-radius: 6px;
+      margin-bottom: 2px;
+      transition: background 0.1s ease;
+    }
+
+    .shortcut-row.flash-row {
+      background: rgba(234, 179, 8, 0.08);
+    }
+
+    .shortcut-row .keys-col {
+      display: flex;
+      gap: 4px;
+      min-width: 80px;
+      flex-shrink: 0;
+    }
+
+    .shortcut-row .desc {
+      font-size: 13px;
+      color: var(--fg-muted);
+    }
+
+    /* ── Interactive Demo ── */
+    .demo-section {
+      margin-bottom: 40px;
+    }
+
+    .demo-section h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+
+    .demo-section .subtitle {
+      font-size: 13px;
+      color: var(--fg-muted);
+      margin-bottom: 16px;
+    }
+
+    .demo-container {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .demo-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 20px;
+      border-bottom: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .demo-header .view-label {
+      font-family: var(--mono);
+      font-weight: 500;
+    }
+
+    .demo-header .hint {
+      font-size: 11px;
+      opacity: 0.6;
+    }
+
+    .stream-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      cursor: default;
+      transition: all 0.1s ease;
+      position: relative;
+    }
+
+    .stream-item:last-child { border-bottom: none; }
+
+    .stream-item.selected {
+      background: rgba(59, 130, 246, 0.06);
+    }
+
+    .stream-item.selected::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: var(--accent);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .stream-item.completed {
+      opacity: 0.35;
+    }
+
+    .stream-item.completed .item-title {
+      text-decoration: line-through;
+    }
+
+    .stream-item.dismissed {
+      display: none;
+    }
+
+    .stream-item.expanded .item-detail {
+      display: block;
+    }
+
+    .item-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .item-icon.decision { background: rgba(234, 179, 8, 0.15); }
+    .item-icon.task { background: rgba(59, 130, 246, 0.15); }
+    .item-icon.alert { background: rgba(239, 68, 68, 0.15); }
+    .item-icon.insight { background: rgba(168, 85, 247, 0.15); }
+    .item-icon.update { background: rgba(34, 197, 94, 0.15); }
+
+    .item-body { flex: 1; min-width: 0; }
+
+    .item-title {
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 3px;
+      transition: all 0.15s ease;
+    }
+
+    .item-meta {
+      font-size: 12px;
+      color: var(--fg-muted);
+    }
+
+    .item-detail {
+      display: none;
+      margin-top: 10px;
+      padding: 10px 14px;
+      background: rgba(255,255,255,0.02);
+      border-radius: 8px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      line-height: 1.6;
+      border-left: 2px solid var(--accent);
+    }
+
+    .item-status {
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      flex-shrink: 0;
+      margin-top: 4px;
+    }
+
+    .item-status.pending { background: rgba(234, 179, 8, 0.15); color: var(--yellow); }
+    .item-status.active { background: rgba(59, 130, 246, 0.15); color: var(--accent); }
+    .item-status.done { background: rgba(34, 197, 94, 0.15); color: var(--green); }
+
+    /* ── Toast ── */
+    .toast-container {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 100;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 8px;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .toast {
+      font-family: var(--mono);
+      font-size: 13px;
+      padding: 8px 16px;
+      background: rgba(30, 30, 30, 0.95);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--fg);
+      backdrop-filter: blur(10px);
+      animation: toast-in 0.15s ease, toast-out 0.3s ease 1.2s forwards;
+      white-space: nowrap;
+    }
+
+    .toast .toast-key {
+      color: var(--yellow);
+      font-weight: 600;
+    }
+
+    .toast .toast-arrow {
+      color: var(--fg-dim);
+      margin: 0 6px;
+    }
+
+    @keyframes toast-in {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes toast-out {
+      from { opacity: 1; }
+      to { opacity: 0; transform: translateY(-4px); }
+    }
+
+    /* ── Philosophy ── */
+    .philosophy {
+      text-align: center;
+      padding: 32px;
+      border-top: 1px solid var(--border);
+      margin-top: 16px;
+    }
+
+    .philosophy blockquote {
+      font-size: 14px;
+      color: var(--fg-muted);
+      line-height: 1.8;
+      max-width: 560px;
+      margin: 0 auto;
+      font-style: italic;
+    }
+
+    .philosophy blockquote em {
+      color: var(--fg);
+      font-style: normal;
+      font-weight: 500;
+    }
+
+    /* ── Command bar overlay ── */
+    .command-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      align-items: flex-start;
+      justify-content: center;
+      padding-top: 20vh;
+    }
+
+    .command-overlay.open {
+      display: flex;
+    }
+
+    .command-bar {
+      width: 480px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .command-input-row {
+      display: flex;
+      align-items: center;
+      padding: 14px 18px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .command-input-row .slash {
+      font-family: var(--mono);
+      font-size: 16px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .command-input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      font-family: var(--sans);
+      font-size: 15px;
+      color: var(--fg);
+    }
+
+    .command-results {
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .command-result-item {
+      padding: 10px 18px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      cursor: default;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .command-result-item.selected {
+      background: rgba(59, 130, 246, 0.08);
+      color: var(--fg);
+    }
+
+    .command-result-item .cmd-name {
+      font-family: var(--mono);
+      font-weight: 500;
+      color: var(--fg);
+    }
+
+    .command-result-item .cmd-desc {
+      color: var(--fg-muted);
+      font-size: 12px;
+    }
+
+    /* ── Assign modal ── */
+    .assign-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .assign-overlay.open {
+      display: flex;
+    }
+
+    .assign-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px 24px;
+      width: 320px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+
+    .assign-modal h3 {
+      font-size: 14px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+
+    .assign-modal .project-opt {
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--fg-muted);
+      cursor: default;
+    }
+
+    .assign-modal .project-opt:hover,
+    .assign-modal .project-opt.sel {
+      background: rgba(59, 130, 246, 0.08);
+      color: var(--fg);
+    }
+
+    .assign-modal .hint-text {
+      font-size: 11px;
+      color: var(--fg-dim);
+      margin-top: 10px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient"></div>
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Keyboard Shortcuts <span class="accent">?</span></h1>
+      <p>Path C — Every action, no mouse required. Try pressing keys now.</p>
+    </div>
+
+    <!-- Quick Reference Bar -->
+    <div class="quick-ref">
+      <div class="quick-ref-item">
+        <div class="keys">
+          <span class="key" data-key="j">j</span>
+          <span class="key" data-key="k">k</span>
+        </div>
+        <span class="label">Navigate</span>
+      </div>
+      <div class="quick-ref-item">
+        <div class="keys">
+          <span class="key" data-key="x">x</span>
+        </div>
+        <span class="label">Act</span>
+      </div>
+      <div class="quick-ref-item">
+        <div class="keys">
+          <span class="key" data-key="/">/ </span>
+        </div>
+        <span class="label">Command</span>
+      </div>
+      <div class="quick-ref-item">
+        <div class="keys">
+          <span class="key" data-key="Enter">Enter</span>
+        </div>
+        <span class="label">Expand</span>
+      </div>
+      <div class="quick-ref-item">
+        <div class="keys">
+          <span class="key" data-key="?">?</span>
+        </div>
+        <span class="label">Help</span>
+      </div>
+    </div>
+
+    <!-- Shortcut Map -->
+    <div class="shortcut-map" id="shortcutMap">
+      <h2>Shortcut Map</h2>
+      <div class="map-grid">
+        <!-- Navigation -->
+        <div class="map-section">
+          <h3>Navigation</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="j">
+            <div class="keys-col"><span class="key" data-key="j">j</span> / <span class="key" data-key="k">k</span></div>
+            <span class="desc">Move up / down in stream</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Enter">
+            <div class="keys-col"><span class="key" data-key="Enter">Enter</span></div>
+            <span class="desc">Expand selected item</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Escape">
+            <div class="keys-col"><span class="key" data-key="Escape">Esc</span></div>
+            <span class="desc">Collapse / Clear</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="/">
+            <div class="keys-col"><span class="key" data-key="/">/ </span></div>
+            <span class="desc">Focus command bar</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="gh">
+            <div class="keys-col"><span class="key">g</span> <span class="key">h</span></div>
+            <span class="desc">Go to Home (stream)</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="ga">
+            <div class="keys-col"><span class="key">g</span> <span class="key">a</span></div>
+            <span class="desc">Go to Agents view</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="gt">
+            <div class="keys-col"><span class="key">g</span> <span class="key">t</span></div>
+            <span class="desc">Go to Tree view</span>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="map-section">
+          <h3>Actions</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="x">
+            <div class="keys-col"><span class="key" data-key="x">x</span></div>
+            <span class="desc">Complete / Approve</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="d">
+            <div class="keys-col"><span class="key" data-key="d">d</span></div>
+            <span class="desc">Dismiss / Reject</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="e">
+            <div class="keys-col"><span class="key" data-key="e">e</span></div>
+            <span class="desc">Edit selected item</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="a">
+            <div class="keys-col"><span class="key" data-key="a">a</span></div>
+            <span class="desc">Assign to project</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="s">
+            <div class="keys-col"><span class="key" data-key="s">s</span></div>
+            <span class="desc">Spawn agent for item</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="c">
+            <div class="keys-col"><span class="key" data-key="c">c</span></div>
+            <span class="desc">Chat about item</span>
+          </div>
+        </div>
+
+        <!-- Command Bar -->
+        <div class="map-section">
+          <h3>Command Bar</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="/">
+            <div class="keys-col"><span class="key" data-key="/">/ </span></div>
+            <span class="desc">Open command bar</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Tab">
+            <div class="keys-col"><span class="key" data-key="Tab">Tab</span></div>
+            <span class="desc">Cycle through results</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Enter">
+            <div class="keys-col"><span class="key" data-key="Enter">Enter</span></div>
+            <span class="desc">Execute command</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Escape">
+            <div class="keys-col"><span class="key" data-key="Escape">Esc</span></div>
+            <span class="desc">Close command bar</span>
+          </div>
+        </div>
+
+        <!-- Agents -->
+        <div class="map-section">
+          <h3>Agents</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="p">
+            <div class="keys-col"><span class="key" data-key="p">p</span></div>
+            <span class="desc">Pause running agent</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="kill-k">
+            <div class="keys-col"><span class="key">k</span></div>
+            <span class="desc">Kill running agent</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="r">
+            <div class="keys-col"><span class="key" data-key="r">r</span></div>
+            <span class="desc">Retry failed agent</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="l">
+            <div class="keys-col"><span class="key" data-key="l">l</span></div>
+            <span class="desc">View agent logs</span>
+          </div>
+        </div>
+
+        <!-- Bulk -->
+        <div class="map-section">
+          <h3>Bulk</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="Shift+x">
+            <div class="keys-col"><span class="key">Shift</span><span class="key">x</span></div>
+            <span class="desc">Select item</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Shift+a">
+            <div class="keys-col"><span class="key">Shift</span><span class="key">a</span></div>
+            <span class="desc">Select all visible</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Shift+d">
+            <div class="keys-col"><span class="key">Shift</span><span class="key">d</span></div>
+            <span class="desc">Bulk dismiss selected</span>
+          </div>
+        </div>
+
+        <!-- System -->
+        <div class="map-section">
+          <h3>System</h3>
+          <div class="divider">-------------------------------</div>
+          <div class="shortcut-row" data-shortcut="Cmd+,">
+            <div class="keys-col"><span class="key">Cmd</span><span class="key">,</span></div>
+            <span class="desc">Settings</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="Cmd+k">
+            <div class="keys-col"><span class="key">Cmd</span><span class="key">K</span></div>
+            <span class="desc">Command bar (alt)</span>
+          </div>
+          <div class="shortcut-row" data-shortcut="?">
+            <div class="keys-col"><span class="key" data-key="?">?</span></div>
+            <span class="desc">Show this overlay</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interactive Demo -->
+    <div class="demo-section">
+      <h2>Interactive Demo</h2>
+      <p class="subtitle">Press keys to see them work. j/k to navigate, Enter to expand, x to complete, d to dismiss, a to assign, / for command bar.</p>
+
+      <div class="demo-container" id="demoStream">
+        <div class="demo-header">
+          <span class="view-label">STREAM</span>
+          <span class="hint">5 items -- try pressing j, k, Enter, x, d</span>
+        </div>
+
+        <div class="stream-item selected" data-idx="0">
+          <div class="item-icon decision">!</div>
+          <div class="item-body">
+            <div class="item-title">Approve API rate limit increase for Payments team</div>
+            <div class="item-meta">Decision -- 12m ago -- from Agent: Infra Monitor</div>
+            <div class="item-detail">Payments team requests 10k -> 50k RPM for the checkout API. Current p99 latency is 120ms with headroom to 200ms. Agent recommends approval with monitoring alert at 80% capacity.</div>
+          </div>
+          <span class="item-status pending">pending</span>
+        </div>
+
+        <div class="stream-item" data-idx="1">
+          <div class="item-icon task">T</div>
+          <div class="item-body">
+            <div class="item-title">Review quarterly OKR draft from Strategy team</div>
+            <div class="item-meta">Task -- 28m ago -- assigned by Sarah Chen</div>
+            <div class="item-detail">Q3 OKRs include 3 new key results for platform reliability. Need your sign-off before Thursday steerco. Draft link attached in thread.</div>
+          </div>
+          <span class="item-status active">active</span>
+        </div>
+
+        <div class="stream-item" data-idx="2">
+          <div class="item-icon alert">A</div>
+          <div class="item-body">
+            <div class="item-title">Cost anomaly: $2.3k spike in us-east-1 Lambda</div>
+            <div class="item-meta">Alert -- 1h ago -- from Agent: Cost Watcher</div>
+            <div class="item-detail">Unusual 340% cost increase detected on Lambda function process-events. Traced to retry storm from failed DynamoDB writes. Agent suggests adding circuit breaker.</div>
+          </div>
+          <span class="item-status pending">pending</span>
+        </div>
+
+        <div class="stream-item" data-idx="3">
+          <div class="item-icon insight">I</div>
+          <div class="item-body">
+            <div class="item-title">Knowledge gap detected: no runbook for Redis failover</div>
+            <div class="item-meta">Insight -- 2h ago -- from Agent: Knowledge Scanner</div>
+            <div class="item-detail">Cross-referenced incident history with knowledge base. Found 3 Redis incidents in past quarter with no documented runbook. Recommended action: generate draft runbook from incident post-mortems.</div>
+          </div>
+          <span class="item-status active">active</span>
+        </div>
+
+        <div class="stream-item" data-idx="4">
+          <div class="item-icon update">U</div>
+          <div class="item-body">
+            <div class="item-title">Deploy pipeline green: auth-service v2.4.1 shipped</div>
+            <div class="item-meta">Update -- 3h ago -- from Agent: Deploy Bot</div>
+            <div class="item-detail">Canary passed at 5% traffic for 30 minutes. Full rollout completed. Zero errors in first 15 minutes. Rollback window closes in 4 hours.</div>
+          </div>
+          <span class="item-status done">done</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Philosophy -->
+    <div class="philosophy">
+      <blockquote>
+        "Every action in CoCo can be done without touching the mouse. The command bar handles complex operations. Single keys handle common actions. <em>This is how developers work -- it's how PMs should work too.</em>"
+      </blockquote>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Command Bar Overlay -->
+  <div class="command-overlay" id="commandOverlay">
+    <div class="command-bar">
+      <div class="command-input-row">
+        <span class="slash">/</span>
+        <input class="command-input" id="commandInput" placeholder="Type a command..." autocomplete="off" />
+      </div>
+      <div class="command-results" id="commandResults">
+        <div class="command-result-item selected"><span class="cmd-name">assign</span> <span class="cmd-desc">Assign item to a project or person</span></div>
+        <div class="command-result-item"><span class="cmd-name">spawn</span> <span class="cmd-desc">Create a new agent for this item</span></div>
+        <div class="command-result-item"><span class="cmd-name">search</span> <span class="cmd-desc">Search knowledge base</span></div>
+        <div class="command-result-item"><span class="cmd-name">budget</span> <span class="cmd-desc">Check cost budget status</span></div>
+        <div class="command-result-item"><span class="cmd-name">settings</span> <span class="cmd-desc">Open platform settings</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assign Overlay -->
+  <div class="assign-overlay" id="assignOverlay">
+    <div class="assign-modal">
+      <h3>Assign to project</h3>
+      <div class="project-opt sel">Platform Reliability</div>
+      <div class="project-opt">Payments v2</div>
+      <div class="project-opt">Cost Optimization</div>
+      <div class="project-opt">Q3 Planning</div>
+      <div class="hint-text">Enter to confirm -- Esc to cancel</div>
+    </div>
+  </div>
+
+  <script>
+    // ── State ──
+    const state = {
+      selectedIdx: 0,
+      commandOpen: false,
+      assignOpen: false,
+      gPending: false,
+    };
+
+    const items = document.querySelectorAll('.stream-item');
+    const toastContainer = document.getElementById('toastContainer');
+    const commandOverlay = document.getElementById('commandOverlay');
+    const commandInput = document.getElementById('commandInput');
+    const assignOverlay = document.getElementById('assignOverlay');
+
+    // ── Flash key in shortcut map ──
+    function flashKey(keyName) {
+      // Flash all matching key elements
+      document.querySelectorAll(`.key[data-key="${keyName}"]`).forEach(el => {
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 400);
+      });
+    }
+
+    function flashRow(shortcutName) {
+      document.querySelectorAll(`.shortcut-row[data-shortcut="${shortcutName}"]`).forEach(el => {
+        el.classList.add('flash-row');
+        setTimeout(() => el.classList.remove('flash-row'), 500);
+      });
+    }
+
+    // ── Toast ──
+    function showToast(keyLabel, action) {
+      const toast = document.createElement('div');
+      toast.className = 'toast';
+      toast.innerHTML = `<span class="toast-key">${keyLabel}</span><span class="toast-arrow">&rarr;</span>${action}`;
+      toastContainer.appendChild(toast);
+      setTimeout(() => { if (toast.parentNode) toast.remove(); }, 1600);
+    }
+
+    // ── Update selection ──
+    function updateSelection() {
+      const visible = getVisibleItems();
+      visible.forEach((item, i) => {
+        item.classList.toggle('selected', i === state.selectedIdx);
+      });
+      // Scroll into view
+      const sel = visible[state.selectedIdx];
+      if (sel) sel.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+
+    function getVisibleItems() {
+      return [...items].filter(el => !el.classList.contains('dismissed'));
+    }
+
+    // ── Open / Close command bar ──
+    function openCommand() {
+      state.commandOpen = true;
+      commandOverlay.classList.add('open');
+      commandInput.value = '';
+      commandInput.focus();
+    }
+
+    function closeCommand() {
+      state.commandOpen = false;
+      commandOverlay.classList.remove('open');
+    }
+
+    function openAssign() {
+      state.assignOpen = true;
+      assignOverlay.classList.add('open');
+    }
+
+    function closeAssign() {
+      state.assignOpen = false;
+      assignOverlay.classList.remove('open');
+    }
+
+    // ── Keyboard handler ──
+    document.addEventListener('keydown', (e) => {
+      // Command bar mode
+      if (state.commandOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeCommand();
+          flashKey('Escape');
+          flashRow('Escape');
+          showToast('Esc', 'closed command bar');
+        } else if (e.key === 'Tab') {
+          e.preventDefault();
+          flashKey('Tab');
+          flashRow('Tab');
+          // Cycle results
+          const results = document.querySelectorAll('.command-result-item');
+          let cur = [...results].findIndex(r => r.classList.contains('selected'));
+          results[cur].classList.remove('selected');
+          cur = (cur + 1) % results.length;
+          results[cur].classList.add('selected');
+          showToast('Tab', 'cycle results');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          flashKey('Enter');
+          const sel = document.querySelector('.command-result-item.selected .cmd-name');
+          showToast('Enter', `execute: ${sel ? sel.textContent : 'command'}`);
+          closeCommand();
+        }
+        return;
+      }
+
+      // Assign modal mode
+      if (state.assignOpen) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeAssign();
+          showToast('Esc', 'cancelled assign');
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          const sel = document.querySelector('.assign-modal .project-opt.sel');
+          showToast('Enter', `assigned to: ${sel ? sel.textContent : 'project'}`);
+          closeAssign();
+        } else if (e.key === 'j' || e.key === 'ArrowDown') {
+          e.preventDefault();
+          const opts = document.querySelectorAll('.project-opt');
+          let cur = [...opts].findIndex(o => o.classList.contains('sel'));
+          opts[cur].classList.remove('sel');
+          cur = Math.min(cur + 1, opts.length - 1);
+          opts[cur].classList.add('sel');
+        } else if (e.key === 'k' || e.key === 'ArrowUp') {
+          e.preventDefault();
+          const opts = document.querySelectorAll('.project-opt');
+          let cur = [...opts].findIndex(o => o.classList.contains('sel'));
+          opts[cur].classList.remove('sel');
+          cur = Math.max(cur - 1, 0);
+          opts[cur].classList.add('sel');
+        }
+        return;
+      }
+
+      // Handle g combos
+      if (state.gPending) {
+        state.gPending = false;
+        if (e.key === 'h') {
+          flashRow('gh');
+          showToast('g h', 'go to Home');
+          return;
+        } else if (e.key === 'a') {
+          flashRow('ga');
+          showToast('g a', 'go to Agents');
+          return;
+        } else if (e.key === 't') {
+          flashRow('gt');
+          showToast('g t', 'go to Tree');
+          return;
+        }
+      }
+
+      const visible = getVisibleItems();
+      if (!visible.length) return;
+
+      // Don't capture Cmd/Ctrl combos except the ones we handle
+      if (e.metaKey || e.ctrlKey) {
+        if (e.key === 'k' || e.key === 'K') {
+          e.preventDefault();
+          flashRow('Cmd+k');
+          openCommand();
+          showToast('Cmd+K', 'command bar (alt)');
+        }
+        return;
+      }
+
+      switch (e.key) {
+        case 'j':
+        case 'ArrowDown':
+          e.preventDefault();
+          state.selectedIdx = Math.min(state.selectedIdx + 1, visible.length - 1);
+          updateSelection();
+          flashKey('j');
+          flashRow('j');
+          showToast('j', 'moved down');
+          break;
+
+        case 'k':
+        case 'ArrowUp':
+          e.preventDefault();
+          state.selectedIdx = Math.max(state.selectedIdx - 1, 0);
+          updateSelection();
+          flashKey('k');
+          flashRow('j');
+          showToast('k', 'moved up');
+          break;
+
+        case 'Enter':
+          e.preventDefault();
+          const selEnter = visible[state.selectedIdx];
+          if (selEnter) {
+            selEnter.classList.toggle('expanded');
+            const expanded = selEnter.classList.contains('expanded');
+            flashKey('Enter');
+            flashRow('Enter');
+            showToast('Enter', expanded ? 'expanded item' : 'collapsed item');
+          }
+          break;
+
+        case 'Escape':
+          e.preventDefault();
+          // Collapse any expanded items
+          visible.forEach(item => item.classList.remove('expanded'));
+          flashKey('Escape');
+          flashRow('Escape');
+          showToast('Esc', 'collapsed all');
+          break;
+
+        case '/':
+          e.preventDefault();
+          flashKey('/');
+          flashRow('/');
+          openCommand();
+          showToast('/', 'opened command bar');
+          break;
+
+        case 'x':
+          if (e.shiftKey) {
+            flashRow('Shift+x');
+            const sel = visible[state.selectedIdx];
+            if (sel) {
+              sel.style.outline = sel.style.outline ? '' : '1px solid var(--accent)';
+              showToast('Shift+X', 'toggled selection');
+            }
+            break;
+          }
+          e.preventDefault();
+          const selX = visible[state.selectedIdx];
+          if (selX && !selX.classList.contains('completed')) {
+            selX.classList.add('completed');
+            const status = selX.querySelector('.item-status');
+            if (status) { status.textContent = 'done'; status.className = 'item-status done'; }
+            flashKey('x');
+            flashRow('x');
+            showToast('x', 'completed item');
+            // Move to next
+            if (state.selectedIdx < visible.length - 1) {
+              state.selectedIdx++;
+              setTimeout(updateSelection, 150);
+            }
+          }
+          break;
+
+        case 'd':
+          if (e.shiftKey) {
+            flashRow('Shift+d');
+            showToast('Shift+D', 'bulk dismiss (demo)');
+            break;
+          }
+          e.preventDefault();
+          const selD = visible[state.selectedIdx];
+          if (selD) {
+            selD.classList.add('dismissed');
+            flashKey('d');
+            flashRow('d');
+            showToast('d', 'dismissed item');
+            const newVisible = getVisibleItems();
+            if (state.selectedIdx >= newVisible.length) {
+              state.selectedIdx = Math.max(0, newVisible.length - 1);
+            }
+            updateSelection();
+          }
+          break;
+
+        case 'e':
+          e.preventDefault();
+          flashKey('e');
+          flashRow('e');
+          showToast('e', 'edit mode (demo)');
+          break;
+
+        case 'a':
+          if (e.shiftKey) {
+            flashRow('Shift+a');
+            showToast('Shift+A', 'selected all visible');
+            break;
+          }
+          e.preventDefault();
+          flashKey('a');
+          flashRow('a');
+          openAssign();
+          showToast('a', 'assign to project');
+          break;
+
+        case 's':
+          e.preventDefault();
+          flashKey('s');
+          flashRow('s');
+          showToast('s', 'spawning agent...');
+          break;
+
+        case 'c':
+          e.preventDefault();
+          flashKey('c');
+          flashRow('c');
+          showToast('c', 'opening chat...');
+          break;
+
+        case 'p':
+          e.preventDefault();
+          flashKey('p');
+          flashRow('p');
+          showToast('p', 'pause agent (demo)');
+          break;
+
+        case 'r':
+          e.preventDefault();
+          flashKey('r');
+          flashRow('r');
+          showToast('r', 'retry agent (demo)');
+          break;
+
+        case 'l':
+          e.preventDefault();
+          flashKey('l');
+          flashRow('l');
+          showToast('l', 'view logs (demo)');
+          break;
+
+        case 'g':
+          state.gPending = true;
+          setTimeout(() => { state.gPending = false; }, 600);
+          showToast('g', 'waiting for second key...');
+          break;
+
+        case '?':
+          e.preventDefault();
+          flashKey('?');
+          flashRow('?');
+          showToast('?', 'you\'re looking at it');
+          // Scroll to top of shortcut map
+          document.getElementById('shortcutMap').scrollIntoView({ behavior: 'smooth' });
+          break;
+      }
+    });
+
+    // Prevent command input from triggering shortcuts
+    commandInput.addEventListener('keydown', (e) => {
+      e.stopPropagation();
+      if (e.key === 'Escape') {
+        closeCommand();
+        flashKey('Escape');
+        showToast('Esc', 'closed command bar');
+      } else if (e.key === 'Tab') {
+        e.preventDefault();
+        const results = document.querySelectorAll('.command-result-item');
+        let cur = [...results].findIndex(r => r.classList.contains('selected'));
+        results[cur].classList.remove('selected');
+        cur = (cur + 1) % results.length;
+        results[cur].classList.add('selected');
+        flashKey('Tab');
+        showToast('Tab', 'cycle results');
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const sel = document.querySelector('.command-result-item.selected .cmd-name');
+        showToast('Enter', `execute: ${sel ? sel.textContent : 'command'}`);
+        closeCommand();
+        flashKey('Enter');
+      }
+    });
+
+    // Close overlays on backdrop click
+    commandOverlay.addEventListener('click', (e) => {
+      if (e.target === commandOverlay) closeCommand();
+    });
+    assignOverlay.addEventListener('click', (e) => {
+      if (e.target === assignOverlay) closeAssign();
+    });
+
+    // Initialize selection
+    updateSelection();
+  </script>
+</body>
+</html>

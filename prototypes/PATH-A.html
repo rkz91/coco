@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path A — Patch</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: #f8fafc;
+    overflow: hidden;
+  }
+
+  /* ── Top Nav ── */
+  .nav-bar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 48px;
+    background: #0f172a;
+    display: flex;
+    align-items: center;
+    z-index: 1000;
+    padding: 0 16px;
+    gap: 4px;
+  }
+
+  .nav-title {
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    margin-right: 8px;
+    padding-right: 12px;
+    border-right: 1px solid #334155;
+  }
+
+  .nav-title .subtitle {
+    font-size: 11px;
+    font-weight: 400;
+    color: #94a3b8;
+    display: block;
+    margin-top: -2px;
+  }
+
+  .tab-btn {
+    background: transparent;
+    border: none;
+    color: #94a3b8;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    position: relative;
+  }
+
+  .tab-btn:hover {
+    color: #e2e8f0;
+    background: #1e293b;
+  }
+
+  .tab-btn.active {
+    color: #fff;
+    background: #2563eb;
+  }
+
+  /* Tooltips */
+  .tab-btn::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    margin-top: 8px;
+    background: #1e293b;
+    color: #e2e8f0;
+    font-size: 11px;
+    font-weight: 400;
+    padding: 4px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.15s ease;
+    z-index: 2000;
+  }
+
+  .tab-btn:hover::after {
+    opacity: 1;
+  }
+
+  /* ── Content Area ── */
+  .content-area {
+    position: fixed;
+    top: 48px;
+    left: 0;
+    right: 0;
+    bottom: 24px;
+  }
+
+  .view-frame {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    background: #fff;
+  }
+
+  .view-frame.active {
+    display: block;
+  }
+
+  /* ── Footer ── */
+  .footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 24px;
+    background: #0f172a;
+    color: #64748b;
+    font-size: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+  }
+</style>
+</head>
+<body>
+
+<!-- Nav Bar -->
+<nav class="nav-bar">
+  <div class="nav-title">
+    Path A — Patch
+    <span class="subtitle">Keep pages, reduce friction</span>
+  </div>
+  <button class="tab-btn active" data-tab="main" data-tooltip="Full app layout with sidebar navigation">Main App</button>
+  <button class="tab-btn" data-tab="home" data-tooltip="Dashboard home with project cards and stats">Home Detail</button>
+  <button class="tab-btn" data-tab="inbox" data-tooltip="Simplified inbox with 3-tab design">Inbox</button>
+  <button class="tab-btn" data-tab="agents" data-tooltip="Agent roster with status and output panels">Agents</button>
+  <button class="tab-btn" data-tab="project" data-tooltip="Project detail view with agents and tasks">Project</button>
+  <button class="tab-btn" data-tab="chat" data-tooltip="Chat interface for CoCo interactions">Chat</button>
+  <button class="tab-btn" data-tab="costs" data-tooltip="Cost tracking, budgets, and spend charts">Costs</button>
+  <button class="tab-btn" data-tab="flow" data-tooltip="User flow diagram across all 17 pages">User Flow</button>
+</nav>
+
+<!-- Content Frames (lazy-loaded) -->
+<div class="content-area">
+  <iframe id="frame-main" class="view-frame active" src="path-a-main.html"></iframe>
+  <iframe id="frame-home" class="view-frame" data-src="path-a-home.html"></iframe>
+  <iframe id="frame-inbox" class="view-frame" data-src="path-a-inbox.html"></iframe>
+  <iframe id="frame-agents" class="view-frame" data-src="path-a-agents.html"></iframe>
+  <iframe id="frame-project" class="view-frame" data-src="path-a-project.html"></iframe>
+  <iframe id="frame-chat" class="view-frame" data-src="path-a-chat.html"></iframe>
+  <iframe id="frame-costs" class="view-frame" data-src="path-a-costs.html"></iframe>
+  <iframe id="frame-flow" class="view-frame" data-src="path-a-flow.html"></iframe>
+</div>
+
+<!-- Footer -->
+<div class="footer">
+  Path A: 17 pages with inline actions, simplified inbox (3 tabs), structured agent output. Low risk, 2-3 weeks.
+</div>
+
+<script>
+  const tabs = document.querySelectorAll('.tab-btn');
+  const frames = document.querySelectorAll('.view-frame');
+
+  tabs.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tabId = btn.dataset.tab;
+      const frame = document.getElementById('frame-' + tabId);
+
+      // Update active tab
+      tabs.forEach(t => t.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Update active frame
+      frames.forEach(f => f.classList.remove('active'));
+      frame.classList.add('active');
+
+      // Lazy-load: set src from data-src on first click
+      if (frame.dataset.src) {
+        frame.src = frame.dataset.src;
+        delete frame.dataset.src;
+      }
+    });
+  });
+</script>
+
+</body>
+</html>

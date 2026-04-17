@@ -1,0 +1,1658 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo — Your PM Brain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════════
+   RESET + ROOT
+   ═══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #0C0F17;
+  --bg-card:       #151923;
+  --bg-card-hover: #1A2030;
+  --border:        #1E2533;
+  --border-hover:  #2A3548;
+  --glass:         rgba(255,255,255,0.03);
+  --glass-border:  rgba(255,255,255,0.06);
+  --glass-heavy:   rgba(255,255,255,0.05);
+
+  --text:          #E8ECF4;
+  --text-secondary:#7A839A;
+  --text-muted:    #4A5168;
+
+  --accent:        #4F7BF7;
+  --accent-dim:    rgba(79,123,247,0.12);
+  --accent-glow:   rgba(79,123,247,0.25);
+  --accent-border: rgba(79,123,247,0.4);
+
+  --success:       #3DD68C;
+  --success-dim:   rgba(61,214,140,0.10);
+  --success-border:rgba(61,214,140,0.3);
+
+  --warning:       #F5A524;
+  --warning-dim:   rgba(245,165,36,0.10);
+
+  --danger:        #F5564E;
+  --danger-dim:    rgba(245,86,78,0.08);
+  --danger-border: rgba(245,86,78,0.3);
+  --danger-glow:   rgba(245,86,78,0.15);
+
+  --draft-blue:    #6C8EF5;
+  --draft-dim:     rgba(108,142,245,0.08);
+  --draft-border:  rgba(108,142,245,0.25);
+
+  --radius-sm:     8px;
+  --radius-md:     12px;
+  --radius-lg:     16px;
+  --radius-xl:     20px;
+  --radius-full:   9999px;
+
+  --shadow-card:   0 2px 12px rgba(0,0,0,0.3);
+  --shadow-hover:  0 4px 20px rgba(0,0,0,0.4);
+  --shadow-glow:   0 0 30px rgba(79,123,247,0.15);
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+}
+
+.mono {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   TOP BAR — 64px glass
+   ═══════════════════════════════════════════════════════ */
+.topbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 28px;
+  background: rgba(12,15,23,0.72);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* Wordmark */
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  font-weight: 300;
+  letter-spacing: -0.5px;
+  color: var(--text);
+  user-select: none;
+}
+.wordmark .dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent-glow);
+  animation: pulse-dot 2.5s ease-in-out infinite;
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 0.7; box-shadow: 0 0 6px var(--accent-glow); }
+  50% { opacity: 1; box-shadow: 0 0 14px var(--accent-glow); }
+}
+
+/* Command Bar (collapsed) */
+.cmd-bar-trigger {
+  width: 480px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all 200ms ease;
+  box-shadow: inset 0 1px 2px rgba(0,0,0,0.2);
+}
+.cmd-bar-trigger:hover {
+  background: var(--glass-heavy);
+  border-color: var(--border);
+}
+.cmd-bar-trigger .search-icon {
+  color: var(--text-muted);
+  flex-shrink: 0;
+}
+.cmd-bar-trigger .placeholder {
+  color: var(--text-muted);
+  font-size: 13px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.cmd-bar-trigger .kbd {
+  font-family: 'Inter', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 5px;
+  padding: 2px 7px;
+  flex-shrink: 0;
+}
+
+/* Top-right status pills */
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: var(--radius-full);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  white-space: nowrap;
+  user-select: none;
+}
+.status-pill .dot-green {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--success);
+  box-shadow: 0 0 6px var(--success-border);
+}
+.avatar {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7C5CFC);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px; font-weight: 600; color: #fff;
+  user-select: none;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   MAIN LAYOUT — two-column
+   ═══════════════════════════════════════════════════════ */
+.main {
+  display: flex;
+  gap: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 88px 28px 80px 28px;
+  min-height: 100vh;
+}
+
+/* Stream (left, 65%) */
+.stream {
+  flex: 0 0 65%;
+  max-width: 65%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stream-header {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+.stream-title {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+.stream-badge {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--glass-heavy);
+  border: 1px solid var(--glass-border);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+}
+
+/* Context sidebar (right, 35%) */
+.sidebar {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  position: sticky;
+  top: 88px;
+  height: fit-content;
+  max-height: calc(100vh - 112px);
+  overflow-y: auto;
+  scrollbar-width: none;
+}
+.sidebar::-webkit-scrollbar { display: none; }
+
+
+/* ═══════════════════════════════════════════════════════
+   CARD BASE
+   ═══════════════════════════════════════════════════════ */
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-card);
+  transition: transform 150ms ease, border-color 150ms ease, box-shadow 150ms ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; bottom: 0;
+  width: 3px;
+  border-radius: 3px 0 0 3px;
+  opacity: 0;
+  transition: opacity 150ms ease;
+}
+.card:hover {
+  border-color: var(--border-hover);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-hover);
+}
+.card.selected::before {
+  opacity: 1;
+  background: var(--accent);
+}
+.card.selected {
+  border-color: var(--accent-border);
+}
+
+/* Card type accents via gradient left border */
+.card--urgent::before { background: linear-gradient(180deg, var(--danger), #FF8A65); opacity: 1; }
+.card--urgent { border-color: var(--danger-border); background: linear-gradient(135deg, var(--bg-card) 0%, rgba(245,86,78,0.04) 100%); }
+
+.card--draft::before { background: linear-gradient(180deg, var(--draft-blue), #A78BFA); opacity: 1; }
+.card--draft { border-color: var(--draft-border); background: linear-gradient(135deg, var(--bg-card) 0%, rgba(108,142,245,0.03) 100%); }
+
+.card--live::before { background: linear-gradient(180deg, var(--accent), #38BDF8); opacity: 1; }
+.card--live { border-color: var(--accent-border); animation: live-border 2s ease-in-out infinite; }
+@keyframes live-border {
+  0%, 100% { border-color: rgba(79,123,247,0.25); box-shadow: var(--shadow-card); }
+  50% { border-color: rgba(79,123,247,0.5); box-shadow: var(--shadow-card), 0 0 20px rgba(79,123,247,0.08); }
+}
+
+.card--done::before { background: var(--success); opacity: 1; }
+.card--done { border-color: var(--success-border); background: linear-gradient(135deg, var(--bg-card) 0%, rgba(61,214,140,0.03) 100%); }
+
+.card--todo::before { background: var(--text-muted); opacity: 0.5; }
+
+/* Card inner structure */
+.card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+.card-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.card-title {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text);
+  flex: 1;
+  line-height: 1.4;
+}
+.card-badge {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: var(--radius-full);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+.badge-live {
+  color: var(--accent);
+  background: var(--accent-dim);
+  animation: badge-pulse 2s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { opacity: 0.8; }
+  50% { opacity: 1; }
+}
+.badge-high {
+  color: var(--warning);
+  background: var(--warning-dim);
+}
+
+.card-meta {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.card-meta .sep {
+  color: var(--text-muted);
+}
+
+.card-body {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  margin-bottom: 16px;
+}
+.card-body em {
+  color: var(--text);
+  font-style: normal;
+  font-weight: 400;
+}
+
+/* Progress bar for live agent */
+.progress-track {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 3px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.progress-fill {
+  height: 100%;
+  border-radius: 3px;
+  background: linear-gradient(90deg, var(--accent), #38BDF8);
+  transition: width 600ms ease;
+}
+
+/* Card actions */
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: var(--glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+.btn:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-hover);
+  color: var(--text);
+}
+.btn--primary {
+  background: var(--accent-dim);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.btn--primary:hover {
+  background: rgba(79,123,247,0.2);
+  border-color: var(--accent);
+}
+.btn--success {
+  background: var(--success-dim);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+.btn--success:hover {
+  background: rgba(61,214,140,0.18);
+  border-color: var(--success);
+}
+.btn--danger {
+  background: var(--danger-dim);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+.btn--danger:hover {
+  background: rgba(245,86,78,0.15);
+  border-color: var(--danger);
+}
+
+/* Card expanded state */
+.card-expand {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 250ms cubic-bezier(0.4, 0, 0.2, 1), opacity 200ms ease;
+  opacity: 0;
+}
+.card.expanded .card-expand {
+  max-height: 400px;
+  opacity: 1;
+}
+.card-expand-inner {
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+}
+.card-expand-inner .detail-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0;
+  font-size: 12px;
+}
+.card-expand-inner .detail-label { color: var(--text-muted); }
+.card-expand-inner .detail-value { color: var(--text-secondary); }
+.card-expand-inner .chat-inline {
+  margin-top: 12px;
+  display: flex;
+  gap: 8px;
+}
+.card-expand-inner .chat-input {
+  flex: 1;
+  height: 36px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0 12px;
+  color: var(--text);
+  font-size: 12px;
+  font-family: 'Inter', sans-serif;
+  outline: none;
+  transition: border-color 150ms ease;
+}
+.card-expand-inner .chat-input:focus {
+  border-color: var(--accent-border);
+}
+.card-expand-inner .chat-input::placeholder {
+  color: var(--text-muted);
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SIDEBAR SECTIONS
+   ═══════════════════════════════════════════════════════ */
+.sidebar-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-card);
+}
+.sidebar-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  margin-bottom: 14px;
+}
+
+/* Quick stats */
+.stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.stat-item .stat-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: -0.5px;
+}
+.stat-item .stat-value .mono {
+  font-size: 20px;
+  font-weight: 500;
+}
+.stat-item .stat-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.stat-period {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  grid-column: span 2;
+}
+.stats-divider {
+  grid-column: span 2;
+  height: 1px;
+  background: var(--border);
+}
+
+/* Health grid */
+.health-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.health-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+.health-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+}
+.health-dot.green { background: var(--success); box-shadow: 0 0 6px var(--success-border); }
+.health-dot.yellow { background: var(--warning); box-shadow: 0 0 6px rgba(245,165,36,0.3); }
+
+/* Teams list */
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.team-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 150ms ease;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+.team-item:hover { background: var(--glass-heavy); color: var(--text); }
+.team-item.active { background: var(--accent-dim); color: var(--accent); }
+.team-count {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: var(--glass);
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+}
+.team-item.active .team-count { color: var(--accent); background: rgba(79,123,247,0.15); }
+.teams-more {
+  padding: 6px 12px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 150ms ease;
+}
+.teams-more:hover { color: var(--text-secondary); }
+
+/* Activity feed */
+.activity-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.activity-item {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+.activity-dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin-top: 6px;
+  flex-shrink: 0;
+}
+.activity-dot.blue { background: var(--accent); }
+.activity-dot.green { background: var(--success); }
+.activity-text {
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+.activity-text strong { font-weight: 500; color: var(--text); }
+.activity-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   COMMAND PALETTE OVERLAY
+   ═══════════════════════════════════════════════════════ */
+.cmd-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  padding-top: 160px;
+  background: rgba(0,0,0,0);
+  backdrop-filter: blur(0px);
+  pointer-events: none;
+  transition: background 200ms ease-out, backdrop-filter 200ms ease-out;
+}
+.cmd-overlay.open {
+  background: rgba(0,0,0,0.55);
+  backdrop-filter: blur(8px);
+  pointer-events: all;
+}
+
+.cmd-palette {
+  width: 600px;
+  max-height: 480px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: 0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.04);
+  transform: translateY(-12px) scale(0.98);
+  opacity: 0;
+  transition: transform 200ms ease-out, opacity 200ms ease-out;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.cmd-overlay.open .cmd-palette {
+  transform: translateY(0) scale(1);
+  opacity: 1;
+}
+
+.cmd-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--border);
+}
+.cmd-input-wrap svg { color: var(--text-muted); flex-shrink: 0; }
+.cmd-input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-family: 'Inter', sans-serif;
+  font-size: 15px;
+  color: var(--text);
+}
+.cmd-input::placeholder { color: var(--text-muted); }
+
+.cmd-results {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+  scrollbar-width: none;
+}
+.cmd-results::-webkit-scrollbar { display: none; }
+
+.cmd-section-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--text-muted);
+  padding: 10px 12px 6px;
+}
+.cmd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: background 100ms ease;
+}
+.cmd-item:hover, .cmd-item.active {
+  background: var(--accent-dim);
+}
+.cmd-item-icon {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  font-size: 13px;
+  flex-shrink: 0;
+}
+.cmd-item-text {
+  flex: 1;
+}
+.cmd-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.cmd-item-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.cmd-item-kbd {
+  font-size: 10px;
+  color: var(--text-muted);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   FLOATING ELEMENTS
+   ═══════════════════════════════════════════════════════ */
+
+/* CoCo Orb */
+.coco-orb {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 90;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), #7C5CFC);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(79,123,247,0.35), 0 0 0 0 rgba(79,123,247,0.2);
+  animation: orb-pulse 3s ease-in-out infinite;
+  transition: transform 150ms ease, box-shadow 150ms ease;
+}
+.coco-orb:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 28px rgba(79,123,247,0.45), 0 0 0 8px rgba(79,123,247,0.08);
+}
+.coco-orb svg { color: #fff; }
+@keyframes orb-pulse {
+  0%, 100% { box-shadow: 0 4px 20px rgba(79,123,247,0.3), 0 0 0 0 rgba(79,123,247,0.15); }
+  50% { box-shadow: 0 4px 20px rgba(79,123,247,0.45), 0 0 0 6px rgba(79,123,247,0.06); }
+}
+
+/* Keyboard hints */
+.keyboard-hints {
+  position: fixed;
+  bottom: 20px;
+  left: 28px;
+  z-index: 90;
+  display: flex;
+  gap: 16px;
+  opacity: 0.4;
+  transition: opacity 300ms ease;
+}
+.keyboard-hints:hover { opacity: 0.7; }
+.hint-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+.hint-key {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  font-weight: 500;
+  padding: 2px 6px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 4px;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+   ═══════════════════════════════════════════════════════ */
+.toast-container {
+  position: fixed;
+  top: 80px;
+  right: 28px;
+  z-index: 300;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.toast {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 18px;
+  font-size: 13px;
+  color: var(--text);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transform: translateX(120%);
+  opacity: 0;
+  transition: transform 300ms cubic-bezier(0.4, 0, 0.2, 1), opacity 300ms ease;
+  max-width: 340px;
+}
+.toast.show {
+  transform: translateX(0);
+  opacity: 1;
+}
+.toast-icon { font-size: 15px; flex-shrink: 0; }
+
+
+/* ═══════════════════════════════════════════════════════
+   LIVE TIMER
+   ═══════════════════════════════════════════════════════ */
+.live-meta .mono {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   SCROLLBAR GLOBAL
+   ═══════════════════════════════════════════════════════ */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+
+/* ═══════════════════════════════════════════════════════
+   RESPONSIVE
+   ═══════════════════════════════════════════════════════ */
+@media (max-width: 1200px) {
+  .main { flex-direction: column; }
+  .stream { flex: none; max-width: 100%; }
+  .sidebar { position: static; flex-direction: row; flex-wrap: wrap; max-height: none; }
+  .sidebar-card { flex: 1; min-width: 280px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ TOP BAR ═══════════ -->
+<header class="topbar">
+  <div class="wordmark">
+    CoCo <span class="dot"></span>
+  </div>
+
+  <div class="cmd-bar-trigger" onclick="openCommandPalette()">
+    <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+    <span class="placeholder">Ask anything, search, or give a command...</span>
+    <span class="kbd">/</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="status-pill"><span class="dot-green"></span> All Healthy</div>
+    <div class="status-pill"><span class="mono">$2.40</span> today</div>
+    <div class="avatar">RK</div>
+  </div>
+</header>
+
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+
+  <!-- ─── Stream ─── -->
+  <section class="stream" id="stream">
+    <div class="stream-header">
+      <h1 class="stream-title">What Needs You</h1>
+      <span class="stream-badge">7 items</span>
+    </div>
+
+    <!-- CARD 1: Urgent -->
+    <article class="card card--urgent" data-index="0" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x1F534;</span>
+        <span class="card-title">Review GitGuardian incident #29214721</span>
+      </div>
+      <div class="card-meta">
+        <span>ACC</span>
+        <span class="sep">&middot;</span>
+        <span>email</span>
+        <span class="sep">&middot;</span>
+        <span>9 days ago</span>
+      </div>
+      <div class="card-body">
+        GitGuardian detected a potential secret leak in the acc-service repository. A generic password was found in <em>config/db.yml</em> on line 47...
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--primary" onclick="doAction(event, 'Reviewing incident...')">Review &rarr;</button>
+        <button class="btn" onclick="doAction(event, 'Dismissed')">Dismiss</button>
+        <button class="btn">Assign &#x25BE;</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">GitGuardian Alert via Email</span></div>
+          <div class="detail-row"><span class="detail-label">Severity</span><span class="detail-value" style="color:var(--danger)">High</span></div>
+          <div class="detail-row"><span class="detail-label">Repository</span><span class="detail-value mono">acc-service/main</span></div>
+          <div class="detail-row"><span class="detail-label">File</span><span class="detail-value mono">config/db.yml:47</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Chat about this..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Message sent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 2: Urgent -->
+    <article class="card card--urgent" data-index="1" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x1F534;</span>
+        <span class="card-title">Aravo API contract expiry &mdash; action required</span>
+      </div>
+      <div class="card-meta">
+        <span>3PI V2</span>
+        <span class="sep">&middot;</span>
+        <span>Jira</span>
+        <span class="sep">&middot;</span>
+        <span>3 days ago</span>
+      </div>
+      <div class="card-body">
+        The Aravo REST API contract for 3PI V2 data ingestion expires on <em>April 20, 2026</em>. Renewal requires legal sign-off and updated SLA terms...
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--primary" onclick="doAction(event, 'Opening renewal flow...')">Start Renewal &rarr;</button>
+        <button class="btn" onclick="doAction(event, 'Snoozed for 3 days')">Snooze</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Contract ID</span><span class="detail-value mono">ARAVO-3PI-2024-081</span></div>
+          <div class="detail-row"><span class="detail-label">Expiry</span><span class="detail-value" style="color:var(--danger)">April 20, 2026</span></div>
+          <div class="detail-row"><span class="detail-label">Owner</span><span class="detail-value">Pankaj Sharma</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Chat about this..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Message sent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 3: Draft -->
+    <article class="card card--draft" data-index="2" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x1F4DD;</span>
+        <span class="card-title">ACC Phase 2 Status Update</span>
+      </div>
+      <div class="card-meta">
+        <span>Knowledge Hub</span>
+        <span class="sep">&middot;</span>
+        <span class="mono">87% confidence</span>
+        <span class="sep">&middot;</span>
+        <span>2 days ago</span>
+      </div>
+      <div class="card-body">
+        "The ACC Phase 2 implementation has progressed beyond initial milestones with 3 key deliverables completed. Auth middleware refactor is on track..."
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--success" onclick="doAction(event, 'Draft approved')">&#x2713; Approve</button>
+        <button class="btn btn--danger" onclick="doAction(event, 'Draft rejected')">&#x2717; Reject</button>
+        <button class="btn btn--primary" onclick="doAction(event, 'Opening preview...')">Preview &rarr;</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">Weekly Status Update</span></div>
+          <div class="detail-row"><span class="detail-label">Recipients</span><span class="detail-value">ACC stakeholders (6)</span></div>
+          <div class="detail-row"><span class="detail-label">Confidence</span><span class="detail-value" style="color:var(--success)">87%</span></div>
+          <div class="detail-row"><span class="detail-label">Sources used</span><span class="detail-value">12 items from Knowledge Hub</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Suggest an edit..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Edit sent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 4: Live Agent -->
+    <article class="card card--live" data-index="3" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x1F916;</span>
+        <span class="card-title">Developer &mdash; Auth Middleware Refactor</span>
+        <span class="card-badge badge-live">LIVE</span>
+      </div>
+      <div class="card-meta live-meta">
+        <span>sonnet</span>
+        <span class="sep">&middot;</span>
+        <span class="mono" id="live-timer">2m 34s</span>
+        <span class="sep">&middot;</span>
+        <span class="mono" id="live-cost">$0.08</span>
+      </div>
+      <div class="progress-track">
+        <div class="progress-fill" style="width: 58%"></div>
+      </div>
+      <div class="card-body">
+        Latest: "Implementing parameterized query for login endpoint with prepared statement pooling..."
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--primary" onclick="doAction(event, 'Opening logs...')">View Logs</button>
+        <button class="btn" onclick="doAction(event, 'Agent paused')">&#x23F8; Pause</button>
+        <button class="btn btn--danger" onclick="doAction(event, 'Agent stopped')">&#x23F9; Stop</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Model</span><span class="detail-value mono">claude-sonnet-4-20250514</span></div>
+          <div class="detail-row"><span class="detail-label">Tokens In</span><span class="detail-value mono">12,847</span></div>
+          <div class="detail-row"><span class="detail-label">Tokens Out</span><span class="detail-value mono">4,291</span></div>
+          <div class="detail-row"><span class="detail-label">Files Modified</span><span class="detail-value">3</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Ask the agent..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Sent to agent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 5: Completed Agent -->
+    <article class="card card--done" data-index="4" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x2705;</span>
+        <span class="card-title">Technical Architect &mdash; Architecture Review</span>
+      </div>
+      <div class="card-meta">
+        <span>opus</span>
+        <span class="sep">&middot;</span>
+        <span class="mono">4m 12s</span>
+        <span class="sep">&middot;</span>
+        <span class="mono">$0.23</span>
+      </div>
+      <div class="card-body">
+        Found <em>3 scaling bottlenecks</em>:<br>
+        &bull; hub_sync: SQLite WAL limit at 100 concurrent reads<br>
+        &bull; agent_output: Unbounded table growth without TTL<br>
+        &bull; event_bus: No backpressure on message queues
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--primary" onclick="doAction(event, 'Opening full report...')">View Full &rarr;</button>
+        <button class="btn" onclick="doAction(event, 'Opening chat...')">&#x1F4AC; Chat</button>
+        <button class="btn" onclick="doAction(event, 'Spawning follow-up agent...')">Spawn Follow-up</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Model</span><span class="detail-value mono">claude-opus-4-20250514</span></div>
+          <div class="detail-row"><span class="detail-label">Duration</span><span class="detail-value">4m 12s</span></div>
+          <div class="detail-row"><span class="detail-label">Total Cost</span><span class="detail-value mono">$0.23</span></div>
+          <div class="detail-row"><span class="detail-label">Files Analyzed</span><span class="detail-value">14</span></div>
+          <div class="detail-row"><span class="detail-label">Issues Found</span><span class="detail-value" style="color:var(--warning)">3 bottlenecks</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Chat about findings..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Message sent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 6: Todo -->
+    <article class="card card--todo" data-index="5" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon" style="font-size:14px;">&#x2610;</span>
+        <span class="card-title">Prep Q2 Risk Report</span>
+        <span class="card-badge badge-high">HIGH</span>
+      </div>
+      <div class="card-meta">
+        <span>Cross Risk Tools</span>
+        <span class="sep">&middot;</span>
+        <span>due Apr 15</span>
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--success" onclick="doAction(event, 'Marked complete')">&#x2713; Complete</button>
+        <button class="btn" onclick="doAction(event, 'Opening delegate...')">Delegate &rarr;</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Priority</span><span class="detail-value" style="color:var(--warning)">High</span></div>
+          <div class="detail-row"><span class="detail-label">Due</span><span class="detail-value">April 15, 2026</span></div>
+          <div class="detail-row"><span class="detail-label">Team</span><span class="detail-value">Cross Risk Tools</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Add a note..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Note saved')">Save</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- CARD 7: Draft -->
+    <article class="card card--draft" data-index="6" onclick="toggleExpand(this)">
+      <div class="card-top">
+        <span class="card-icon">&#x1F4DD;</span>
+        <span class="card-title">AuditBoard Weekly Digest</span>
+      </div>
+      <div class="card-meta">
+        <span>Knowledge Hub</span>
+        <span class="sep">&middot;</span>
+        <span class="mono">92% confidence</span>
+        <span class="sep">&middot;</span>
+        <span>5 hours ago</span>
+      </div>
+      <div class="card-body">
+        "AuditBoard integration testing completed with 94% pass rate. Two flaky tests in the SSO module flagged for review. Deployment window confirmed for Thursday..."
+      </div>
+      <div class="card-actions">
+        <button class="btn btn--success" onclick="doAction(event, 'Draft approved')">&#x2713; Approve</button>
+        <button class="btn btn--danger" onclick="doAction(event, 'Draft rejected')">&#x2717; Reject</button>
+        <button class="btn btn--primary" onclick="doAction(event, 'Opening preview...')">Preview &rarr;</button>
+      </div>
+      <div class="card-expand">
+        <div class="card-expand-inner">
+          <div class="detail-row"><span class="detail-label">Type</span><span class="detail-value">Weekly Digest</span></div>
+          <div class="detail-row"><span class="detail-label">Recipients</span><span class="detail-value">AuditBoard team (4)</span></div>
+          <div class="detail-row"><span class="detail-label">Confidence</span><span class="detail-value" style="color:var(--success)">92%</span></div>
+          <div class="chat-inline">
+            <input class="chat-input" placeholder="Suggest an edit..." onclick="event.stopPropagation()">
+            <button class="btn btn--primary" onclick="event.stopPropagation(); doAction(event, 'Edit sent')">Send</button>
+          </div>
+        </div>
+      </div>
+    </article>
+
+  </section>
+
+
+  <!-- ─── Context Sidebar ─── -->
+  <aside class="sidebar">
+
+    <!-- Quick Stats -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">Quick Stats</div>
+      <div class="stats-grid">
+        <div class="stat-period">Today</div>
+        <div class="stat-item">
+          <div class="stat-value"><span class="mono">$2.40</span></div>
+          <div class="stat-label">spent</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">1</div>
+          <div class="stat-label">agent running</div>
+        </div>
+        <div class="stats-divider"></div>
+        <div class="stat-period">This Week</div>
+        <div class="stat-item">
+          <div class="stat-value"><span class="mono">$14.80</span></div>
+          <div class="stat-label">total</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-value">4</div>
+          <div class="stat-label">agents used</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Health -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">System Health</div>
+      <div class="health-grid">
+        <div class="health-item"><span class="health-dot green"></span> Platform</div>
+        <div class="health-item"><span class="health-dot green"></span> Hub DB</div>
+        <div class="health-item"><span class="health-dot green"></span> Brain</div>
+        <div class="health-item"><span class="health-dot green"></span> Queue</div>
+      </div>
+    </div>
+
+    <!-- Teams -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">Teams</div>
+      <div class="team-list" id="team-list">
+        <div class="team-item active" onclick="filterByTeam(this, 'all')">
+          <span>All Teams</span>
+          <span class="team-count">7</span>
+        </div>
+        <div class="team-item" onclick="filterByTeam(this, 'ACC')">
+          <span>ACC</span>
+          <span class="team-count">21</span>
+        </div>
+        <div class="team-item" onclick="filterByTeam(this, 'AuditBoard')">
+          <span>AuditBoard</span>
+          <span class="team-count">40</span>
+        </div>
+        <div class="team-item" onclick="filterByTeam(this, '3PI V2')">
+          <span>3PI V2</span>
+          <span class="team-count">18</span>
+        </div>
+        <div class="team-item" onclick="filterByTeam(this, 'Cross Risk')">
+          <span>Cross Risk</span>
+          <span class="team-count">15</span>
+        </div>
+        <div class="team-item" onclick="filterByTeam(this, 'Screening')">
+          <span>Screening</span>
+          <span class="team-count">12</span>
+        </div>
+        <div class="teams-more">+ 8 more teams</div>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="sidebar-card">
+      <div class="sidebar-title">Recent Activity</div>
+      <div class="activity-list">
+        <div class="activity-item">
+          <span class="activity-dot green"></span>
+          <div>
+            <div class="activity-text"><strong>Approved:</strong> ACC Status Update</div>
+            <div class="activity-time">2h ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <span class="activity-dot green"></span>
+          <div>
+            <div class="activity-text"><strong>Completed:</strong> QA Review PR #47</div>
+            <div class="activity-time">4h ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <span class="activity-dot blue"></span>
+          <div>
+            <div class="activity-text"><strong>Spawned:</strong> Developer agent</div>
+            <div class="activity-time">5h ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <span class="activity-dot"></span>
+          <div>
+            <div class="activity-text"><strong>Dismissed:</strong> Stale PR notification</div>
+            <div class="activity-time">6h ago</div>
+          </div>
+        </div>
+        <div class="activity-item">
+          <span class="activity-dot blue"></span>
+          <div>
+            <div class="activity-text"><strong>Ingested:</strong> 8 new emails classified</div>
+            <div class="activity-time">8h ago</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </aside>
+</main>
+
+
+<!-- ═══════════ COMMAND PALETTE ═══════════ -->
+<div class="cmd-overlay" id="cmdOverlay" onclick="closeCommandPalette(event)">
+  <div class="cmd-palette" onclick="event.stopPropagation()">
+    <div class="cmd-input-wrap">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="cmd-input" id="cmdInput" placeholder="Type a command or search..." autofocus>
+    </div>
+    <div class="cmd-results" id="cmdResults">
+      <div class="cmd-section-label">Suggested</div>
+      <div class="cmd-item active" onclick="cmdAction('Review GitGuardian incident')">
+        <div class="cmd-item-icon">&#x1F534;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Review GitGuardian incident</div>
+          <div class="cmd-item-desc">Urgent &middot; ACC &middot; 9 days overdue</div>
+        </div>
+        <span class="cmd-item-kbd">Enter</span>
+      </div>
+      <div class="cmd-item" onclick="cmdAction('Approve ACC Status Update')">
+        <div class="cmd-item-icon">&#x1F4DD;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Approve ACC Status Update</div>
+          <div class="cmd-item-desc">Draft ready &middot; 87% confidence</div>
+        </div>
+      </div>
+
+      <div class="cmd-section-label">Actions</div>
+      <div class="cmd-item" onclick="cmdAction('Spawning new agent...')">
+        <div class="cmd-item-icon">&#x1F916;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Spawn Agent</div>
+          <div class="cmd-item-desc">Start a new AI agent for a task</div>
+        </div>
+        <span class="cmd-item-kbd">Ctrl+N</span>
+      </div>
+      <div class="cmd-item" onclick="cmdAction('Opening briefing...')">
+        <div class="cmd-item-icon">&#x1F4CB;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Generate Briefing</div>
+          <div class="cmd-item-desc">Create a summary across all teams</div>
+        </div>
+      </div>
+      <div class="cmd-item" onclick="cmdAction('Opening cost dashboard...')">
+        <div class="cmd-item-icon">&#x1F4B0;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">View Cost Dashboard</div>
+          <div class="cmd-item-desc">Spending breakdown by team and model</div>
+        </div>
+      </div>
+
+      <div class="cmd-section-label">Navigation</div>
+      <div class="cmd-item" onclick="cmdAction('Navigating to teams...')">
+        <div class="cmd-item-icon">&#x1F465;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Teams</div>
+          <div class="cmd-item-desc">View all 13 teams</div>
+        </div>
+        <span class="cmd-item-kbd">G T</span>
+      </div>
+      <div class="cmd-item" onclick="cmdAction('Navigating to Knowledge Hub...')">
+        <div class="cmd-item-icon">&#x1F4DA;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Knowledge Hub</div>
+          <div class="cmd-item-desc">Search ingested knowledge</div>
+        </div>
+        <span class="cmd-item-kbd">G K</span>
+      </div>
+      <div class="cmd-item" onclick="cmdAction('Navigating to agent tree...')">
+        <div class="cmd-item-icon">&#x1F333;</div>
+        <div class="cmd-item-text">
+          <div class="cmd-item-title">Agent Tree</div>
+          <div class="cmd-item-desc">Org chart of all agents</div>
+        </div>
+        <span class="cmd-item-kbd">G A</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ═══════════ COCO ORB ═══════════ -->
+<div class="coco-orb" onclick="doAction(null, 'CoCo ready. Ask me anything...')" title="Quick chat with CoCo">
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+  </svg>
+</div>
+
+
+<!-- ═══════════ KEYBOARD HINTS ═══════════ -->
+<div class="keyboard-hints">
+  <div class="hint-item"><span class="hint-key">/</span> Command</div>
+  <div class="hint-item"><span class="hint-key">j</span><span class="hint-key">k</span> Navigate</div>
+  <div class="hint-item"><span class="hint-key">x</span> Act</div>
+  <div class="hint-item"><span class="hint-key">?</span> Help</div>
+</div>
+
+
+<!-- ═══════════ TOAST CONTAINER ═══════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+
+<!-- ═══════════ JAVASCRIPT ═══════════ -->
+<script>
+// ─── State ───
+let selectedIndex = -1;
+let cmdOpen = false;
+let cmdActiveIndex = 0;
+const cards = () => document.querySelectorAll('.stream .card');
+const cmdItems = () => document.querySelectorAll('.cmd-results .cmd-item');
+
+// ─── Live Timer ───
+let liveSeconds = 154; // 2m 34s
+let liveCost = 0.08;
+setInterval(() => {
+  liveSeconds++;
+  liveCost += 0.0005;
+  const m = Math.floor(liveSeconds / 60);
+  const s = liveSeconds % 60;
+  const timerEl = document.getElementById('live-timer');
+  const costEl = document.getElementById('live-cost');
+  if (timerEl) timerEl.textContent = `${m}m ${s.toString().padStart(2, '0')}s`;
+  if (costEl) costEl.textContent = `$${liveCost.toFixed(2)}`;
+
+  // Slowly advance progress
+  const fill = document.querySelector('.card--live .progress-fill');
+  if (fill) {
+    const current = parseFloat(fill.style.width);
+    if (current < 95) fill.style.width = (current + 0.04) + '%';
+  }
+}, 1000);
+
+
+// ─── Card Selection (j/k) ───
+function selectCard(index) {
+  const allCards = cards();
+  if (index < 0 || index >= allCards.length) return;
+  allCards.forEach(c => c.classList.remove('selected'));
+  selectedIndex = index;
+  allCards[selectedIndex].classList.add('selected');
+  allCards[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── Card Expand/Collapse ───
+function toggleExpand(card) {
+  const wasExpanded = card.classList.contains('expanded');
+  // Collapse all others
+  cards().forEach(c => c.classList.remove('expanded'));
+  if (!wasExpanded) {
+    card.classList.add('expanded');
+  }
+}
+
+// ─── Command Palette ───
+function openCommandPalette() {
+  const overlay = document.getElementById('cmdOverlay');
+  overlay.classList.add('open');
+  cmdOpen = true;
+  cmdActiveIndex = 0;
+  updateCmdSelection();
+  setTimeout(() => document.getElementById('cmdInput').focus(), 50);
+}
+function closeCommandPalette(e) {
+  if (e && e.target !== document.getElementById('cmdOverlay')) return;
+  document.getElementById('cmdOverlay').classList.remove('open');
+  document.getElementById('cmdInput').value = '';
+  cmdOpen = false;
+}
+function updateCmdSelection() {
+  const items = cmdItems();
+  items.forEach((item, i) => {
+    item.classList.toggle('active', i === cmdActiveIndex);
+  });
+}
+function cmdAction(msg) {
+  closeCommandPalette({ target: document.getElementById('cmdOverlay') });
+  showToast(msg);
+}
+
+// ─── Action handler ───
+function doAction(e, msg) {
+  if (e) e.stopPropagation();
+  showToast(msg);
+}
+
+// ─── Toast ───
+function showToast(message) {
+  const container = document.getElementById('toastContainer');
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.innerHTML = `<span class="toast-icon">&#x2713;</span> ${message}`;
+  container.appendChild(toast);
+  // Trigger animation
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => toast.classList.add('show'));
+  });
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => toast.remove(), 300);
+  }, 2500);
+}
+
+// ─── Team Filtering ───
+function filterByTeam(el, team) {
+  // Update active team
+  document.querySelectorAll('.team-item').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  // Filter cards
+  const allCards = cards();
+  allCards.forEach(card => {
+    if (team === 'all') {
+      card.style.display = '';
+      return;
+    }
+    const meta = card.querySelector('.card-meta');
+    if (meta && meta.textContent.includes(team)) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+
+  // Update count
+  const visibleCount = document.querySelectorAll('.stream .card:not([style*="display: none"])').length;
+  document.querySelector('.stream-badge').textContent = `${visibleCount} item${visibleCount !== 1 ? 's' : ''}`;
+
+  showToast(team === 'all' ? 'Showing all items' : `Filtered to ${team}`);
+}
+
+
+// ─── Keyboard Navigation ───
+document.addEventListener('keydown', (e) => {
+  // Don't capture when typing in inputs
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+    if (e.key === 'Escape') {
+      e.target.blur();
+      if (cmdOpen) closeCommandPalette({ target: document.getElementById('cmdOverlay') });
+    }
+    // Command palette arrow navigation
+    if (cmdOpen) {
+      const items = cmdItems();
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        cmdActiveIndex = Math.min(cmdActiveIndex + 1, items.length - 1);
+        updateCmdSelection();
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        cmdActiveIndex = Math.max(cmdActiveIndex - 1, 0);
+        updateCmdSelection();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const activeItem = items[cmdActiveIndex];
+        if (activeItem) activeItem.click();
+      }
+    }
+    return;
+  }
+
+  // Command palette
+  if (e.key === '/' && !cmdOpen) {
+    e.preventDefault();
+    openCommandPalette();
+    return;
+  }
+  if (e.key === 'Escape') {
+    if (cmdOpen) {
+      closeCommandPalette({ target: document.getElementById('cmdOverlay') });
+      return;
+    }
+    // Collapse expanded card
+    cards().forEach(c => c.classList.remove('expanded'));
+    return;
+  }
+
+  // Card navigation
+  if (e.key === 'j') {
+    e.preventDefault();
+    selectCard(selectedIndex + 1);
+  }
+  if (e.key === 'k') {
+    e.preventDefault();
+    selectCard(selectedIndex - 1);
+  }
+
+  // Enter to expand
+  if (e.key === 'Enter' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = cards()[selectedIndex];
+    if (card) toggleExpand(card);
+  }
+
+  // x = primary action
+  if (e.key === 'x' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = cards()[selectedIndex];
+    if (card) {
+      const primaryBtn = card.querySelector('.btn--primary, .btn--success');
+      if (primaryBtn) primaryBtn.click();
+    }
+  }
+
+  // d = dismiss
+  if (e.key === 'd' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = cards()[selectedIndex];
+    if (card) {
+      showToast('Dismissed');
+      card.style.opacity = '0';
+      card.style.transform = 'translateX(40px)';
+      card.style.transition = 'opacity 250ms ease, transform 250ms ease';
+      setTimeout(() => {
+        card.style.display = 'none';
+        const visibleCount = document.querySelectorAll('.stream .card:not([style*="display: none"])').length;
+        document.querySelector('.stream-badge').textContent = `${visibleCount} item${visibleCount !== 1 ? 's' : ''}`;
+      }, 260);
+    }
+  }
+
+  // ? = help
+  if (e.key === '?') {
+    showToast('Shortcuts: / Command, j/k Navigate, Enter Expand, x Act, d Dismiss');
+  }
+});
+
+
+// ─── Command Palette Search (basic filter) ───
+document.getElementById('cmdInput').addEventListener('input', (e) => {
+  const query = e.target.value.toLowerCase().trim();
+  const items = cmdItems();
+  const sections = document.querySelectorAll('.cmd-section-label');
+
+  if (!query) {
+    items.forEach(item => item.style.display = '');
+    sections.forEach(s => s.style.display = '');
+    cmdActiveIndex = 0;
+    updateCmdSelection();
+    return;
+  }
+
+  let firstVisible = -1;
+  items.forEach((item, i) => {
+    const text = item.textContent.toLowerCase();
+    const match = text.includes(query);
+    item.style.display = match ? '' : 'none';
+    if (match && firstVisible === -1) firstVisible = i;
+  });
+
+  // Hide empty section labels
+  sections.forEach(s => {
+    let nextEl = s.nextElementSibling;
+    let hasVisible = false;
+    while (nextEl && !nextEl.classList.contains('cmd-section-label')) {
+      if (nextEl.style.display !== 'none') hasVisible = true;
+      nextEl = nextEl.nextElementSibling;
+    }
+    s.style.display = hasVisible ? '' : 'none';
+  });
+
+  cmdActiveIndex = firstVisible >= 0 ? firstVisible : 0;
+  updateCmdSelection();
+});
+</script>
+
+</body>
+</html>

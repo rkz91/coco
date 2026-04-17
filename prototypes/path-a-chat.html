@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo Platform — Chat (Path A: Patch)</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  /* ─── Reset & Base ─── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg-deep:       #0b0e14;
+    --bg-surface:    #111620;
+    --bg-card:       rgba(22, 28, 40, 0.72);
+    --bg-card-hover: rgba(28, 36, 52, 0.85);
+    --border-glass:  rgba(255, 255, 255, 0.06);
+    --border-active: rgba(255, 255, 255, 0.12);
+
+    --text-primary:   #e8edf5;
+    --text-secondary: #8892a4;
+    --text-muted:     #5a6478;
+
+    --accent-blue:    #4e8cff;
+    --accent-green:   #34d399;
+    --accent-amber:   #f59e0b;
+    --accent-red:     #ef4444;
+    --accent-purple:  #a78bfa;
+    --accent-teal:    #2dd4bf;
+
+    --green-bg:  rgba(52, 211, 153, 0.10);
+    --amber-bg:  rgba(245, 158, 11, 0.10);
+    --red-bg:    rgba(239, 68, 68, 0.10);
+    --blue-bg:   rgba(78, 140, 255, 0.10);
+    --purple-bg: rgba(167, 139, 250, 0.10);
+
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  14px;
+    --radius-xl:  18px;
+
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.15);
+    --shadow-glow: 0 0 40px rgba(78, 140, 255, 0.06);
+
+    --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    --sidebar-width: 240px;
+    --context-width: 280px;
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg-deep);
+    color: var(--text-primary);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    line-height: 1.5;
+    overflow: hidden;
+  }
+
+  /* ─── Layout ─── */
+  .app-layout {
+    display: flex;
+    height: 100vh;
+    width: 100%;
+  }
+
+  /* ─── Session Sidebar ─── */
+  .session-sidebar {
+    width: var(--sidebar-width);
+    min-width: var(--sidebar-width);
+    background: var(--bg-surface);
+    border-right: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-header {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-glass);
+  }
+
+  .sidebar-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .sidebar-logo svg {
+    width: 28px;
+    height: 28px;
+  }
+
+  .sidebar-logo span {
+    font-weight: 700;
+    font-size: 16px;
+    letter-spacing: -0.02em;
+  }
+
+  .sidebar-logo .logo-sub {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-left: 4px;
+  }
+
+  .new-chat-btn {
+    width: 100%;
+    padding: 10px 14px;
+    background: var(--accent-blue);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: var(--transition);
+  }
+
+  .new-chat-btn:hover {
+    background: #5d96ff;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(78, 140, 255, 0.3);
+  }
+
+  .session-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+  }
+
+  .session-group-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 12px 10px 6px;
+  }
+
+  .session-item {
+    padding: 10px 12px;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: 2px;
+  }
+
+  .session-item:hover {
+    background: var(--bg-card-hover);
+  }
+
+  .session-item.active {
+    background: var(--blue-bg);
+    border: 1px solid rgba(78, 140, 255, 0.15);
+  }
+
+  .session-item .session-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .session-item .session-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .session-item.active .session-title {
+    color: var(--accent-blue);
+  }
+
+  /* ─── Main Chat Area ─── */
+  .chat-main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    position: relative;
+  }
+
+  .chat-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border-glass);
+    background: rgba(17, 22, 32, 0.8);
+    backdrop-filter: blur(12px);
+    z-index: 10;
+  }
+
+  .chat-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .chat-topbar-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .chat-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .topbar-btn {
+    padding: 6px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .topbar-btn:hover {
+    background: var(--bg-card-hover);
+    border-color: var(--border-active);
+    color: var(--text-primary);
+  }
+
+  .topbar-btn.active {
+    background: var(--blue-bg);
+    border-color: rgba(78, 140, 255, 0.2);
+    color: var(--accent-blue);
+  }
+
+  .context-count {
+    background: var(--accent-blue);
+    color: white;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+  }
+
+  /* ─── Messages ─── */
+  .messages-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    scroll-behavior: smooth;
+  }
+
+  .message {
+    display: flex;
+    flex-direction: column;
+    max-width: 720px;
+    animation: messageIn 300ms ease forwards;
+  }
+
+  @keyframes messageIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.user {
+    align-self: flex-end;
+  }
+
+  .message.assistant {
+    align-self: flex-start;
+  }
+
+  .message-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .message-sender {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-secondary);
+  }
+
+  .model-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    letter-spacing: 0.02em;
+  }
+
+  .model-badge.sonnet {
+    background: var(--purple-bg);
+    color: var(--accent-purple);
+    border: 1px solid rgba(167, 139, 250, 0.15);
+  }
+
+  .model-badge.opus {
+    background: var(--blue-bg);
+    color: var(--accent-blue);
+    border: 1px solid rgba(78, 140, 255, 0.15);
+  }
+
+  .model-badge.haiku {
+    background: var(--green-bg);
+    color: var(--accent-green);
+    border: 1px solid rgba(52, 211, 153, 0.15);
+  }
+
+  .message-bubble {
+    padding: 14px 18px;
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .message.user .message-bubble {
+    background: var(--accent-blue);
+    color: white;
+    border-bottom-right-radius: 4px;
+  }
+
+  .message.assistant .message-bubble {
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+  }
+
+  .message-bubble strong {
+    color: var(--accent-blue);
+    font-weight: 600;
+  }
+
+  .message.assistant .message-bubble strong {
+    color: var(--accent-teal);
+  }
+
+  .message-bubble ol, .message-bubble ul {
+    padding-left: 20px;
+    margin: 8px 0;
+  }
+
+  .message-bubble li {
+    margin-bottom: 4px;
+  }
+
+  .message-bubble .code-inline {
+    background: rgba(255, 255, 255, 0.08);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12.5px;
+  }
+
+  .message-bubble .agent-spawn {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: var(--green-bg);
+    border: 1px solid rgba(52, 211, 153, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: var(--accent-green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .message-time {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+
+  .message.user .message-time {
+    text-align: right;
+  }
+
+  /* ─── Typing Indicator ─── */
+  .typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 18px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    border-bottom-left-radius: 4px;
+    max-width: 120px;
+    animation: messageIn 300ms ease forwards;
+  }
+
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+  }
+
+  .typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: typingBounce 1.4s infinite ease-in-out both;
+  }
+
+  .typing-dots span:nth-child(1) { animation-delay: 0ms; }
+  .typing-dots span:nth-child(2) { animation-delay: 160ms; }
+  .typing-dots span:nth-child(3) { animation-delay: 320ms; }
+
+  @keyframes typingBounce {
+    0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+    40% { transform: scale(1); opacity: 1; }
+  }
+
+  /* ─── Chat Input ─── */
+  .chat-input-area {
+    padding: 16px 20px;
+    border-top: 1px solid var(--border-glass);
+    background: rgba(17, 22, 32, 0.9);
+    backdrop-filter: blur(12px);
+  }
+
+  .chat-about-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    background: var(--blue-bg);
+    border: 1px solid rgba(78, 140, 255, 0.15);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--accent-blue);
+  }
+
+  .chat-about-bar svg {
+    flex-shrink: 0;
+  }
+
+  .chat-about-bar .dismiss {
+    margin-left: auto;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: var(--transition);
+  }
+
+  .chat-about-bar .dismiss:hover {
+    color: var(--text-primary);
+  }
+
+  .input-wrapper {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-lg);
+    padding: 10px 14px;
+    transition: var(--transition);
+  }
+
+  .input-wrapper:focus-within {
+    border-color: rgba(78, 140, 255, 0.3);
+    box-shadow: 0 0 0 3px rgba(78, 140, 255, 0.08);
+  }
+
+  .input-wrapper textarea {
+    flex: 1;
+    background: none;
+    border: none;
+    color: var(--text-primary);
+    font-family: inherit;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: none;
+    outline: none;
+    min-height: 22px;
+    max-height: 120px;
+  }
+
+  .input-wrapper textarea::placeholder {
+    color: var(--text-muted);
+  }
+
+  .input-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+
+  .input-btn {
+    width: 34px;
+    height: 34px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    transition: var(--transition);
+    background: none;
+    color: var(--text-muted);
+  }
+
+  .input-btn:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .input-btn.send {
+    background: var(--accent-blue);
+    color: white;
+    border-radius: 50%;
+  }
+
+  .input-btn.send:hover {
+    background: #5d96ff;
+    transform: scale(1.05);
+  }
+
+  .input-model-badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 10px;
+    background: var(--purple-bg);
+    color: var(--accent-purple);
+    border: 1px solid rgba(167, 139, 250, 0.15);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+  }
+
+  .input-model-badge:hover {
+    background: rgba(167, 139, 250, 0.18);
+  }
+
+  /* ─── Context Panel ─── */
+  .context-panel {
+    width: var(--context-width);
+    min-width: var(--context-width);
+    background: var(--bg-surface);
+    border-left: 1px solid var(--border-glass);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: width 250ms ease, min-width 250ms ease, opacity 250ms ease;
+  }
+
+  .context-panel.collapsed {
+    width: 0;
+    min-width: 0;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .context-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .context-header h3 {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .context-close {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .context-close:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .context-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+  }
+
+  .context-section {
+    margin-bottom: 16px;
+  }
+
+  .context-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    padding: 0 4px 8px;
+  }
+
+  .context-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+    transition: var(--transition);
+  }
+
+  .context-item:hover {
+    border-color: var(--border-active);
+  }
+
+  .context-item-icon {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    flex-shrink: 0;
+    font-size: 14px;
+  }
+
+  .context-item-icon.agent {
+    background: var(--purple-bg);
+    color: var(--accent-purple);
+  }
+
+  .context-item-icon.file {
+    background: var(--amber-bg);
+    color: var(--accent-amber);
+  }
+
+  .context-item-icon.todo {
+    background: var(--green-bg);
+    color: var(--accent-green);
+  }
+
+  .context-item-icon.knowledge {
+    background: var(--blue-bg);
+    color: var(--accent-blue);
+  }
+
+  .context-item-info {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .context-item-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .context-item-desc {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 1px;
+  }
+
+  .context-item-remove {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+    flex-shrink: 0;
+    font-size: 14px;
+    opacity: 0;
+  }
+
+  .context-item:hover .context-item-remove {
+    opacity: 1;
+  }
+
+  .context-item-remove:hover {
+    background: var(--red-bg);
+    color: var(--accent-red);
+  }
+
+  /* Add Context Button */
+  .add-context-btn {
+    width: 100%;
+    padding: 10px;
+    background: none;
+    border: 1px dashed var(--border-active);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    position: relative;
+  }
+
+  .add-context-btn:hover {
+    border-color: var(--accent-blue);
+    color: var(--accent-blue);
+    background: var(--blue-bg);
+  }
+
+  /* Dropdown */
+  .context-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    margin-top: 4px;
+    background: rgba(22, 28, 40, 0.98);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-md);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+    z-index: 100;
+    overflow: hidden;
+    display: none;
+  }
+
+  .context-dropdown.open {
+    display: block;
+    animation: dropIn 180ms ease forwards;
+  }
+
+  @keyframes dropIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .context-dropdown-item {
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .context-dropdown-item:hover {
+    background: var(--bg-card-hover);
+    color: var(--text-primary);
+  }
+
+  .context-dropdown-item .dd-icon {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    font-size: 12px;
+  }
+
+  /* Model Selector */
+  .context-model-section {
+    padding: 12px;
+    border-top: 1px solid var(--border-glass);
+  }
+
+  .model-selector {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+  }
+
+  .model-option {
+    flex: 1;
+    padding: 6px;
+    text-align: center;
+    background: var(--bg-card);
+    border: 1px solid var(--border-glass);
+    border-radius: var(--radius-sm);
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: var(--transition);
+  }
+
+  .model-option:hover {
+    border-color: var(--border-active);
+    color: var(--text-secondary);
+  }
+
+  .model-option.selected {
+    border-color: rgba(167, 139, 250, 0.3);
+    background: var(--purple-bg);
+    color: var(--accent-purple);
+  }
+
+  .model-option.selected.opus-sel {
+    border-color: rgba(78, 140, 255, 0.3);
+    background: var(--blue-bg);
+    color: var(--accent-blue);
+  }
+
+  .model-option.selected.haiku-sel {
+    border-color: rgba(52, 211, 153, 0.3);
+    background: var(--green-bg);
+    color: var(--accent-green);
+  }
+
+  /* Token Estimate */
+  .token-estimate {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text-muted);
+  }
+
+  .token-bar {
+    width: 60px;
+    height: 4px;
+    background: rgba(255,255,255,0.06);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .token-bar-fill {
+    width: 18%;
+    height: 100%;
+    background: var(--accent-green);
+    border-radius: 2px;
+    transition: width 400ms ease;
+  }
+
+  /* ─── Scrollbar ─── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+  /* ─── Toast ─── */
+  #toast-container {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+
+  .toast {
+    background: rgba(30, 38, 56, 0.95);
+    backdrop-filter: blur(20px);
+    border: 1px solid var(--border-active);
+    border-radius: var(--radius-md);
+    padding: 12px 20px;
+    font-size: 13px;
+    color: var(--text-primary);
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    animation: toastIn 300ms ease forwards;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    white-space: nowrap;
+  }
+
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<div class="app-layout">
+
+  <!-- ─── Session Sidebar ─── -->
+  <aside class="session-sidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <svg viewBox="0 0 28 28" fill="none">
+          <rect width="28" height="28" rx="8" fill="#4e8cff" fill-opacity="0.15"/>
+          <circle cx="14" cy="14" r="6" stroke="#4e8cff" stroke-width="2" fill="none"/>
+          <circle cx="14" cy="14" r="2" fill="#4e8cff"/>
+        </svg>
+        <span>CoCo <span class="logo-sub">Chat</span></span>
+      </div>
+      <button class="new-chat-btn" onclick="showToast('New session created')">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        New Chat
+      </button>
+    </div>
+
+    <div class="session-list">
+      <div class="session-group-label">Today</div>
+
+      <div class="session-item active">
+        <div class="session-title">Architecture Review Discussion</div>
+        <div class="session-meta">3 min ago &middot; sonnet</div>
+      </div>
+
+      <div class="session-item" onclick="showToast('Switched to Q2 Risk Planning')">
+        <div class="session-title">Q2 Risk Planning</div>
+        <div class="session-meta">2 hours ago &middot; opus</div>
+      </div>
+
+      <div class="session-group-label">Yesterday</div>
+
+      <div class="session-item" onclick="showToast('Switched to Auth Middleware Help')">
+        <div class="session-title">Auth Middleware Help</div>
+        <div class="session-meta">Yesterday &middot; sonnet</div>
+      </div>
+
+      <div class="session-item" onclick="showToast('Switched to GitGuardian Triage')">
+        <div class="session-title">GitGuardian Triage</div>
+        <div class="session-meta">Yesterday &middot; haiku</div>
+      </div>
+
+      <div class="session-group-label">This Week</div>
+
+      <div class="session-item" onclick="showToast('Switched to DB Migration Strategy')">
+        <div class="session-title">DB Migration Strategy</div>
+        <div class="session-meta">3 days ago &middot; opus</div>
+      </div>
+
+      <div class="session-item" onclick="showToast('Switched to Sprint Retro Notes')">
+        <div class="session-title">Sprint Retro Notes</div>
+        <div class="session-meta">4 days ago &middot; sonnet</div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ─── Main Chat ─── -->
+  <main class="chat-main">
+    <div class="chat-topbar">
+      <div class="chat-topbar-left">
+        <div class="chat-topbar-title">Architecture Review Discussion</div>
+        <span class="model-badge sonnet">sonnet</span>
+      </div>
+      <div class="chat-topbar-right">
+        <button class="topbar-btn" onclick="showToast('Search coming soon')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          Search
+        </button>
+        <button class="topbar-btn active" id="contextToggle" onclick="toggleContext()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+          Context
+          <span class="context-count">2</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Messages -->
+    <div class="messages-container" id="messages">
+
+      <!-- Message 1 — User -->
+      <div class="message user">
+        <div class="message-header" style="justify-content: flex-end;">
+          <span class="message-sender">You</span>
+        </div>
+        <div class="message-bubble">
+          I just got the architecture review results. Can you summarize the key findings?
+        </div>
+        <div class="message-time">10:42 AM</div>
+      </div>
+
+      <!-- Message 2 — Assistant -->
+      <div class="message assistant">
+        <div class="message-header">
+          <span class="message-sender">CoCo</span>
+          <span class="model-badge sonnet">sonnet</span>
+        </div>
+        <div class="message-bubble">
+          Based on the Technical Architect's analysis:
+          <ol>
+            <li><strong>hub_sync bottleneck</strong>: SQLite WAL can't handle &gt;100 concurrent reads</li>
+            <li><strong>agent_output growth</strong>: Table grows unbounded beyond 1,000 rows</li>
+            <li><strong>event_bus</strong>: No backpressure on in-memory queues</li>
+          </ol>
+          The most critical is #1 — it affects every page that reads Knowledge Hub data.
+        </div>
+        <div class="message-time">10:42 AM</div>
+      </div>
+
+      <!-- Message 3 — User -->
+      <div class="message user">
+        <div class="message-header" style="justify-content: flex-end;">
+          <span class="message-sender">You</span>
+        </div>
+        <div class="message-bubble">
+          What's the fastest fix for the hub_sync issue?
+        </div>
+        <div class="message-time">10:43 AM</div>
+      </div>
+
+      <!-- Message 4 — Assistant -->
+      <div class="message assistant">
+        <div class="message-header">
+          <span class="message-sender">CoCo</span>
+          <span class="model-badge sonnet">sonnet</span>
+        </div>
+        <div class="message-bubble">
+          Two options:
+          <ul>
+            <li><strong>Quick</strong>: Add connection pooling (3-5 connections). ~2 hours.</li>
+            <li><strong>Proper</strong>: Read replicas with async sync. ~1 day.</li>
+          </ul>
+          I'd recommend starting with connection pooling. Want me to spawn a Developer agent to implement it?
+        </div>
+        <div class="message-time">10:43 AM</div>
+      </div>
+
+      <!-- Message 5 — User -->
+      <div class="message user">
+        <div class="message-header" style="justify-content: flex-end;">
+          <span class="message-sender">You</span>
+        </div>
+        <div class="message-bubble">
+          Yes, do it.
+        </div>
+        <div class="message-time">10:44 AM</div>
+      </div>
+
+      <!-- Message 6 — Assistant with agent spawn -->
+      <div class="message assistant">
+        <div class="message-header">
+          <span class="message-sender">CoCo</span>
+          <span class="model-badge sonnet">sonnet</span>
+        </div>
+        <div class="message-bubble">
+          Spawning Developer agent with task: <strong>"Add SQLite connection pooling to hub_sync service"</strong>...
+          <div class="agent-spawn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Agent spawned. You can monitor progress on the <a href="path-a-agents.html" style="color: var(--accent-green); text-decoration: underline; text-underline-offset: 2px;">Agents page</a>.
+          </div>
+        </div>
+        <div class="message-time">10:44 AM</div>
+      </div>
+
+      <!-- Typing Indicator -->
+      <div class="message assistant" id="typingIndicator" style="display: none;">
+        <div class="message-header">
+          <span class="message-sender">CoCo</span>
+          <span class="model-badge sonnet">sonnet</span>
+        </div>
+        <div class="typing-indicator">
+          <div class="typing-dots">
+            <span></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Input -->
+    <div class="chat-input-area">
+      <!-- "Chat About This" bar — shown when navigating from another page -->
+      <div class="chat-about-bar" id="chatAboutBar">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>Chatting about: <strong>Architecture Review</strong> &mdash; context pre-loaded from Agents page</span>
+        <span class="dismiss" onclick="document.getElementById('chatAboutBar').style.display='none'">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </span>
+      </div>
+
+      <div class="input-wrapper">
+        <button class="input-btn" title="Attach file" onclick="showToast('File picker opening...')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+        </button>
+        <textarea rows="1" placeholder="Ask CoCo anything..." id="chatInput" onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+        <div class="input-actions">
+          <span class="input-model-badge" onclick="showToast('Model selector: sonnet / opus / haiku')" title="Click to change model">sonnet</span>
+          <button class="input-btn send" title="Send message" onclick="sendMessage()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ─── Context Panel ─── -->
+  <aside class="context-panel" id="contextPanel">
+    <div class="context-header">
+      <h3>Attached Context</h3>
+      <button class="context-close" onclick="toggleContext()" title="Close panel">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+
+    <div class="context-body">
+      <div class="context-section">
+        <div class="context-section-label">Active Context</div>
+
+        <!-- Agent Output -->
+        <div class="context-item">
+          <div class="context-item-icon agent">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+          </div>
+          <div class="context-item-info">
+            <div class="context-item-title">Technical Architect</div>
+            <div class="context-item-desc">Architecture Review output</div>
+          </div>
+          <button class="context-item-remove" onclick="this.closest('.context-item').remove(); updateCount();" title="Remove">&times;</button>
+        </div>
+
+        <!-- File Reference -->
+        <div class="context-item">
+          <div class="context-item-icon file">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          </div>
+          <div class="context-item-info">
+            <div class="context-item-title">hub_sync.py</div>
+            <div class="context-item-desc">File reference &middot; 248 lines</div>
+          </div>
+          <button class="context-item-remove" onclick="this.closest('.context-item').remove(); updateCount();" title="Remove">&times;</button>
+        </div>
+      </div>
+
+      <!-- Add Context -->
+      <div class="context-section" style="position: relative;">
+        <button class="add-context-btn" id="addContextBtn" onclick="toggleDropdown()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Context
+        </button>
+
+        <div class="context-dropdown" id="contextDropdown">
+          <div class="context-dropdown-item" onclick="addContext('agent')">
+            <div class="dd-icon" style="background: var(--purple-bg); color: var(--accent-purple);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>
+            </div>
+            Agents
+          </div>
+          <div class="context-dropdown-item" onclick="addContext('todo')">
+            <div class="dd-icon" style="background: var(--green-bg); color: var(--accent-green);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            </div>
+            Todos
+          </div>
+          <div class="context-dropdown-item" onclick="addContext('knowledge')">
+            <div class="dd-icon" style="background: var(--blue-bg); color: var(--accent-blue);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+            </div>
+            Knowledge
+          </div>
+          <div class="context-dropdown-item" onclick="addContext('file')">
+            <div class="dd-icon" style="background: var(--amber-bg); color: var(--accent-amber);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            </div>
+            Files
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Model Selector -->
+    <div class="context-model-section">
+      <div class="context-section-label" style="padding: 0 0 6px;">Model</div>
+      <div class="model-selector">
+        <div class="model-option selected" onclick="selectModel(this, 'sonnet')">sonnet</div>
+        <div class="model-option" onclick="selectModel(this, 'opus')">opus</div>
+        <div class="model-option" onclick="selectModel(this, 'haiku')">haiku</div>
+      </div>
+    </div>
+
+    <!-- Token Estimate -->
+    <div class="token-estimate">
+      <span id="tokenCount">~2,400 tokens context</span>
+      <div class="token-bar">
+        <div class="token-bar-fill" id="tokenBarFill"></div>
+      </div>
+    </div>
+  </aside>
+
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<script>
+  // ─── Context Panel Toggle ───
+  function toggleContext() {
+    const panel = document.getElementById('contextPanel');
+    const btn = document.getElementById('contextToggle');
+    panel.classList.toggle('collapsed');
+    btn.classList.toggle('active');
+  }
+
+  // ─── Dropdown Toggle ───
+  function toggleDropdown() {
+    const dd = document.getElementById('contextDropdown');
+    dd.classList.toggle('open');
+  }
+
+  // Close dropdown on outside click
+  document.addEventListener('click', (e) => {
+    const dd = document.getElementById('contextDropdown');
+    const btn = document.getElementById('addContextBtn');
+    if (!btn.contains(e.target) && !dd.contains(e.target)) {
+      dd.classList.remove('open');
+    }
+  });
+
+  // ─── Add Context Item ───
+  const contextExamples = {
+    agent: { title: 'Developer Agent', desc: 'Latest task output', icon: 'agent' },
+    todo: { title: 'Fix WAL concurrency', desc: 'Todo #42 — High priority', icon: 'todo' },
+    knowledge: { title: 'SQLite Best Practices', desc: 'Knowledge Hub article', icon: 'knowledge' },
+    file: { title: 'platform.db schema', desc: 'File reference', icon: 'file' },
+  };
+
+  const iconSvgs = {
+    agent: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></svg>',
+    todo: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>',
+    knowledge: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>',
+    file: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>',
+  };
+
+  function addContext(type) {
+    const ex = contextExamples[type];
+    const section = document.querySelector('.context-section');
+    const item = document.createElement('div');
+    item.className = 'context-item';
+    item.style.animation = 'messageIn 200ms ease forwards';
+    item.innerHTML = `
+      <div class="context-item-icon ${ex.icon}">${iconSvgs[ex.icon]}</div>
+      <div class="context-item-info">
+        <div class="context-item-title">${ex.title}</div>
+        <div class="context-item-desc">${ex.desc}</div>
+      </div>
+      <button class="context-item-remove" onclick="this.closest('.context-item').remove(); updateCount();" title="Remove">&times;</button>
+    `;
+    section.appendChild(item);
+    document.getElementById('contextDropdown').classList.remove('open');
+    updateCount();
+    showToast(`Added "${ex.title}" to context`);
+  }
+
+  function updateCount() {
+    const count = document.querySelectorAll('.context-item').length;
+    document.querySelector('.context-count').textContent = count;
+    // Update token estimate
+    const tokens = count * 1200;
+    document.getElementById('tokenCount').textContent = `~${tokens.toLocaleString()} tokens context`;
+    document.getElementById('tokenBarFill').style.width = Math.min(tokens / 128000 * 100, 100) + '%';
+  }
+
+  // ─── Model Selector ───
+  function selectModel(el, model) {
+    document.querySelectorAll('.model-option').forEach(o => {
+      o.classList.remove('selected', 'opus-sel', 'haiku-sel');
+    });
+    el.classList.add('selected');
+    if (model === 'opus') el.classList.add('opus-sel');
+    if (model === 'haiku') el.classList.add('haiku-sel');
+
+    // Update badges
+    const badge = document.querySelector('.input-model-badge');
+    badge.textContent = model;
+    badge.className = 'input-model-badge';
+    if (model === 'sonnet') badge.style.cssText = 'background: var(--purple-bg); color: var(--accent-purple); border-color: rgba(167,139,250,0.15);';
+    if (model === 'opus') badge.style.cssText = 'background: var(--blue-bg); color: var(--accent-blue); border-color: rgba(78,140,255,0.15);';
+    if (model === 'haiku') badge.style.cssText = 'background: var(--green-bg); color: var(--accent-green); border-color: rgba(52,211,153,0.15);';
+
+    showToast(`Model switched to ${model}`);
+  }
+
+  // ─── Send Message ───
+  function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+
+    const container = document.getElementById('messages');
+    const typing = document.getElementById('typingIndicator');
+
+    // Add user message
+    const userMsg = document.createElement('div');
+    userMsg.className = 'message user';
+    const now = new Date();
+    const time = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    userMsg.innerHTML = `
+      <div class="message-header" style="justify-content: flex-end;">
+        <span class="message-sender">You</span>
+      </div>
+      <div class="message-bubble">${escapeHtml(text)}</div>
+      <div class="message-time">${time}</div>
+    `;
+    container.insertBefore(userMsg, typing);
+    input.value = '';
+    autoResize(input);
+
+    // Show typing
+    typing.style.display = '';
+    container.scrollTop = container.scrollHeight;
+
+    // Simulate response
+    setTimeout(() => {
+      typing.style.display = 'none';
+      const model = document.querySelector('.input-model-badge').textContent;
+      const assistantMsg = document.createElement('div');
+      assistantMsg.className = 'message assistant';
+      assistantMsg.innerHTML = `
+        <div class="message-header">
+          <span class="message-sender">CoCo</span>
+          <span class="model-badge ${model}">${model}</span>
+        </div>
+        <div class="message-bubble">I understand. Let me look into that for you based on the attached context...</div>
+        <div class="message-time">${time}</div>
+      `;
+      container.insertBefore(assistantMsg, typing);
+      container.scrollTop = container.scrollHeight;
+    }, 1500);
+  }
+
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+  }
+
+  // ─── Toast ───
+  function showToast(msg) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => {
+      toast.style.transition = '300ms ease';
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(10px)';
+      setTimeout(() => toast.remove(), 300);
+    }, 2500);
+  }
+
+  // ─── Scroll to bottom on load ───
+  document.getElementById('messages').scrollTop = document.getElementById('messages').scrollHeight;
+</script>
+</body>
+</html>

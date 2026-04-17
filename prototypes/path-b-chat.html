@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Path B — Chat Slide-Over | CoCo Platform</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* ── Reset & Base ─────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:        #0b0f1a;
+    --surface:   #111827;
+    --surface-2: #1e293b;
+    --border:    #1e293b;
+    --text:      #e2e8f0;
+    --text-dim:  #94a3b8;
+    --accent:    #818cf8;
+    --accent-2:  #6366f1;
+    --green:     #34d399;
+    --red:       #f87171;
+    --orange:    #fb923c;
+    --yellow:    #fbbf24;
+    --blue:      #3b82f6;
+    --blue-dim:  rgba(59, 130, 246, 0.15);
+    --panel-bg:  rgba(15, 23, 42, 0.95);
+    --panel-w:   440px;
+    --chat-w:    360px;
+    --anim:      300ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Top Bar ──────────────────────────────────────────── */
+  .topbar {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 10;
+    height: 48px;
+    display: flex; align-items: center; gap: 12px;
+    padding: 0 20px;
+    background: rgba(11, 15, 26, 0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+  }
+  .topbar .logo { font-weight: 700; font-size: 15px; color: var(--accent); letter-spacing: -0.3px; }
+  .topbar .subtitle { font-size: 12px; color: var(--text-dim); }
+  .topbar .right { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .topbar .badge {
+    font-size: 11px; font-weight: 600;
+    padding: 3px 10px; border-radius: 99px;
+    background: rgba(129, 140, 248, 0.15); color: var(--accent);
+    border: 1px solid rgba(129, 140, 248, 0.25);
+  }
+
+  /* ── Main Layout ──────────────────────────────────────── */
+  .main {
+    margin-top: 48px;
+    display: flex;
+    min-height: calc(100vh - 48px);
+    transition: opacity var(--anim), filter var(--anim);
+  }
+  .main.dimmed { opacity: 0.4; filter: blur(1px); pointer-events: none; }
+
+  /* ── Sidebar ──────────────────────────────────────────── */
+  .sidebar {
+    width: 200px; flex-shrink: 0;
+    padding: 20px 14px;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .sidebar h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--text-dim); margin-bottom: 12px; }
+  .sidebar a {
+    display: flex; align-items: center; gap: 8px;
+    padding: 7px 10px; border-radius: 6px;
+    color: var(--text-dim); text-decoration: none; font-size: 13px;
+    transition: background 150ms, color 150ms;
+    margin-bottom: 2px;
+  }
+  .sidebar a:hover { background: var(--surface-2); color: var(--text); }
+  .sidebar a.active { background: rgba(129, 140, 248, 0.12); color: var(--accent); }
+  .sidebar .icon { width: 16px; text-align: center; font-size: 14px; }
+
+  /* ── Action Stream ────────────────────────────────────── */
+  .stream {
+    flex: 1;
+    padding: 28px 32px;
+    max-width: 720px;
+  }
+  .stream h2 { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
+  .stream .desc { font-size: 13px; color: var(--text-dim); margin-bottom: 24px; }
+
+  .stream-item {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 10px;
+    cursor: pointer;
+    transition: border-color 200ms, transform 100ms;
+  }
+  .stream-item:hover {
+    border-color: var(--accent);
+    transform: translateX(2px);
+  }
+
+  .item-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .item-icon.agent   { background: rgba(129, 140, 248, 0.15); }
+  .item-icon.todo    { background: rgba(248, 113, 113, 0.15); }
+  .item-icon.draft   { background: rgba(52, 211, 153, 0.15); }
+  .item-icon.content { background: rgba(251, 191, 36, 0.15); }
+
+  .item-body { flex: 1; min-width: 0; }
+  .item-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .item-meta { font-size: 12px; color: var(--text-dim); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .item-meta .tag {
+    display: inline-block;
+    padding: 1px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+  }
+  .tag-green  { background: rgba(52, 211, 153, 0.15); color: var(--green); }
+  .tag-red    { background: rgba(248, 113, 113, 0.15); color: var(--red); }
+  .tag-purple { background: rgba(129, 140, 248, 0.15); color: var(--accent); }
+  .tag-orange { background: rgba(251, 191, 36, 0.15); color: var(--orange); }
+
+  .item-time { font-size: 11px; color: var(--text-dim); white-space: nowrap; padding-top: 2px; }
+
+  /* ── Chat About This button on stream items ─────────── */
+  .chat-trigger {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 5px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(59, 130, 246, 0.12); color: var(--blue);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    cursor: pointer;
+    transition: all 150ms;
+    white-space: nowrap;
+  }
+  .chat-trigger:hover {
+    background: rgba(59, 130, 246, 0.22);
+    border-color: var(--blue);
+  }
+
+  /* ── Overlay ──────────────────────────────────────────── */
+  .overlay {
+    position: fixed; inset: 0; z-index: 50;
+    background: rgba(0, 0, 0, 0.5);
+    opacity: 0; pointer-events: none;
+    transition: opacity var(--anim);
+  }
+  .overlay.visible { opacity: 1; pointer-events: auto; }
+
+  /* ── Panels (shared) ─────────────────────────────────── */
+  .panel {
+    position: fixed; top: 0; bottom: 0; right: 0; z-index: 100;
+    width: var(--panel-w);
+    background: var(--panel-bg);
+    backdrop-filter: blur(24px) saturate(1.4);
+    border-left: 1px solid rgba(255,255,255,0.08);
+    box-shadow: -20px 0 60px rgba(0,0,0,0.5);
+    transform: translateX(100%);
+    transition: transform var(--anim);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .panel.open { transform: translateX(0); }
+
+  /* Agent detail panel — shifts left when chat stacks on top */
+  .panel.agent-panel.stacked {
+    transform: translateX(-20px);
+    z-index: 100;
+  }
+
+  /* Chat panel always on top */
+  .panel.chat-panel {
+    width: var(--chat-w);
+    z-index: 110;
+  }
+
+  .panel-header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 14px 18px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .panel-header .panel-type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--accent); font-weight: 600;
+  }
+  .panel-header .panel-title {
+    font-size: 15px; font-weight: 700; flex: 1;
+  }
+  .panel-close {
+    width: 28px; height: 28px; border-radius: 6px;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-dim); font-size: 14px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 150ms, color 150ms;
+  }
+  .panel-close:hover { background: rgba(255,255,255,0.12); color: var(--text); }
+
+  .panel-body {
+    flex: 1; overflow-y: auto; padding: 18px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-2) transparent;
+  }
+
+  /* ── Agent Detail Panel Content ──────────────────────── */
+  .agent-meta {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+    padding: 14px; border-radius: 8px;
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05);
+    margin-bottom: 16px;
+  }
+  .agent-meta .label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.8px; color: var(--text-dim); }
+  .agent-meta .value { font-size: 13px; font-weight: 500; margin-top: 2px; }
+
+  .agent-findings {
+    padding: 14px 16px; border-radius: 8px;
+    background: rgba(129, 140, 248, 0.08);
+    border: 1px solid rgba(129, 140, 248, 0.18);
+    margin-bottom: 16px;
+  }
+  .agent-findings h4 { font-size: 12px; font-weight: 700; color: var(--accent); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .agent-findings li {
+    font-size: 13px; padding: 4px 0; line-height: 1.5;
+    display: flex; align-items: flex-start; gap: 8px; list-style: none;
+  }
+  .agent-findings li::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; margin-top: 7px; }
+
+  .agent-output-preview {
+    padding: 12px 14px; border-radius: 8px;
+    background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.05);
+    font-size: 11px; line-height: 1.5; color: var(--text-dim);
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    white-space: pre-wrap;
+    max-height: 140px; overflow-y: auto;
+  }
+
+  .agent-section-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-dim); margin-bottom: 6px; font-weight: 600;
+  }
+  .agent-section { margin-bottom: 16px; }
+
+  /* ── Chat Panel ──────────────────────────────────────── */
+  .chat-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .chat-header-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .chat-header-title {
+    font-size: 14px; font-weight: 700;
+  }
+  .chat-context-badge {
+    display: inline-flex; align-items: center; gap: 5px;
+    padding: 2px 8px; border-radius: 4px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(129, 140, 248, 0.1); color: var(--accent);
+    border: 1px solid rgba(129, 140, 248, 0.2);
+  }
+  .chat-context-indicator {
+    display: flex; align-items: center; gap: 6px;
+    padding: 6px 10px; border-radius: 6px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.05);
+    font-size: 11px; color: var(--text-dim);
+  }
+  .chat-context-indicator .ctx-icon {
+    font-size: 12px;
+  }
+
+  /* ── Chat Messages ──────────────────────────────────── */
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 14px 14px;
+    display: flex; flex-direction: column; gap: 12px;
+    scrollbar-width: thin;
+    scrollbar-color: var(--surface-2) transparent;
+  }
+
+  .msg {
+    max-width: 100%;
+    display: flex; flex-direction: column;
+  }
+  .msg.user { align-items: flex-end; }
+  .msg.assistant { align-items: flex-start; }
+
+  .msg-label {
+    font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.8px; margin-bottom: 4px; padding: 0 4px;
+  }
+  .msg.user .msg-label { color: var(--blue); }
+  .msg.assistant .msg-label { color: var(--text-dim); }
+
+  .msg-bubble {
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 13px; line-height: 1.55;
+    max-width: 100%;
+    word-wrap: break-word;
+  }
+  .msg.user .msg-bubble {
+    background: var(--blue);
+    color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg.assistant .msg-bubble {
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-bubble ol {
+    margin: 6px 0 2px 0;
+    padding-left: 18px;
+  }
+  .msg-bubble ol li {
+    padding: 2px 0;
+  }
+  .msg-bubble strong { font-weight: 600; }
+  .msg-bubble .spawned-card {
+    margin-top: 8px; padding: 8px 10px; border-radius: 6px;
+    background: rgba(52, 211, 153, 0.1);
+    border: 1px solid rgba(52, 211, 153, 0.2);
+    font-size: 12px; line-height: 1.5;
+  }
+  .msg-bubble .spawned-card .check { color: var(--green); }
+
+  /* ── Chat Input ─────────────────────────────────────── */
+  .chat-input-area {
+    padding: 10px 14px 12px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    flex-shrink: 0;
+  }
+  .chat-input-row {
+    display: flex; align-items: flex-end; gap: 8px;
+  }
+  .chat-textarea {
+    flex: 1;
+    min-height: 36px; max-height: 100px;
+    padding: 8px 12px;
+    background: rgba(0,0,0,0.25);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: var(--text); font-size: 13px;
+    font-family: inherit; resize: none;
+    transition: border-color 200ms;
+    line-height: 1.4;
+  }
+  .chat-textarea:focus { outline: none; border-color: var(--accent); }
+  .chat-textarea::placeholder { color: var(--text-dim); }
+
+  .chat-send {
+    width: 36px; height: 36px; border-radius: 8px;
+    background: var(--blue); border: none;
+    color: #fff; font-size: 15px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 150ms, transform 100ms;
+    flex-shrink: 0;
+  }
+  .chat-send:hover { background: #2563eb; transform: scale(1.05); }
+
+  .chat-input-meta {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 6px;
+  }
+  .attach-btn {
+    font-size: 11px; font-weight: 500;
+    color: var(--text-dim);
+    cursor: pointer; background: none; border: none;
+    padding: 2px 6px; border-radius: 4px;
+    transition: color 150ms, background 150ms;
+  }
+  .attach-btn:hover { color: var(--accent); background: rgba(129,140,248,0.08); }
+  .model-pill {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 8px; border-radius: 99px;
+    font-size: 10px; font-weight: 600;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all 150ms;
+  }
+  .model-pill:hover { background: rgba(255,255,255,0.1); color: var(--text); }
+  .model-pill .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--green); }
+
+  /* ── CoCo Orb ───────────────────────────────────────── */
+  .coco-orb {
+    position: fixed; bottom: 24px; right: 24px; z-index: 40;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent-2), var(--blue));
+    border: 2px solid rgba(255,255,255,0.15);
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 0 0 rgba(99, 102, 241, 0.3);
+    color: #fff; font-size: 22px;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: transform 200ms, box-shadow 200ms;
+    animation: orbPulse 3s ease-in-out infinite;
+  }
+  .coco-orb:hover {
+    transform: scale(1.08);
+    box-shadow: 0 6px 28px rgba(99, 102, 241, 0.5);
+  }
+  .coco-orb.hidden { opacity: 0; pointer-events: none; transform: scale(0.8); transition: all 200ms; }
+
+  @keyframes orbPulse {
+    0%, 100% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 0 0 rgba(99, 102, 241, 0.3); }
+    50% { box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4), 0 0 0 8px rgba(99, 102, 241, 0); }
+  }
+
+  /* ── Entry Point Buttons (demo controls) ────────────── */
+  .demo-controls {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 30;
+    padding: 10px 20px;
+    background: rgba(11, 15, 26, 0.85);
+    backdrop-filter: blur(8px);
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center; gap: 16px;
+  }
+  .demo-controls .label {
+    font-size: 11px; color: var(--text-dim); font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px;
+    margin-right: 8px;
+  }
+  .demo-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border-radius: 7px;
+    font-size: 12px; font-weight: 500;
+    background: var(--surface-2);
+    border: 1px solid rgba(255,255,255,0.08);
+    color: var(--text); cursor: pointer;
+    transition: all 150ms;
+    font-family: inherit;
+  }
+  .demo-btn:hover { border-color: var(--accent); background: rgba(129, 140, 248, 0.1); }
+  .demo-btn kbd {
+    display: inline-block; padding: 1px 5px; border-radius: 3px;
+    background: rgba(0,0,0,0.3); border: 1px solid rgba(255,255,255,0.1);
+    font-size: 10px; font-family: inherit;
+  }
+  .demo-btn.active { border-color: var(--blue); background: rgba(59, 130, 246, 0.15); color: var(--blue); }
+
+  /* ── Stacking Indicator ─────────────────────────────── */
+  .stack-indicator {
+    position: fixed; top: 56px; right: 16px; z-index: 200;
+    padding: 6px 14px; border-radius: 6px;
+    background: rgba(99, 102, 241, 0.15);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+    font-size: 11px; color: var(--accent); font-weight: 500;
+    opacity: 0; transform: translateY(-8px);
+    transition: all 300ms ease;
+    pointer-events: none;
+  }
+  .stack-indicator.visible { opacity: 1; transform: translateY(0); }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══════════════════════════════════════════ -->
+<div class="topbar">
+  <div class="logo">CoCo</div>
+  <div class="subtitle">Command Center</div>
+  <div class="right">
+    <div class="badge">Path B: Chat as Slide-Over</div>
+  </div>
+</div>
+
+<!-- ═══ MAIN CONTENT ══════════════════════════════════════ -->
+<div class="main" id="main">
+  <!-- Sidebar -->
+  <nav class="sidebar">
+    <h3>Navigate</h3>
+    <a href="#" class="active"><span class="icon">&#9679;</span> Home</a>
+    <a href="#"><span class="icon">&#9670;</span> Agents</a>
+    <a href="#"><span class="icon">&#9733;</span> Knowledge</a>
+    <a href="#"><span class="icon">&#9888;</span> Decisions</a>
+    <a href="#"><span class="icon">&#9776;</span> Tasks</a>
+    <a href="#"><span class="icon">&#9783;</span> Costs</a>
+  </nav>
+
+  <!-- Action Stream -->
+  <div class="stream">
+    <h2>Action Stream</h2>
+    <p class="desc">What needs your attention right now.</p>
+
+    <!-- Item 1: Agent result (with chat trigger) -->
+    <div class="stream-item" onclick="openAgentPanel()">
+      <div class="item-icon agent">&#9670;</div>
+      <div class="item-body">
+        <div class="item-title">Architecture Review completed</div>
+        <div class="item-meta">
+          <span class="tag tag-purple">Technical Architect</span>
+          <span>3 bottlenecks found</span>
+          <span class="chat-trigger" onclick="event.stopPropagation(); openChatOnly('Architecture Review')">Chat About This &#128172;</span>
+        </div>
+      </div>
+      <div class="item-time">4m ago</div>
+    </div>
+
+    <!-- Item 2: Todo -->
+    <div class="stream-item">
+      <div class="item-icon todo">&#9888;</div>
+      <div class="item-body">
+        <div class="item-title">Review hub_sync connection pooling PR</div>
+        <div class="item-meta">
+          <span class="tag tag-red">Urgent</span>
+          <span>Assigned by Developer agent</span>
+        </div>
+      </div>
+      <div class="item-time">12m ago</div>
+    </div>
+
+    <!-- Item 3: Draft -->
+    <div class="stream-item">
+      <div class="item-icon draft">&#128196;</div>
+      <div class="item-body">
+        <div class="item-title">Weekly Status Report draft ready</div>
+        <div class="item-meta">
+          <span class="tag tag-green">Draft</span>
+          <span>Auto-generated from agent outputs</span>
+          <span class="chat-trigger" onclick="event.stopPropagation(); openChatOnly('Status Report')">Chat About This &#128172;</span>
+        </div>
+      </div>
+      <div class="item-time">25m ago</div>
+    </div>
+
+    <!-- Item 4: Agent result -->
+    <div class="stream-item">
+      <div class="item-icon agent">&#9670;</div>
+      <div class="item-body">
+        <div class="item-title">Cost Analyst: Budget threshold warning</div>
+        <div class="item-meta">
+          <span class="tag tag-orange">Warning</span>
+          <span>$42.30 / $50.00 budget</span>
+        </div>
+      </div>
+      <div class="item-time">1h ago</div>
+    </div>
+
+    <!-- Item 5: Content -->
+    <div class="stream-item">
+      <div class="item-icon content">&#9733;</div>
+      <div class="item-body">
+        <div class="item-title">Knowledge Hub: 12 new entries indexed</div>
+        <div class="item-meta">
+          <span class="tag tag-green">Synced</span>
+          <span>3 projects updated</span>
+        </div>
+      </div>
+      <div class="item-time">2h ago</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ OVERLAY ═══════════════════════════════════════════ -->
+<div class="overlay" id="overlay" onclick="closeAll()"></div>
+
+<!-- ═══ AGENT DETAIL PANEL ════════════════════════════════ -->
+<div class="panel agent-panel" id="agentPanel">
+  <div class="panel-header">
+    <div style="flex:1">
+      <div class="panel-type">Agent Result</div>
+      <div class="panel-title">Architecture Review</div>
+    </div>
+    <button class="panel-close" onclick="closeAgentPanel()">&times;</button>
+  </div>
+  <div class="panel-body">
+    <div class="agent-section">
+      <div class="agent-meta">
+        <div><div class="label">Agent</div><div class="value">Technical Architect</div></div>
+        <div><div class="label">Model</div><div class="value">opus</div></div>
+        <div><div class="label">Duration</div><div class="value">3m 42s</div></div>
+        <div><div class="label">Cost</div><div class="value">$1.24</div></div>
+        <div><div class="label">Status</div><div class="value" style="color:var(--green)">Completed</div></div>
+        <div><div class="label">Tokens</div><div class="value">2,400 out</div></div>
+      </div>
+    </div>
+
+    <div class="agent-section">
+      <div class="agent-findings">
+        <h4>Key Findings</h4>
+        <ul>
+          <li><strong>hub_sync:</strong> SQLite WAL limit at 100 concurrent reads</li>
+          <li><strong>agent_output:</strong> Unbounded growth in output table</li>
+          <li><strong>event_bus:</strong> No backpressure mechanism</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="agent-section">
+      <div class="agent-section-label">Raw Output</div>
+      <div class="agent-output-preview">
+{
+  "bottlenecks": [
+    {
+      "component": "hub_sync",
+      "severity": "critical",
+      "description": "SQLite WAL journal mode limits concurrent reads to ~100",
+      "recommendation": "Add connection pooling with max_connections=50"
+    },
+    ...
+  ],
+  "overall_health": "at_risk"
+}</div>
+    </div>
+
+    <div class="agent-section">
+      <button class="demo-btn" style="width:100%; justify-content:center;" onclick="openChatFromAgent()">
+        Chat About This &#128172;
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CHAT SLIDE-OVER PANEL ═════════════════════════════ -->
+<div class="panel chat-panel" id="chatPanel">
+  <!-- Chat Header -->
+  <div class="chat-header">
+    <div class="chat-header-top">
+      <div class="chat-header-title">Chat with CoCo</div>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <div class="chat-context-badge">Re: Architecture Review</div>
+        <button class="panel-close" onclick="closeChatPanel()">&times;</button>
+      </div>
+    </div>
+    <div class="chat-context-indicator">
+      <span class="ctx-icon">&#128206;</span>
+      Context: Technical Architect output (2,400 tokens)
+    </div>
+  </div>
+
+  <!-- Chat Messages -->
+  <div class="chat-messages" id="chatMessages">
+    <!-- User message 1 -->
+    <div class="msg user">
+      <div class="msg-label">You</div>
+      <div class="msg-bubble">What were the main findings from the architecture review?</div>
+    </div>
+
+    <!-- Assistant message 1 -->
+    <div class="msg assistant">
+      <div class="msg-label">CoCo</div>
+      <div class="msg-bubble">
+        Three bottlenecks identified:
+        <ol>
+          <li><strong>hub_sync:</strong> SQLite WAL limit at 100 concurrent reads</li>
+          <li><strong>agent_output:</strong> Unbounded growth</li>
+          <li><strong>event_bus:</strong> No backpressure</li>
+        </ol>
+        <br>Most critical: <strong>hub_sync</strong> affects every KH read.
+      </div>
+    </div>
+
+    <!-- User message 2 -->
+    <div class="msg user">
+      <div class="msg-label">You</div>
+      <div class="msg-bubble">Fix the hub_sync issue &mdash; spawn a developer.</div>
+    </div>
+
+    <!-- Assistant message 2 -->
+    <div class="msg assistant">
+      <div class="msg-label">CoCo</div>
+      <div class="msg-bubble">
+        <div class="spawned-card">
+          <span class="check">&#10003;</span> <strong>Spawned Developer agent:</strong><br>
+          Task: "Add connection pooling to hub_sync"<br>
+          Model: sonnet&ensp;|&ensp;Budget: $5.00
+        </div>
+        <br>You'll see it in your stream when it completes.
+      </div>
+    </div>
+  </div>
+
+  <!-- Chat Input -->
+  <div class="chat-input-area">
+    <div class="chat-input-row">
+      <textarea class="chat-textarea" placeholder="Message CoCo..." rows="1"></textarea>
+      <button class="chat-send">&#8593;</button>
+    </div>
+    <div class="chat-input-meta">
+      <button class="attach-btn">+ Attach Context</button>
+      <div class="model-pill"><span class="dot"></span> sonnet</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ COCO ORB ══════════════════════════════════════════ -->
+<div class="coco-orb" id="cocoOrb" onclick="toggleChat()" title="Chat with CoCo (Cmd+Shift+C)">&#9679;</div>
+
+<!-- ═══ STACKING INDICATOR ════════════════════════════════ -->
+<div class="stack-indicator" id="stackIndicator">&#x25A0; 2 panels stacked &mdash; close chat to reveal agent detail</div>
+
+<!-- ═══ DEMO CONTROLS ═════════════════════════════════════ -->
+<div class="demo-controls">
+  <span class="label">Entry Points:</span>
+  <button class="demo-btn" id="btnCard" onclick="openChatOnly('Architecture Review')">&#10102; "Chat About This &#128172;" on card</button>
+  <button class="demo-btn" id="btnOrb" onclick="toggleChat()">&#10103; CoCo Orb (bottom-right)</button>
+  <button class="demo-btn" id="btnKbd">&#10104; <kbd>&#8984;&#8679;C</kbd> Keyboard Shortcut</button>
+  <button class="demo-btn" id="btnStack" onclick="demoStack()">&#9632; Demo Panel Stacking</button>
+</div>
+
+<script>
+  // ── State ──────────────────────────────────────────────
+  let agentOpen = false;
+  let chatOpen = false;
+
+  const main = document.getElementById('main');
+  const overlay = document.getElementById('overlay');
+  const agentPanel = document.getElementById('agentPanel');
+  const chatPanel = document.getElementById('chatPanel');
+  const cocoOrb = document.getElementById('cocoOrb');
+  const stackIndicator = document.getElementById('stackIndicator');
+
+  // ── Helpers ────────────────────────────────────────────
+  function updateState() {
+    const anyOpen = agentOpen || chatOpen;
+    overlay.classList.toggle('visible', anyOpen);
+    main.classList.toggle('dimmed', anyOpen);
+    agentPanel.classList.toggle('open', agentOpen);
+    chatPanel.classList.toggle('open', chatOpen);
+
+    // Stacking: if both open, offset the agent panel
+    agentPanel.classList.toggle('stacked', agentOpen && chatOpen);
+    stackIndicator.classList.toggle('visible', agentOpen && chatOpen);
+
+    // Hide orb when chat is open
+    cocoOrb.classList.toggle('hidden', chatOpen);
+
+    // Scroll chat to bottom
+    if (chatOpen) {
+      const msgs = document.getElementById('chatMessages');
+      setTimeout(() => msgs.scrollTop = msgs.scrollHeight, 50);
+    }
+  }
+
+  // ── Actions ────────────────────────────────────────────
+  function openAgentPanel() {
+    agentOpen = true;
+    updateState();
+  }
+
+  function closeAgentPanel() {
+    agentOpen = false;
+    updateState();
+  }
+
+  function openChatOnly(context) {
+    chatOpen = true;
+    updateState();
+  }
+
+  function openChatFromAgent() {
+    chatOpen = true;
+    updateState();
+  }
+
+  function closeChatPanel() {
+    chatOpen = false;
+    updateState();
+  }
+
+  function toggleChat() {
+    chatOpen = !chatOpen;
+    updateState();
+  }
+
+  function closeAll() {
+    agentOpen = false;
+    chatOpen = false;
+    updateState();
+  }
+
+  function demoStack() {
+    // Open agent panel first, then chat on top after a beat
+    agentOpen = true;
+    chatOpen = false;
+    updateState();
+    setTimeout(() => {
+      chatOpen = true;
+      updateState();
+    }, 400);
+  }
+
+  // ── Keyboard Shortcut ─────────────────────────────────
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      toggleChat();
+    }
+    if (e.key === 'Escape') {
+      if (chatOpen) {
+        closeChatPanel();
+      } else if (agentOpen) {
+        closeAgentPanel();
+      }
+    }
+  });
+
+  // Highlight keyboard button on shortcut
+  const btnKbd = document.getElementById('btnKbd');
+  document.addEventListener('keydown', (e) => {
+    if (e.metaKey && e.shiftKey && e.key.toLowerCase() === 'c') {
+      btnKbd.classList.add('active');
+      setTimeout(() => btnKbd.classList.remove('active'), 600);
+    }
+  });
+</script>
+
+</body>
+</html>

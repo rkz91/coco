@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CoCo Platform — The Happy Path</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #FAFBFC;
+      color: #111827;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .page {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 80px 32px 120px;
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      margin-bottom: 72px;
+    }
+    .hero-badge {
+      display: inline-block;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #2563EB;
+      background: #EFF6FF;
+      border: 1px solid #BFDBFE;
+      border-radius: 100px;
+      padding: 6px 16px;
+      margin-bottom: 24px;
+    }
+    .hero h1 {
+      font-size: 44px;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      line-height: 1.15;
+      color: #111827;
+      margin-bottom: 16px;
+    }
+    .hero p {
+      font-size: 18px;
+      color: #6B7280;
+      max-width: 540px;
+      margin: 0 auto;
+      line-height: 1.6;
+    }
+
+    /* ── Section ── */
+    .section {
+      margin-bottom: 64px;
+    }
+    .section-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #2563EB;
+      margin-bottom: 8px;
+    }
+    .section h2 {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #111827;
+      margin-bottom: 8px;
+    }
+    .section-subtitle {
+      font-size: 15px;
+      color: #6B7280;
+      margin-bottom: 32px;
+    }
+
+    /* ── Mermaid container ── */
+    .diagram-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 40px 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+      overflow-x: auto;
+    }
+    .diagram-card svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* ── Table ── */
+    .table-wrap {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+      overflow: hidden;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    thead {
+      background: #F9FAFB;
+    }
+    th {
+      text-align: left;
+      font-weight: 600;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #6B7280;
+      padding: 14px 20px;
+      border-bottom: 1px solid #E5E7EB;
+    }
+    td {
+      padding: 16px 20px;
+      border-bottom: 1px solid #F3F4F6;
+      vertical-align: top;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tbody tr:hover {
+      background: #F9FAFB;
+    }
+    .step-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 26px;
+      height: 26px;
+      border-radius: 8px;
+      background: #EFF6FF;
+      color: #2563EB;
+      font-weight: 700;
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .step-label {
+      font-weight: 600;
+      color: #111827;
+    }
+    .step-cell {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .time-badge {
+      display: inline-block;
+      font-size: 13px;
+      font-weight: 600;
+      color: #2563EB;
+      background: #EFF6FF;
+      border-radius: 6px;
+      padding: 2px 10px;
+    }
+    .total-row td {
+      background: #F9FAFB;
+      font-weight: 700;
+      color: #111827;
+      border-top: 2px solid #E5E7EB;
+    }
+
+    /* ── Exclusion list ── */
+    .exclusion-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .exclusion-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    .exclusion-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      background: #F9FAFB;
+      border: 1px solid #F3F4F6;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #6B7280;
+    }
+    .exclusion-item .x-icon {
+      color: #D1D5DB;
+      font-weight: 700;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+    .exclusion-quote {
+      font-style: italic;
+      color: #6B7280;
+      font-size: 15px;
+      border-left: 3px solid #2563EB;
+      padding-left: 16px;
+      margin-top: 4px;
+    }
+
+    /* ── Checklist ── */
+    .checklist-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .check-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid #F3F4F6;
+      font-size: 15px;
+    }
+    .check-item:last-child {
+      border-bottom: none;
+    }
+    .check-box {
+      width: 20px;
+      height: 20px;
+      border: 2px solid #D1D5DB;
+      border-radius: 5px;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .check-text {
+      color: #374151;
+    }
+    .check-text code {
+      font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 13px;
+      background: #F3F4F6;
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #2563EB;
+    }
+
+    /* ── Priority list ── */
+    .priority-card {
+      background: #FFFFFF;
+      border: 1px solid #E5E7EB;
+      border-radius: 16px;
+      padding: 32px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 1px 2px rgba(0,0,0,0.02);
+    }
+    .priority-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      padding: 16px 0;
+      border-bottom: 1px solid #F3F4F6;
+    }
+    .priority-item:last-child {
+      border-bottom: none;
+    }
+    .priority-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 14px;
+      flex-shrink: 0;
+    }
+    .priority-num.p1 { background: #DBEAFE; color: #1D4ED8; }
+    .priority-num.p2 { background: #DBEAFE; color: #1D4ED8; }
+    .priority-num.p3 { background: #E0E7FF; color: #4338CA; }
+    .priority-num.p4 { background: #E0E7FF; color: #4338CA; }
+    .priority-num.p5 { background: #EDE9FE; color: #6D28D9; }
+    .priority-num.p6 { background: #EDE9FE; color: #6D28D9; }
+    .priority-num.p7 { background: #F3F4F6; color: #6B7280; }
+    .priority-title {
+      font-weight: 600;
+      color: #111827;
+      font-size: 15px;
+    }
+    .priority-desc {
+      font-size: 13px;
+      color: #6B7280;
+      margin-top: 2px;
+    }
+
+    /* ── Footer ── */
+    .footer {
+      text-align: center;
+      margin-top: 80px;
+      padding-top: 32px;
+      border-top: 1px solid #E5E7EB;
+      font-size: 13px;
+      color: #9CA3AF;
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <!-- Hero -->
+    <div class="hero">
+      <div class="hero-badge">Path A -- Product Spec</div>
+      <h1>CoCo Platform — The Happy Path</h1>
+      <p>The daily workflow that must be perfect. 7 steps, no dead ends.</p>
+    </div>
+
+    <!-- Flowchart -->
+    <div class="section">
+      <div class="section-label">Overview</div>
+      <h2>The Happy Path Flow</h2>
+      <p class="section-subtitle">Every step leads forward. Every action gives feedback. No confusion, no dead ends.</p>
+      <div class="diagram-card">
+        <div id="flowchart"></div>
+      </div>
+    </div>
+
+    <!-- Step-by-Step -->
+    <div class="section">
+      <div class="section-label">Breakdown</div>
+      <h2>Step-by-Step Detail</h2>
+      <p class="section-subtitle">Each step shows what the user sees, what they do, and the system response.</p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:140px">Step</th>
+              <th>User Sees</th>
+              <th>User Does</th>
+              <th>Result</th>
+              <th style="width:70px">Time</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">1</span><span class="step-label">Open</span></div></td>
+              <td>Home with briefing cards</td>
+              <td>Open browser tab</td>
+              <td>Action cards load instantly</td>
+              <td><span class="time-badge">1s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">2</span><span class="step-label">Scan</span></div></td>
+              <td>"3 urgent, 5 drafts, 1 running"</td>
+              <td>Glance at attention strip</td>
+              <td>Knows what needs attention</td>
+              <td><span class="time-badge">2s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">3</span><span class="step-label">Approve</span></div></td>
+              <td>Draft card with preview</td>
+              <td>Click "Approve"</td>
+              <td>Card fades, toast: "Approved"</td>
+              <td><span class="time-badge">1s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">4</span><span class="step-label">Complete</span></div></td>
+              <td>Todo card with checkbox</td>
+              <td>Click "Complete"</td>
+              <td>Strikethrough, toast: "Done"</td>
+              <td><span class="time-badge">1s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">5</span><span class="step-label">Spawn</span></div></td>
+              <td>Need auth fix done</td>
+              <td>Click Orb, type task, Spawn</td>
+              <td>Agent starts, card appears in stream</td>
+              <td><span class="time-badge">5s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">6</span><span class="step-label">Monitor</span></div></td>
+              <td>Agent card with progress bar</td>
+              <td>Glance (no click needed)</td>
+              <td>See latest output line + cost</td>
+              <td><span class="time-badge">0s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">7</span><span class="step-label">Review</span></div></td>
+              <td>Agent done, summary card</td>
+              <td>Read summary</td>
+              <td>Understand what was done</td>
+              <td><span class="time-badge">10s</span></td>
+            </tr>
+            <tr>
+              <td><div class="step-cell"><span class="step-num">8</span><span class="step-label">Chat</span></div></td>
+              <td>Need clarification</td>
+              <td>Click "Chat About"</td>
+              <td>Chat opens with context pre-loaded</td>
+              <td><span class="time-badge">3s</span></td>
+            </tr>
+            <tr class="total-row">
+              <td colspan="4" style="text-align:right; padding-right:20px;">Total happy path: a complete triage cycle</td>
+              <td><span class="time-badge">~23s</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Exclusions -->
+    <div class="section">
+      <div class="section-label">Scope</div>
+      <h2>What's NOT in the Happy Path</h2>
+      <p class="section-subtitle">Intentionally excluded. Valid features, but not the daily workflow.</p>
+      <div class="exclusion-card">
+        <div class="exclusion-grid">
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Settings configuration</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Tree / portfolio management</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Cost analysis deep dive</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Knowledge base browsing</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Agent org chart</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Self-improve cycles</div>
+          <div class="exclusion-item"><span class="x-icon">&times;</span>Batch operations</div>
+        </div>
+        <div class="exclusion-quote">
+          "These are all valid features, but they're not the daily workflow. Fix the happy path first, everything else can wait."
+        </div>
+      </div>
+    </div>
+
+    <!-- Success Criteria -->
+    <div class="section">
+      <div class="section-label">Acceptance</div>
+      <h2>Success Criteria</h2>
+      <p class="section-subtitle">After implementing the Path A happy path, every one of these must be true.</p>
+      <div class="checklist-card">
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Home loads in <code>&lt; 1s</code></div>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Any action card can be acted on in <code>1 click</code></div>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Agent spawn takes <code>&lt; 5s</code> from Orb click to agent running</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Agent completion shows <code>structured summary</code> (not raw log)</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Chat can be opened with <code>pre-loaded context</code> in 1 click</div>
+        </div>
+        <div class="check-item">
+          <div class="check-box"></div>
+          <div class="check-text">Toast confirms every action within <code>200ms</code></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Implementation Priority -->
+    <div class="section">
+      <div class="section-label">Roadmap</div>
+      <h2>Implementation Priority</h2>
+      <p class="section-subtitle">Build in this order. Each step unlocks the next piece of the happy path.</p>
+      <div class="priority-card">
+        <div class="priority-item">
+          <span class="priority-num p1">1</span>
+          <div>
+            <div class="priority-title">Inline action buttons on Home cards</div>
+            <div class="priority-desc">Approve, complete, dismiss -- without navigating away</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p2">2</span>
+          <div>
+            <div class="priority-title">Structured agent summary cards</div>
+            <div class="priority-desc">Replace raw logs with readable, scannable summaries</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p3">3</span>
+          <div>
+            <div class="priority-title">Quick spawn from Orb</div>
+            <div class="priority-desc">Type a task, hit Spawn, agent starts immediately</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p4">4</span>
+          <div>
+            <div class="priority-title">"Chat About" with context pre-loading</div>
+            <div class="priority-desc">One click opens chat with the relevant agent output already loaded</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p5">5</span>
+          <div>
+            <div class="priority-title">Simplified inbox (3 tabs)</div>
+            <div class="priority-desc">Urgent / Drafts / Running -- nothing else on the home screen</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p6">6</span>
+          <div>
+            <div class="priority-title">Running cost on agent cards</div>
+            <div class="priority-desc">Live cost counter so you always know what you're spending</div>
+          </div>
+        </div>
+        <div class="priority-item">
+          <span class="priority-num p7">7</span>
+          <div>
+            <div class="priority-title">Everything else</div>
+            <div class="priority-desc">Settings, tree view, knowledge base, org chart, batch ops</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      CoCo Platform -- Path A Happy Path Spec -- April 2026
+    </div>
+
+  </div>
+
+  <script type="module">
+    import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3';
+
+    const theme = {
+      bg: '#FFFFFF',
+      fg: '#111827',
+      accent: '#2563EB',
+      muted: '#9CA3AF',
+      surface: '#F3F4F6',
+      border: '#E5E7EB',
+      transparent: true
+    };
+
+    const flowchartDef = `graph TD
+    A["Open CoCo"] --> B["See Briefing<br/>What needs me?"]
+    B --> C{"Act Inline"}
+    C -->|"Approve draft"| D["Approved<br/>Toast notification"]
+    C -->|"Complete todo"| E["Done<br/>Card fades out"]
+    C -->|"Need something done"| F["Spawn Agent<br/>via Orb"]
+    F --> G["Agent Running<br/>Glance at progress"]
+    G --> H["Agent Done<br/>Read structured summary"]
+    H --> I{"Need more?"}
+    I -->|"Yes"| J["Chat About It<br/>Inline context"]
+    I -->|"No"| K["Done<br/>Close CoCo"]
+    J --> K
+    D --> B
+    E --> B`;
+
+    async function render() {
+      try {
+        const svg = await renderMermaidSVGAsync(flowchartDef, theme);
+        document.getElementById('flowchart').innerHTML = svg;
+      } catch (e) {
+        console.error('Mermaid render error:', e);
+        document.getElementById('flowchart').innerHTML =
+          '<p style="color:#6B7280;text-align:center;padding:40px;">Diagram loading... (requires network access for beautiful-mermaid)</p>';
+      }
+    }
+
+    render();
+  </script>
+</body>
+</html>

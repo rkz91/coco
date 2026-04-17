@@ -1,0 +1,1856 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoCo — The Stream</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ═══════════════════════════════════════════════════
+   CoCo Stream — Design System
+   ═══════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:             #0C0F17;
+  --card-bg:        #151923;
+  --card-border:    #1E2533;
+  --card-hover-border: #2A3548;
+  --glass:          rgba(255,255,255,0.03);
+  --glass-blur:     40px;
+
+  --text-primary:   #E8ECF4;
+  --text-secondary: #7A839A;
+  --text-muted:     #4A5168;
+
+  --accent:         #4F7BF7;
+  --accent-glow:    rgba(79,123,247,0.15);
+  --success:        #3DD68C;
+  --success-glow:   rgba(61,214,140,0.12);
+  --warning:        #F5A524;
+  --warning-glow:   rgba(245,165,36,0.12);
+  --danger:         #F5564E;
+  --danger-glow:    rgba(245,86,78,0.15);
+
+  --font-body:      'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono:      'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  --radius:         16px;
+  --radius-sm:      10px;
+  --radius-xs:      6px;
+  --card-padding:   20px;
+  --transition:     200ms cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  --max-width:      720px;
+}
+
+html {
+  scroll-behavior: smooth;
+  scroll-snap-type: y proximity;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.5;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(122,131,154,0.25);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(122,131,154,0.4); }
+
+/* ═══════════════════════════════════════════════════
+   Top Bar
+   ═══════════════════════════════════════════════════ */
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(12,15,23,0.82);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-bottom: 1px solid rgba(30,37,51,0.6);
+  padding: 0 24px;
+}
+
+.topbar-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  height: 56px;
+}
+
+.wordmark {
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, var(--accent), #8B5CF6);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  flex-shrink: 0;
+}
+
+.command-bar {
+  flex: 1;
+  position: relative;
+}
+
+.command-bar input {
+  width: 100%;
+  background: var(--glass);
+  backdrop-filter: blur(20px);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 14px 8px 36px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition);
+}
+
+.command-bar input::placeholder { color: var(--text-muted); }
+.command-bar input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.command-bar .search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.command-bar .kbd-hint {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.04);
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.status-pills {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--glass);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.status-pill .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-green { background: var(--success); box-shadow: 0 0 6px var(--success-glow); }
+.dot-blue  { background: var(--accent); box-shadow: 0 0 6px var(--accent-glow); animation: pulse-dot 2s ease-in-out infinite; }
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ═══════════════════════════════════════════════════
+   Main Content
+   ═══════════════════════════════════════════════════ */
+
+.stream {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  padding: 24px 24px 100px;
+}
+
+/* ═══════════════════════════════════════════════════
+   Section Headers
+   ═══════════════════════════════════════════════════ */
+
+.section-header {
+  scroll-snap-align: start;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 32px 0 16px;
+  padding-top: 8px;
+}
+
+.section-header:first-child { margin-top: 0; }
+
+.section-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.section-count {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.04);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.section-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(to right, var(--card-border), transparent);
+}
+
+/* ═══════════════════════════════════════════════════
+   Base Card
+   ═══════════════════════════════════════════════════ */
+
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius);
+  padding: var(--card-padding);
+  margin-bottom: 12px;
+  cursor: pointer;
+  transition: all var(--transition);
+  position: relative;
+  overflow: hidden;
+}
+
+.card:hover {
+  border-color: var(--card-hover-border);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.3), 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.card.selected {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 0 20px var(--accent-glow);
+}
+
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.card-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.card-header-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.card-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 3px;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.card-subtitle {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.card-preview {
+  font-size: 13px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin: 8px 0 12px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.meta-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.meta-item .icon { font-size: 12px; opacity: 0.7; }
+
+.meta-item.mono {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: var(--radius-xs);
+  border: 1px solid var(--card-border);
+  background: var(--glass);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  white-space: nowrap;
+}
+
+.btn:hover {
+  background: rgba(255,255,255,0.06);
+  border-color: var(--card-hover-border);
+  color: var(--text-primary);
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #5D88F8;
+  border-color: #5D88F8;
+  box-shadow: 0 4px 16px var(--accent-glow);
+}
+
+.btn-success {
+  background: rgba(61,214,140,0.12);
+  border-color: rgba(61,214,140,0.25);
+  color: var(--success);
+}
+
+.btn-success:hover {
+  background: rgba(61,214,140,0.2);
+  border-color: var(--success);
+}
+
+.btn-danger {
+  background: rgba(245,86,78,0.1);
+  border-color: rgba(245,86,78,0.2);
+  color: var(--danger);
+}
+
+.btn-danger:hover {
+  background: rgba(245,86,78,0.18);
+  border-color: var(--danger);
+}
+
+.btn-warning {
+  background: rgba(245,165,36,0.1);
+  border-color: rgba(245,165,36,0.2);
+  color: var(--warning);
+}
+
+.btn-warning:hover {
+  background: rgba(245,165,36,0.18);
+  border-color: var(--warning);
+}
+
+/* ═══════════════════════════════════════════════════
+   Badge / Pill
+   ═══════════════════════════════════════════════════ */
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 3px 8px;
+  border-radius: 10px;
+}
+
+.badge-team {
+  background: rgba(79,123,247,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(79,123,247,0.2);
+}
+
+.badge-high {
+  background: rgba(245,86,78,0.12);
+  color: var(--danger);
+  border: 1px solid rgba(245,86,78,0.2);
+}
+
+.badge-medium {
+  background: rgba(245,165,36,0.12);
+  color: var(--warning);
+  border: 1px solid rgba(245,165,36,0.2);
+}
+
+.badge-low {
+  background: rgba(61,214,140,0.08);
+  color: var(--success);
+  border: 1px solid rgba(61,214,140,0.15);
+}
+
+.badge-running {
+  background: rgba(79,123,247,0.12);
+  color: var(--accent);
+  border: 1px solid rgba(79,123,247,0.25);
+}
+
+/* ═══════════════════════════════════════════════════
+   Progress Bar
+   ═══════════════════════════════════════════════════ */
+
+.progress-bar {
+  width: 100%;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--accent), #8B5CF6);
+  transition: width 1s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  width: 40px;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+  animation: progress-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes progress-shimmer {
+  0% { opacity: 0; }
+  50% { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════
+   Card Variants
+   ═══════════════════════════════════════════════════ */
+
+/* Running Agent — blue ambient glow */
+.card-running {
+  border-color: rgba(79,123,247,0.35);
+  box-shadow: 0 0 30px rgba(79,123,247,0.08), inset 0 0 30px rgba(79,123,247,0.03);
+  animation: running-glow 3s ease-in-out infinite;
+}
+
+.card-running:hover {
+  border-color: rgba(79,123,247,0.5);
+  box-shadow: 0 0 40px rgba(79,123,247,0.12), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+@keyframes running-glow {
+  0%, 100% { box-shadow: 0 0 30px rgba(79,123,247,0.08), inset 0 0 30px rgba(79,123,247,0.03); }
+  50% { box-shadow: 0 0 40px rgba(79,123,247,0.14), inset 0 0 40px rgba(79,123,247,0.05); }
+}
+
+.card-running .card-icon {
+  background: var(--accent-glow);
+  color: var(--accent);
+}
+
+.live-timer {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+  tabular-nums: true;
+  font-variant-numeric: tabular-nums;
+}
+
+.output-preview {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(0,0,0,0.3);
+  padding: 8px 12px;
+  border-radius: var(--radius-xs);
+  border-left: 2px solid var(--accent);
+  margin: 8px 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Urgent — red left gradient */
+.card-urgent {
+  border-color: rgba(245,86,78,0.25);
+}
+
+.card-urgent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--danger), #D4342E, var(--danger));
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+.card-urgent .card-icon {
+  background: var(--danger-glow);
+  color: var(--danger);
+}
+
+/* Draft */
+.card-draft .card-icon {
+  background: rgba(79,123,247,0.1);
+  color: var(--accent);
+}
+
+/* Todo */
+.card-todo .card-icon {
+  background: rgba(255,255,255,0.04);
+  color: var(--text-secondary);
+}
+
+/* Completed */
+.card-completed {
+  opacity: 0.75;
+}
+
+.card-completed:hover { opacity: 0.9; }
+
+.card-completed .card-icon {
+  background: var(--success-glow);
+  color: var(--success);
+}
+
+/* Failed */
+.card-failed {
+  border-color: rgba(245,86,78,0.25);
+  box-shadow: 0 0 25px rgba(245,86,78,0.06);
+}
+
+.card-failed .card-icon {
+  background: var(--danger-glow);
+  color: var(--danger);
+}
+
+/* Done / dimmed */
+.card-done {
+  opacity: 0.5;
+}
+
+.card-done:hover { opacity: 0.7; }
+
+/* ═══════════════════════════════════════════════════
+   Confidence Meter
+   ═══════════════════════════════════════════════════ */
+
+.confidence {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+
+.confidence-bar {
+  width: 48px;
+  height: 4px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: var(--success);
+}
+
+/* ═══════════════════════════════════════════════════
+   Expanded Card
+   ═══════════════════════════════════════════════════ */
+
+.card.expanded {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent), 0 16px 48px rgba(0,0,0,0.4);
+}
+
+.card-expanded-content {
+  display: none;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+  animation: expand-in 250ms ease;
+}
+
+.card.expanded .card-expanded-content { display: block; }
+.card.expanded .card-preview {
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+@keyframes expand-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.metadata-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metadata-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.metadata-value {
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.expanded-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+/* ═══════════════════════════════════════════════════
+   Inline Chat
+   ═══════════════════════════════════════════════════ */
+
+.inline-chat {
+  display: none;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--card-border);
+  animation: expand-in 250ms ease;
+}
+
+.inline-chat.open { display: block; }
+
+.chat-messages {
+  max-height: 200px;
+  overflow-y: auto;
+  margin-bottom: 12px;
+}
+
+.chat-bubble {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.45;
+  margin-bottom: 8px;
+}
+
+.chat-bubble.user {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  border-bottom-right-radius: 4px;
+}
+
+.chat-bubble.assistant {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-primary);
+  border-bottom-left-radius: 4px;
+}
+
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.chat-input-row input {
+  flex: 1;
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--card-border);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: var(--transition-fast);
+}
+
+.chat-input-row input:focus {
+  border-color: var(--accent);
+}
+
+.chat-input-row input::placeholder { color: var(--text-muted); }
+
+.model-selector {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--accent);
+  background: var(--accent-glow);
+  border: 1px solid rgba(79,123,247,0.25);
+  border-radius: 12px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  white-space: nowrap;
+}
+
+.model-selector:hover {
+  background: rgba(79,123,247,0.2);
+}
+
+/* ═══════════════════════════════════════════════════
+   Show More
+   ═══════════════════════════════════════════════════ */
+
+.show-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px;
+  margin: 8px 0;
+  background: var(--glass);
+  border: 1px dashed rgba(30,37,51,0.8);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.show-more:hover {
+  background: rgba(255,255,255,0.04);
+  border-color: var(--card-border);
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════
+   Footer
+   ═══════════════════════════════════════════════════ */
+
+.footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  background: rgba(12,15,23,0.85);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-top: 1px solid rgba(30,37,51,0.6);
+  padding: 12px 24px;
+}
+
+.footer-inner {
+  max-width: var(--max-width);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.footer-stats {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.footer-stats span {
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.footer-shortcuts {
+  display: flex;
+  gap: 12px;
+}
+
+.shortcut {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.shortcut kbd {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text-secondary);
+}
+
+/* ═══════════════════════════════════════════════════
+   Dismiss Animation
+   ═══════════════════════════════════════════════════ */
+
+.card.dismissing {
+  animation: dismiss 300ms ease forwards;
+}
+
+@keyframes dismiss {
+  0% { opacity: 1; transform: translateX(0); max-height: 300px; margin-bottom: 12px; }
+  50% { opacity: 0; transform: translateX(60px); }
+  100% { opacity: 0; transform: translateX(60px); max-height: 0; margin-bottom: 0; padding: 0; overflow: hidden; }
+}
+
+/* ═══════════════════════════════════════════════════
+   Collapsed section
+   ═══════════════════════════════════════════════════ */
+
+.done-section .card { display: none; }
+.done-section.open .card { display: block; }
+</style>
+</head>
+<body>
+
+<!-- ═══ TOP BAR ═══ -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <div class="wordmark">CoCo</div>
+    <div class="command-bar">
+      <span class="search-icon">&#x2318;</span>
+      <input type="text" id="commandInput" placeholder="Search or type a command..." />
+      <span class="kbd-hint">/</span>
+    </div>
+    <div class="status-pills">
+      <div class="status-pill"><span class="dot dot-blue"></span> 1 Running</div>
+      <div class="status-pill"><span class="dot dot-green"></span> All Healthy</div>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ STREAM ═══ -->
+<main class="stream" id="stream">
+
+  <!-- ─── WHAT NEEDS YOU ─── -->
+  <div class="section-header">
+    <span class="section-title">What Needs You</span>
+    <span class="section-count">7</span>
+    <span class="section-line"></span>
+  </div>
+
+  <!-- Card 1: RUNNING Agent -->
+  <div class="card card-running" data-index="0" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F916;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--accent)">Running Agent</div>
+        <div class="card-title">Auth Middleware Refactor</div>
+        <div class="card-subtitle">Developer &middot; Cross Risk Tools</div>
+      </div>
+      <span class="badge badge-running"><span class="dot dot-blue" style="width:5px;height:5px;display:inline-block"></span> Live</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item mono"><span class="icon">&#x23F1;</span> <span class="live-timer" id="timer1">2:34</span></div>
+      <div class="meta-item mono"><span class="icon">&#x1F4B0;</span> $0.08</div>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" style="width:62%"></div></div>
+    <div class="output-preview">&#x276F; Refactoring token validation layer... migrating to jose library</div>
+    <div class="card-actions">
+      <button class="btn btn-primary" onclick="event.stopPropagation()">View Logs</button>
+      <button class="btn btn-warning" onclick="event.stopPropagation()">Pause</button>
+      <button class="btn btn-danger" onclick="event.stopPropagation()">Stop</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Scheduled Task</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk Tools</span></div>
+        <div class="metadata-item"><span class="metadata-label">Started</span><span class="metadata-value">2 min ago</span></div>
+        <div class="metadata-item"><span class="metadata-label">Budget Cap</span><span class="metadata-value" style="font-family:var(--font-mono)">$0.50</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn" onclick="event.stopPropagation()">View Full Logs</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages">
+          <div class="chat-bubble assistant">I'm currently refactoring the auth middleware. The token validation layer is being migrated to the jose library for better JWT handling. Want me to explain the approach?</div>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this task..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 2: URGENT GitGuardian #29214721 -->
+  <div class="card card-urgent" data-index="1" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F534;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--danger)">Urgent &middot; Security</div>
+        <div class="card-title">GitGuardian Incident #29214721</div>
+        <div class="card-subtitle">ACC Service &middot; Detected 12m ago</div>
+      </div>
+      <span class="badge badge-high">Urgent</span>
+    </div>
+    <div class="card-preview">GitGuardian detected a potential secret leak in the acc-service repo. An AWS access key was committed in <code style="font-family:var(--font-mono);font-size:12px;color:var(--danger)">config/deploy.yml</code>. Immediate rotation recommended.</div>
+    <div class="card-meta">
+      <span class="badge badge-team">ACC</span>
+      <div class="meta-item"><span class="icon">&#x23F0;</span> 12 min ago</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-danger" onclick="event.stopPropagation()">Review &#x2192;</button>
+      <button class="btn" onclick="event.stopPropagation()">Dismiss</button>
+      <button class="btn" onclick="event.stopPropagation()">Assign &#x25BE;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="card-preview" style="display:block;-webkit-line-clamp:unset">
+        <strong style="color:var(--text-primary)">Full Details:</strong><br>
+        GitGuardian detected a potential secret leak in the acc-service repository. An AWS access key (AKIA...) was committed to <code style="font-family:var(--font-mono);font-size:12px;color:var(--danger)">config/deploy.yml</code> on branch <code style="font-family:var(--font-mono);font-size:12px">feature/ci-pipeline</code>. The key appears to have write access to S3 and DynamoDB. Immediate rotation is strongly recommended.
+      </div>
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">GitGuardian</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">ACC Service</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--danger)">Critical</span></div>
+        <div class="metadata-item"><span class="metadata-label">Created</span><span class="metadata-value">12 min ago</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-danger" onclick="event.stopPropagation()">Rotate Key Now</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this incident..." />
+          <div class="model-selector">opus</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 3: URGENT GitGuardian #29214720 -->
+  <div class="card card-urgent" data-index="2" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F534;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--danger)">Urgent &middot; Security</div>
+        <div class="card-title">GitGuardian Incident #29214720</div>
+        <div class="card-subtitle">ACC Service &middot; Detected 18m ago</div>
+      </div>
+      <span class="badge badge-high">Urgent</span>
+    </div>
+    <div class="card-preview">GitGuardian detected a Slack webhook URL in the acc-service repo. The webhook was found in <code style="font-family:var(--font-mono);font-size:12px;color:var(--danger)">scripts/notify.sh</code>. Review and invalidate the URL.</div>
+    <div class="card-meta">
+      <span class="badge badge-team">ACC</span>
+      <div class="meta-item"><span class="icon">&#x23F0;</span> 18 min ago</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-danger" onclick="event.stopPropagation()">Review &#x2192;</button>
+      <button class="btn" onclick="event.stopPropagation()">Dismiss</button>
+      <button class="btn" onclick="event.stopPropagation()">Assign &#x25BE;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">GitGuardian</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">ACC Service</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--danger)">High</span></div>
+        <div class="metadata-item"><span class="metadata-label">Created</span><span class="metadata-value">18 min ago</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-danger" onclick="event.stopPropagation()">Invalidate Webhook</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this incident..." />
+          <div class="model-selector">opus</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 4: DRAFT — ACC Phase 2 Status Update -->
+  <div class="card card-draft" data-index="3" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F4DD;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--accent)">Draft &middot; Status Update</div>
+        <div class="card-title">ACC Phase 2 Status Update</div>
+        <div class="card-subtitle">Auto-generated from sprint data</div>
+      </div>
+      <div class="confidence">
+        <div class="confidence-bar"><div class="confidence-fill" style="width:87%"></div></div>
+        <span style="font-family:var(--font-mono);font-weight:600">87%</span>
+      </div>
+    </div>
+    <div class="card-preview">Phase 2 migration is on track. 14 of 18 endpoints migrated to the new API gateway. Two blockers identified: auth token refresh flow and rate limiting configuration. ETA for completion remains April 12.</div>
+    <div class="card-meta">
+      <span class="badge badge-team">ACC</span>
+      <div class="meta-item"><span class="icon">&#x1F4C5;</span> Generated 1h ago</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+      <button class="btn btn-danger" onclick="event.stopPropagation()">&#x2717; Reject</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Preview &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="card-preview" style="display:block;-webkit-line-clamp:unset">
+        <strong style="color:var(--text-primary)">Full Draft:</strong><br><br>
+        Phase 2 migration is on track. 14 of 18 endpoints migrated to the new API gateway. Two blockers identified: auth token refresh flow and rate limiting configuration. ETA for completion remains April 12.<br><br>
+        <strong style="color:var(--text-primary)">Key Metrics:</strong><br>
+        &bull; Endpoints migrated: 14/18 (78%)<br>
+        &bull; Test coverage: 92%<br>
+        &bull; P0 bugs: 0 &middot; P1 bugs: 2<br>
+        &bull; Sprint velocity: +12% vs. target
+      </div>
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Sprint Data + Jira</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">ACC Phase 2</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value">Standard</span></div>
+        <div class="metadata-item"><span class="metadata-label">Updated</span><span class="metadata-value">1 hour ago</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve & Send</button>
+        <button class="btn" onclick="event.stopPropagation()">Edit Draft</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this draft..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 5: DRAFT — AuditBoard Config Migration -->
+  <div class="card card-draft" data-index="4" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F4DD;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--accent)">Draft &middot; Migration Plan</div>
+        <div class="card-title">AuditBoard Config Migration Plan</div>
+        <div class="card-subtitle">Cross Risk Tools team</div>
+      </div>
+      <div class="confidence">
+        <div class="confidence-bar"><div class="confidence-fill" style="width:74%"></div></div>
+        <span style="font-family:var(--font-mono);font-weight:600">74%</span>
+      </div>
+    </div>
+    <div class="card-preview">Migration plan for AuditBoard configuration from legacy YAML to the new centralized config service. Covers 23 config keys across 4 environments with rollback procedures.</div>
+    <div class="card-meta">
+      <span class="badge badge-team">Cross Risk</span>
+      <div class="meta-item"><span class="icon">&#x1F4C5;</span> Generated 3h ago</div>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+      <button class="btn btn-danger" onclick="event.stopPropagation()">&#x2717; Reject</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Preview &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Architecture Review</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">AuditBoard</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value">Medium</span></div>
+        <div class="metadata-item"><span class="metadata-label">Updated</span><span class="metadata-value">3 hours ago</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+        <button class="btn" onclick="event.stopPropagation()">Edit Draft</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this plan..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 6: TODO — Prep Q2 risk report -->
+  <div class="card card-todo" data-index="5" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2610;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--text-secondary)">Todo</div>
+        <div class="card-title">Prep Q2 Risk Report</div>
+        <div class="card-subtitle">Cross Risk Tools</div>
+      </div>
+      <span class="badge badge-high">High</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item"><span class="icon">&#x1F4C5;</span> Due Apr 15</div>
+      <span class="badge badge-team">Cross Risk</span>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+      <button class="btn" onclick="event.stopPropagation()">Delegate &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Manual</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk Tools</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--danger)">High</span></div>
+        <div class="metadata-item"><span class="metadata-label">Due Date</span><span class="metadata-value">April 15, 2026</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+        <button class="btn" onclick="event.stopPropagation()">Delegate &#x2192;</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this task..." />
+          <div class="model-selector">haiku</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 7: TODO — Update Aravo API docs -->
+  <div class="card card-todo" data-index="6" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2610;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--text-secondary)">Todo</div>
+        <div class="card-title">Update Aravo API Docs</div>
+        <div class="card-subtitle">3PI Integration</div>
+      </div>
+      <span class="badge badge-medium">Medium</span>
+    </div>
+    <div class="card-meta">
+      <span class="badge badge-team">3PI</span>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+      <button class="btn" onclick="event.stopPropagation()">&#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Manual</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">3PI Integration</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--warning)">Medium</span></div>
+        <div class="metadata-item"><span class="metadata-label">Created</span><span class="metadata-value">Yesterday</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this..." />
+          <div class="model-selector">haiku</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── COMPLETED TODAY ─── -->
+  <div class="section-header">
+    <span class="section-title">Completed Today</span>
+    <span class="section-count">4</span>
+    <span class="section-line"></span>
+  </div>
+
+  <!-- Card 8: Agent result — Technical Architect -->
+  <div class="card card-completed" data-index="7" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2705;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--success)">Agent Result</div>
+        <div class="card-title">Architecture Review</div>
+        <div class="card-subtitle">Technical Architect &middot; Cross Risk Tools</div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item mono"><span class="icon">&#x23F1;</span> 4m 12s</div>
+      <div class="meta-item mono"><span class="icon">&#x1F4B0;</span> $0.23</div>
+      <div class="meta-item"><span class="icon">&#x1F4CB;</span> 3 scaling bottlenecks found</div>
+    </div>
+    <div class="card-preview">Identified 3 scaling bottlenecks: (1) synchronous DB calls in the event handler, (2) unbounded queue growth in the notification service, (3) N+1 query pattern in the dashboard aggregation endpoint.</div>
+    <div class="card-actions">
+      <button class="btn btn-primary" onclick="event.stopPropagation()">View Full &#x2192;</button>
+      <button class="btn" onclick="event.stopPropagation()">&#x1F4AC; Chat</button>
+      <button class="btn" onclick="event.stopPropagation()">Spawn Follow-up</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="card-preview" style="display:block;-webkit-line-clamp:unset">
+        <strong style="color:var(--text-primary)">Findings Summary:</strong><br><br>
+        <strong style="color:var(--danger)">1. Synchronous DB calls in event handler</strong><br>
+        The event handler makes 3 sequential database calls that could be parallelized. Estimated improvement: 60% latency reduction.<br><br>
+        <strong style="color:var(--warning)">2. Unbounded queue growth</strong><br>
+        Notification service queue has no backpressure mechanism. Under load, memory usage grows linearly. Recommend adding a bounded buffer with 10k capacity.<br><br>
+        <strong style="color:var(--warning)">3. N+1 query pattern</strong><br>
+        Dashboard aggregation makes 1 query per team member. With 50+ members, this causes ~2s latency. Recommend eager loading with JOIN.
+      </div>
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Scheduled Review</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk Tools</span></div>
+        <div class="metadata-item"><span class="metadata-label">Duration</span><span class="metadata-value" style="font-family:var(--font-mono)">4m 12s</span></div>
+        <div class="metadata-item"><span class="metadata-label">Cost</span><span class="metadata-value" style="font-family:var(--font-mono)">$0.23</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-primary" onclick="event.stopPropagation()">View Full Report</button>
+        <button class="btn" onclick="event.stopPropagation()">Create Tickets</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about the findings..." />
+          <div class="model-selector">opus</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 9: Agent result — QA Reviewer -->
+  <div class="card card-completed" data-index="8" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2705;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--success)">Agent Result</div>
+        <div class="card-title">PR #47 Code Review</div>
+        <div class="card-subtitle">QA Reviewer &middot; ACC Service</div>
+      </div>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item mono"><span class="icon">&#x23F1;</span> 1m 45s</div>
+      <div class="meta-item mono"><span class="icon">&#x1F4B0;</span> $0.11</div>
+      <div class="meta-item"><span style="color:var(--danger)">2 critical</span>, <span style="color:var(--warning)">1 minor</span></div>
+    </div>
+    <div class="card-preview">Found 3 issues: missing input validation on the /api/transfer endpoint (critical), unhandled promise rejection in webhook handler (critical), inconsistent error response format (minor).</div>
+    <div class="card-actions">
+      <button class="btn btn-primary" onclick="event.stopPropagation()">View Full &#x2192;</button>
+      <button class="btn" onclick="event.stopPropagation()">&#x1F4AC; Chat</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">PR Trigger</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">ACC Service</span></div>
+        <div class="metadata-item"><span class="metadata-label">Duration</span><span class="metadata-value" style="font-family:var(--font-mono)">1m 45s</span></div>
+        <div class="metadata-item"><span class="metadata-label">Cost</span><span class="metadata-value" style="font-family:var(--font-mono)">$0.11</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-primary" onclick="event.stopPropagation()">View Full Report</button>
+        <button class="btn" onclick="event.stopPropagation()">Comment on PR</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about the review..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 10: Approved draft -->
+  <div class="card card-completed card-done" data-index="9" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2705;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--success)">Approved</div>
+        <div class="card-title">3PI V2 Vendor Comparison</div>
+        <div class="card-subtitle">Approved 4h ago</div>
+      </div>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Auto-Draft</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">3PI Integration</span></div>
+        <div class="metadata-item"><span class="metadata-label">Approved</span><span class="metadata-value">4 hours ago</span></div>
+        <div class="metadata-item"><span class="metadata-label">Approved By</span><span class="metadata-value">Rijul Kalra</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 11: Completed todo -->
+  <div class="card card-completed card-done" data-index="10" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2705;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--success)">Completed</div>
+        <div class="card-title">Updated Team Roster</div>
+        <div class="card-subtitle">Completed 5h ago</div>
+      </div>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Manual Todo</span></div>
+        <div class="metadata-item"><span class="metadata-label">Completed</span><span class="metadata-value">5 hours ago</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── THIS WEEK ─── -->
+  <div class="section-header">
+    <span class="section-title">This Week</span>
+    <span class="section-count">6</span>
+    <span class="section-line"></span>
+  </div>
+
+  <!-- Card 12: Todo - medium -->
+  <div class="card card-todo" data-index="11" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2610;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--text-secondary)">Todo</div>
+        <div class="card-title">Review AuditBoard Access Policies</div>
+        <div class="card-subtitle">Cross Risk Tools</div>
+      </div>
+      <span class="badge badge-medium">Medium</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item"><span class="icon">&#x1F4C5;</span> Due Apr 9</div>
+      <span class="badge badge-team">Cross Risk</span>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+      <button class="btn" onclick="event.stopPropagation()">Delegate &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Manual</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk Tools</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--warning)">Medium</span></div>
+        <div class="metadata-item"><span class="metadata-label">Due Date</span><span class="metadata-value">April 9, 2026</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this..." />
+          <div class="model-selector">haiku</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 13: Draft — Weekly summary -->
+  <div class="card card-draft" data-index="12" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F4DD;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--accent)">Draft &middot; Weekly Summary</div>
+        <div class="card-title">Cross Risk Weekly Summary</div>
+        <div class="card-subtitle">Auto-generated &middot; For SteerCo</div>
+      </div>
+      <div class="confidence">
+        <div class="confidence-bar"><div class="confidence-fill" style="width:91%"></div></div>
+        <span style="font-family:var(--font-mono);font-weight:600">91%</span>
+      </div>
+    </div>
+    <div class="card-preview">Weekly summary covering 3 projects, 12 completed tasks, and 2 open blockers. Includes velocity trends and budget utilization for Q2 planning.</div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+      <button class="btn btn-danger" onclick="event.stopPropagation()">&#x2717; Reject</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Preview &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Aggregate Data</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk</span></div>
+        <div class="metadata-item"><span class="metadata-label">Audience</span><span class="metadata-value">SteerCo</span></div>
+        <div class="metadata-item"><span class="metadata-label">Created</span><span class="metadata-value">Today, 6:00 AM</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve & Send</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this summary..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 14: Todo — low -->
+  <div class="card card-todo" data-index="13" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x2610;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--text-secondary)">Todo</div>
+        <div class="card-title">Clean Up Stale Feature Branches</div>
+        <div class="card-subtitle">ACC Service</div>
+      </div>
+      <span class="badge badge-low">Low</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item"><span class="icon">&#x1F4C5;</span> Due Apr 11</div>
+      <span class="badge badge-team">ACC</span>
+    </div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+      <button class="btn" onclick="event.stopPropagation()">&#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Auto-detected</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">ACC Service</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--success)">Low</span></div>
+        <div class="metadata-item"><span class="metadata-label">Due Date</span><span class="metadata-value">April 11, 2026</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Complete</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this..." />
+          <div class="model-selector">haiku</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 15: Draft — Runbook -->
+  <div class="card card-draft" data-index="14" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x1F4DD;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--accent)">Draft &middot; Runbook</div>
+        <div class="card-title">Incident Response Runbook v2</div>
+        <div class="card-subtitle">Cross Risk Tools</div>
+      </div>
+      <div class="confidence">
+        <div class="confidence-bar"><div class="confidence-fill" style="width:68%"></div></div>
+        <span style="font-family:var(--font-mono);font-weight:600">68%</span>
+      </div>
+    </div>
+    <div class="card-preview">Updated incident response runbook incorporating lessons learned from the March 28 outage. New sections on database failover and communication protocols.</div>
+    <div class="card-actions">
+      <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+      <button class="btn btn-danger" onclick="event.stopPropagation()">&#x2717; Reject</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Preview &#x2192;</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Post-Incident Review</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk Tools</span></div>
+        <div class="metadata-item"><span class="metadata-label">Priority</span><span class="metadata-value" style="color:var(--warning)">Medium</span></div>
+        <div class="metadata-item"><span class="metadata-label">Updated</span><span class="metadata-value">Yesterday</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-success" onclick="event.stopPropagation()">&#x2713; Approve</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about this runbook..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card 16: FAILED Agent -->
+  <div class="card card-failed" data-index="15" onclick="toggleExpand(this)">
+    <div class="card-header">
+      <div class="card-icon">&#x274C;</div>
+      <div class="card-header-text">
+        <div class="card-label" style="color:var(--danger)">Failed Agent</div>
+        <div class="card-title">Q2 Revenue Projections</div>
+        <div class="card-subtitle">Data Analyst &middot; Cross Risk</div>
+      </div>
+      <span class="badge badge-high">Failed</span>
+    </div>
+    <div class="card-meta">
+      <div class="meta-item mono"><span class="icon">&#x23F1;</span> 6m 03s</div>
+      <div class="meta-item mono"><span class="icon">&#x1F4B0;</span> $0.48</div>
+    </div>
+    <div class="output-preview" style="border-left-color:var(--danger)">&#x26A0; Error: Budget cap exceeded ($0.48 / $0.50). Task terminated before completion.</div>
+    <div class="card-actions">
+      <button class="btn btn-warning" onclick="event.stopPropagation()">&#x1F504; Retry</button>
+      <button class="btn btn-primary" onclick="event.stopPropagation()">Increase Budget</button>
+      <button class="btn" onclick="event.stopPropagation()">Dismiss</button>
+    </div>
+    <div class="card-expanded-content">
+      <div class="card-preview" style="display:block;-webkit-line-clamp:unset;color:var(--danger)">
+        <strong>Error Log:</strong><br>
+        <span style="font-family:var(--font-mono);font-size:12px">
+        [14:23:01] Fetching Q1 actuals from data warehouse...<br>
+        [14:24:18] Running projection model (3 scenarios)...<br>
+        [14:27:42] Generating visualization...<br>
+        [14:29:04] FATAL: Budget cap exceeded ($0.48 / $0.50)<br>
+        [14:29:04] Task terminated. Partial results saved.
+        </span>
+      </div>
+      <div class="metadata-grid">
+        <div class="metadata-item"><span class="metadata-label">Source</span><span class="metadata-value">Scheduled</span></div>
+        <div class="metadata-item"><span class="metadata-label">Project</span><span class="metadata-value">Cross Risk</span></div>
+        <div class="metadata-item"><span class="metadata-label">Budget</span><span class="metadata-value" style="font-family:var(--font-mono);color:var(--danger)">$0.48 / $0.50</span></div>
+        <div class="metadata-item"><span class="metadata-label">Partial Results</span><span class="metadata-value">Available</span></div>
+      </div>
+      <div class="expanded-actions">
+        <button class="btn btn-warning" onclick="event.stopPropagation()">&#x1F504; Retry ($1.00 cap)</button>
+        <button class="btn" onclick="event.stopPropagation()">View Partial Results</button>
+        <button class="btn btn-primary" onclick="event.stopPropagation(); toggleChat(this.closest('.card'))">&#x1F4AC; Chat About This</button>
+      </div>
+      <div class="inline-chat">
+        <div class="chat-messages"></div>
+        <div class="chat-input-row">
+          <input type="text" placeholder="Ask about the failure..." />
+          <div class="model-selector">sonnet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── DONE (collapsed) ─── -->
+  <div class="section-header">
+    <span class="section-title">Done</span>
+    <span class="section-count">4</span>
+    <span class="section-line"></span>
+  </div>
+
+  <div class="done-section" id="doneSection">
+    <!-- Card 17 -->
+    <div class="card card-completed card-done" data-index="16" onclick="toggleExpand(this)">
+      <div class="card-header">
+        <div class="card-icon">&#x2705;</div>
+        <div class="card-header-text">
+          <div class="card-label" style="color:var(--success)">Completed</div>
+          <div class="card-title">Confluence Page Audit</div>
+          <div class="card-subtitle">Completed Monday</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 18 -->
+    <div class="card card-completed card-done" data-index="17" onclick="toggleExpand(this)">
+      <div class="card-header">
+        <div class="card-icon">&#x2705;</div>
+        <div class="card-header-text">
+          <div class="card-label" style="color:var(--success)">Completed</div>
+          <div class="card-title">Terraform State Migration</div>
+          <div class="card-subtitle">Completed Monday</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 19 -->
+    <div class="card card-completed card-done" data-index="18" onclick="toggleExpand(this)">
+      <div class="card-header">
+        <div class="card-icon">&#x2705;</div>
+        <div class="card-header-text">
+          <div class="card-label" style="color:var(--success)">Approved</div>
+          <div class="card-title">Q1 Retrospective Summary</div>
+          <div class="card-subtitle">Approved Sunday</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Card 20 -->
+    <div class="card card-completed card-done" data-index="19" onclick="toggleExpand(this)">
+      <div class="card-header">
+        <div class="card-icon">&#x2705;</div>
+        <div class="card-header-text">
+          <div class="card-label" style="color:var(--success)">Agent Result</div>
+          <div class="card-title">Dependency Vulnerability Scan</div>
+          <div class="card-subtitle">Completed Saturday &middot; 0 critical</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="show-more" id="showMoreDone" onclick="toggleDone()">
+    <span id="showMoreText">Show 4 done items</span>
+    <span style="font-size:11px">&#x25BC;</span>
+  </div>
+
+</main>
+
+<!-- ═══ FOOTER ═══ -->
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-stats">
+      <span>13</span> teams &middot; <span>50</span> items &middot; <span>1</span> running &middot; <span style="color:var(--success)">All healthy</span>
+    </div>
+    <div class="footer-shortcuts">
+      <div class="shortcut"><kbd>j</kbd><kbd>k</kbd> navigate</div>
+      <div class="shortcut"><kbd>Enter</kbd> expand</div>
+      <div class="shortcut"><kbd>x</kbd> action</div>
+      <div class="shortcut"><kbd>d</kbd> dismiss</div>
+      <div class="shortcut"><kbd>c</kbd> chat</div>
+    </div>
+  </div>
+</footer>
+
+<script>
+/* ═══════════════════════════════════════════════════
+   Interactions
+   ═══════════════════════════════════════════════════ */
+
+let selectedIndex = -1;
+const cards = () => document.querySelectorAll('.card:not(.dismissing)');
+
+// ─── Live Timer ───
+(function runTimer() {
+  let seconds = 154; // 2:34
+  const el = document.getElementById('timer1');
+  setInterval(() => {
+    seconds++;
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    el.textContent = m + ':' + String(s).padStart(2, '0');
+  }, 1000);
+})();
+
+// ─── Card Expand/Collapse ───
+function toggleExpand(card) {
+  const wasExpanded = card.classList.contains('expanded');
+  // Collapse all others
+  document.querySelectorAll('.card.expanded').forEach(c => {
+    if (c !== card) c.classList.remove('expanded');
+  });
+  card.classList.toggle('expanded', !wasExpanded);
+}
+
+// ─── Inline Chat ───
+function toggleChat(card) {
+  const chat = card.querySelector('.inline-chat');
+  if (chat) {
+    chat.classList.toggle('open');
+    if (chat.classList.contains('open')) {
+      const input = chat.querySelector('input');
+      if (input) setTimeout(() => input.focus(), 100);
+    }
+  }
+}
+
+// ─── Done Section Toggle ───
+function toggleDone() {
+  const section = document.getElementById('doneSection');
+  const text = document.getElementById('showMoreText');
+  const isOpen = section.classList.toggle('open');
+  text.textContent = isOpen ? 'Hide done items' : 'Show 4 done items';
+}
+
+// ─── Selection ───
+function selectCard(index) {
+  const allCards = cards();
+  if (index < 0 || index >= allCards.length) return;
+  // Remove previous
+  allCards.forEach(c => c.classList.remove('selected'));
+  selectedIndex = index;
+  allCards[selectedIndex].classList.add('selected');
+  allCards[selectedIndex].scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ─── Keyboard Navigation ───
+document.addEventListener('keydown', (e) => {
+  const allCards = cards();
+  const target = e.target;
+  const isInput = target.tagName === 'INPUT' || target.tagName === 'TEXTAREA';
+
+  // / focuses command bar
+  if (e.key === '/' && !isInput) {
+    e.preventDefault();
+    document.getElementById('commandInput').focus();
+    return;
+  }
+
+  // Escape: blur input or collapse expanded
+  if (e.key === 'Escape') {
+    if (isInput) {
+      target.blur();
+      return;
+    }
+    const expanded = document.querySelector('.card.expanded');
+    if (expanded) {
+      expanded.classList.remove('expanded');
+      return;
+    }
+  }
+
+  if (isInput) return;
+
+  // j/k navigation
+  if (e.key === 'j') {
+    e.preventDefault();
+    selectCard(selectedIndex < 0 ? 0 : Math.min(selectedIndex + 1, allCards.length - 1));
+  }
+  if (e.key === 'k') {
+    e.preventDefault();
+    selectCard(selectedIndex <= 0 ? 0 : selectedIndex - 1);
+  }
+
+  // Enter: expand/collapse selected
+  if (e.key === 'Enter' && selectedIndex >= 0) {
+    e.preventDefault();
+    toggleExpand(allCards[selectedIndex]);
+  }
+
+  // x: primary action
+  if (e.key === 'x' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = allCards[selectedIndex];
+    const primaryBtn = card.querySelector('.btn-success') || card.querySelector('.btn-primary');
+    if (primaryBtn) primaryBtn.click();
+  }
+
+  // d: dismiss
+  if (e.key === 'd' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = allCards[selectedIndex];
+    card.classList.add('dismissing');
+    setTimeout(() => {
+      card.remove();
+      if (selectedIndex >= cards().length) selectedIndex = cards().length - 1;
+      if (selectedIndex >= 0) selectCard(selectedIndex);
+    }, 300);
+  }
+
+  // c: expand + open chat
+  if (e.key === 'c' && selectedIndex >= 0) {
+    e.preventDefault();
+    const card = allCards[selectedIndex];
+    if (!card.classList.contains('expanded')) toggleExpand(card);
+    setTimeout(() => toggleChat(card), 100);
+  }
+});
+
+// ─── Chat Input (Enter to send) ───
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && e.target.closest('.chat-input-row')) {
+    e.preventDefault();
+    const input = e.target;
+    const value = input.value.trim();
+    if (!value) return;
+
+    const chatMessages = input.closest('.inline-chat').querySelector('.chat-messages');
+
+    // Add user bubble
+    const userBubble = document.createElement('div');
+    userBubble.className = 'chat-bubble user';
+    userBubble.textContent = value;
+    chatMessages.appendChild(userBubble);
+
+    input.value = '';
+
+    // Fake assistant response
+    setTimeout(() => {
+      const aiBubble = document.createElement('div');
+      aiBubble.className = 'chat-bubble assistant';
+      aiBubble.textContent = 'I\'ll look into that. Give me a moment to analyze the context...';
+      chatMessages.appendChild(aiBubble);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }, 800);
+
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+  }
+});
+
+// ─── Model Selector Cycle ───
+document.querySelectorAll('.model-selector').forEach(el => {
+  const models = ['sonnet', 'opus', 'haiku'];
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const current = el.textContent;
+    const next = models[(models.indexOf(current) + 1) % models.length];
+    el.textContent = next;
+  });
+});
+</script>
+</body>
+</html>

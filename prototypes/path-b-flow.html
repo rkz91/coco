@@ -1,0 +1,960 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Path B — Collapse | CoCo Platform Design Rationale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #1e293b;
+      --fg: #cbd5e1;
+      --accent: #34d399;
+      --muted: #64748b;
+      --surface: #334155;
+      --border: #475569;
+      --success: #34d399;
+      --warning: #fbbf24;
+      --danger: #f87171;
+      --purple: #a78bfa;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      line-height: 1.7;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .hero {
+      padding: 4rem 2rem 3rem;
+      text-align: center;
+      background: linear-gradient(180deg, #0f172a 0%, var(--bg) 100%);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(52,211,153,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero .badge {
+      display: inline-block;
+      background: rgba(52,211,153,0.12);
+      border: 1px solid rgba(52,211,153,0.25);
+      color: var(--accent);
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 0.35rem 1rem;
+      border-radius: 100px;
+      margin-bottom: 1.25rem;
+    }
+    .hero h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      color: #f1f5f9;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.75rem;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero .tagline {
+      font-size: 1.1rem;
+      color: var(--muted);
+      max-width: 620px;
+      margin: 0 auto 0.5rem;
+    }
+    .hero .mantra {
+      font-size: 1.35rem;
+      font-weight: 600;
+      color: var(--accent);
+      font-style: italic;
+      margin-top: 0.5rem;
+    }
+
+    /* Layout */
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem 4rem;
+    }
+
+    /* Glass panels */
+    .panel {
+      background: rgba(51, 65, 85, 0.45);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2.25rem;
+      margin-bottom: 2rem;
+      position: relative;
+    }
+    .panel::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.03) 0%, transparent 50%);
+      pointer-events: none;
+    }
+
+    /* Section numbers */
+    .section-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      background: rgba(52,211,153,0.15);
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 10px;
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-weight: 700;
+      margin-bottom: 0.75rem;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 1rem;
+      letter-spacing: -0.02em;
+    }
+    h3 {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 0.75rem;
+    }
+    p { margin-bottom: 0.75rem; }
+    p:last-child { margin-bottom: 0; }
+
+    /* Philosophy cards */
+    .philosophy-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .philosophy-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .philosophy-card h4 {
+      font-size: 0.9rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .philosophy-card p {
+      font-size: 0.85rem;
+      color: var(--fg);
+      line-height: 1.5;
+    }
+    .philosophy-card.full-width {
+      grid-column: 1 / -1;
+    }
+
+    /* Page cards */
+    .page-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      margin-top: 1.25rem;
+    }
+    .page-card {
+      background: rgba(52,211,153,0.06);
+      border: 1px solid rgba(52,211,153,0.2);
+      border-radius: 12px;
+      padding: 1.15rem;
+      text-align: center;
+    }
+    .page-card .icon {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+    .page-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-bottom: 0.3rem;
+    }
+    .page-card p {
+      font-size: 0.78rem;
+      color: var(--muted);
+      line-height: 1.4;
+    }
+    .panel-list {
+      margin-top: 1rem;
+      padding: 1rem 1.25rem;
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .panel-list h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.5rem;
+    }
+    .panel-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+    }
+    .panel-tag {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 500;
+      padding: 0.25rem 0.65rem;
+      border-radius: 8px;
+      background: rgba(51,65,85,0.6);
+      border: 1px solid var(--border);
+      color: var(--fg);
+    }
+
+    /* Diagram containers */
+    .diagram-wrap {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+    .diagram-wrap svg {
+      max-width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+    .diagram-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+
+    /* Comparison */
+    .comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .comparison-grid .diagram-wrap { margin-top: 0; }
+    .comparison-label {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      padding: 0.2rem 0.6rem;
+      border-radius: 6px;
+      margin-bottom: 0.75rem;
+    }
+    .comparison-label.before {
+      background: rgba(248,113,113,0.15);
+      color: var(--danger);
+      border: 1px solid rgba(248,113,113,0.25);
+    }
+    .comparison-label.after {
+      background: rgba(52,211,153,0.15);
+      color: var(--success);
+      border: 1px solid rgba(52,211,153,0.25);
+    }
+
+    /* Absorb table */
+    .absorb-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .absorb-card {
+      background: rgba(15, 23, 42, 0.5);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .absorb-card h4 {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 0.5rem;
+    }
+    .absorb-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .absorb-card li {
+      position: relative;
+      padding-left: 1.1rem;
+      margin-bottom: 0.35rem;
+      font-size: 0.85rem;
+      color: var(--fg);
+      line-height: 1.5;
+    }
+    .absorb-card li::before {
+      content: '+';
+      position: absolute;
+      left: 0;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    .killed-card {
+      grid-column: 1 / -1;
+      background: rgba(248,113,113,0.05);
+      border: 1px solid rgba(248,113,113,0.2);
+    }
+    .killed-card h4 {
+      color: var(--danger);
+    }
+    .killed-card li::before {
+      content: 'x';
+      color: var(--danger);
+    }
+
+    /* Pros & Cons */
+    .proscons-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+    .proscons-card {
+      background: rgba(15, 23, 42, 0.5);
+      border-radius: 12px;
+      padding: 1.25rem;
+    }
+    .proscons-card.pros { border: 1px solid rgba(52,211,153,0.25); }
+    .proscons-card.cons { border: 1px solid rgba(248,113,113,0.25); }
+    .proscons-card h4 {
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+    .proscons-card.pros h4 { color: var(--success); }
+    .proscons-card.cons h4 { color: var(--danger); }
+    .proscons-card ul {
+      list-style: none;
+      padding: 0;
+    }
+    .proscons-card li {
+      position: relative;
+      padding-left: 1.25rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+      color: var(--fg);
+      line-height: 1.5;
+    }
+    .proscons-card li::before {
+      position: absolute;
+      left: 0;
+      font-weight: 700;
+    }
+    .proscons-card.pros li::before { content: '+'; color: var(--success); }
+    .proscons-card.cons li::before { content: '-'; color: var(--danger); }
+
+    /* Migration table */
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 1rem;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+    }
+    thead th {
+      text-align: left;
+      font-weight: 600;
+      color: var(--accent);
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 0.75rem 1rem;
+      border-bottom: 2px solid var(--border);
+      background: rgba(15, 23, 42, 0.4);
+    }
+    thead th:first-child { border-radius: 8px 0 0 0; }
+    thead th:last-child { border-radius: 0 8px 0 0; }
+    tbody td {
+      padding: 0.7rem 1rem;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.4);
+      color: var(--fg);
+      vertical-align: top;
+    }
+    tbody tr:hover td { background: rgba(51, 65, 85, 0.3); }
+    .tag {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 600;
+      padding: 0.15rem 0.55rem;
+      border-radius: 6px;
+      letter-spacing: 0.03em;
+    }
+    .tag-merge { background: rgba(52,211,153,0.15); color: var(--success); border: 1px solid rgba(52,211,153,0.25); }
+    .tag-kill { background: rgba(248,113,113,0.15); color: var(--danger); border: 1px solid rgba(248,113,113,0.25); }
+    .tag-panel { background: rgba(167,139,250,0.15); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
+    .tag-keep { background: rgba(100,116,139,0.2); color: var(--muted); border: 1px solid rgba(100,116,139,0.3); }
+    .tag-modal { background: rgba(251,191,36,0.15); color: var(--warning); border: 1px solid rgba(251,191,36,0.25); }
+
+    .priority-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      background: rgba(52,211,153,0.15);
+      border: 1px solid rgba(52,211,153,0.3);
+      border-radius: 6px;
+      color: var(--accent);
+      font-size: 0.7rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 2rem;
+      color: var(--muted);
+      font-size: 0.8rem;
+      border-top: 1px solid var(--border);
+      margin-top: 2rem;
+    }
+    .footer code {
+      font-family: 'JetBrains Mono', monospace;
+      background: rgba(51,65,85,0.5);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+    }
+
+    @media (max-width: 768px) {
+      .hero h1 { font-size: 1.75rem; }
+      .philosophy-grid, .comparison-grid, .proscons-grid, .absorb-grid { grid-template-columns: 1fr; }
+      .page-grid { grid-template-columns: repeat(2, 1fr); }
+      .panel { padding: 1.5rem; }
+      .killed-card { grid-column: 1; }
+    }
+  </style>
+</head>
+<body>
+
+  <header class="hero">
+    <div class="badge">CoCo Platform / UX Strategy</div>
+    <h1>Path B <span>-- Collapse</span></h1>
+    <p class="tagline">17 pages become 4. Everything else is a slide-over panel. Navigate by acting, not by page-hopping.</p>
+    <p class="mantra">"4 pages, infinite depth."</p>
+  </header>
+
+  <main class="container">
+
+    <!-- 1. Design Philosophy -->
+    <section class="panel">
+      <div class="section-num">1</div>
+      <h2>Design Philosophy</h2>
+      <p>
+        Home is the command center. Everything else is a slide-over panel.
+        The user never leaves Home for routine work. They <strong>act</strong> on items inline, or click to open a panel
+        that slides in from the right. Escape closes it. The stream is always there underneath.
+      </p>
+      <div class="philosophy-grid">
+        <div class="philosophy-card">
+          <h4>Command Center Model</h4>
+          <p>Home shows the action stream: decisions, agent updates, todos, costs. Every item is actionable inline. No dead-end display pages.</p>
+        </div>
+        <div class="philosophy-card">
+          <h4>Slide-Over Panels</h4>
+          <p>Need more detail? Click an item and a panel slides in from the right. It stacks, so you can drill deeper. Escape pops the stack.</p>
+        </div>
+        <div class="philosophy-card">
+          <h4>Navigate by Acting</h4>
+          <p>You don't navigate to "the Costs page." You see a cost alert in the stream and click it. Context comes to you, not the other way around.</p>
+        </div>
+        <div class="philosophy-card">
+          <h4>Keyboard-First</h4>
+          <p>Escape = close panel. Tab = next item. Enter = open detail. Arrow keys = scroll. Power users never touch the mouse.</p>
+        </div>
+      </div>
+
+      <div style="margin-top:1.5rem;">
+        <h3>The Four Pages</h3>
+        <div class="page-grid">
+          <div class="page-card">
+            <span class="icon" aria-hidden="true">&#x1F3E0;</span>
+            <h4>Home</h4>
+            <p>Command center. Action stream. Where you live 90% of the time.</p>
+          </div>
+          <div class="page-card">
+            <span class="icon" aria-hidden="true">&#x1F916;</span>
+            <h4>Agents</h4>
+            <p>Delegate + monitor. See all running agents and their status.</p>
+          </div>
+          <div class="page-card">
+            <span class="icon" aria-hidden="true">&#x1F333;</span>
+            <h4>Tree</h4>
+            <p>Organize portfolio. Teams, projects, knowledge hierarchy.</p>
+          </div>
+          <div class="page-card">
+            <span class="icon" aria-hidden="true">&#x2728;</span>
+            <h4>Self-Improve</h4>
+            <p>Studio only. Code analysis, folder review, improvement suggestions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel-list">
+        <h4>Slide-Over Panels</h4>
+        <div class="panel-tags">
+          <span class="panel-tag">Draft preview</span>
+          <span class="panel-tag">Agent output</span>
+          <span class="panel-tag">Todo detail</span>
+          <span class="panel-tag">Content viewer</span>
+          <span class="panel-tag">Chat</span>
+          <span class="panel-tag">Settings</span>
+          <span class="panel-tag">Cost breakdown</span>
+          <span class="panel-tag">Decision detail</span>
+          <span class="panel-tag">Knowledge item</span>
+          <span class="panel-tag">Project detail</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. Page Reduction Diagram -->
+    <section class="panel">
+      <div class="section-num">2</div>
+      <h2>Page Reduction: 17 to 4</h2>
+      <p>
+        The current app has 17 separate pages. Path B collapses them into 4 real pages plus a stack of slide-over panels.
+        Most "pages" become either absorbed into Home's stream, converted to panels, or killed entirely.
+      </p>
+      <div class="diagram-wrap">
+        <div class="diagram-label">17 Pages to 4 Pages + Panels</div>
+        <div id="diagram-reduction"></div>
+      </div>
+    </section>
+
+    <!-- 3. User Flow -->
+    <section class="panel">
+      <div class="section-num">3</div>
+      <h2>Core User Flow</h2>
+      <p>
+        The primary loop: open CoCo, see the action stream, act inline or open a slide-over, close panel,
+        back to stream. The user <strong>never leaves Home</strong> for routine work.
+      </p>
+      <div class="diagram-wrap">
+        <div class="diagram-label">Primary User Journey</div>
+        <div id="diagram-flow"></div>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3>When You Leave Home</h3>
+        <p style="font-size:0.9rem; color: var(--muted);">
+          Only three reasons to navigate away from Home:
+        </p>
+        <div class="philosophy-grid" style="margin-top:0.75rem;">
+          <div class="philosophy-card">
+            <h4>Agents Page</h4>
+            <p>Monitor long-running agents. See all active processes, their progress, and output summaries. Agent detail opens as a slide-over.</p>
+          </div>
+          <div class="philosophy-card">
+            <h4>Tree Page</h4>
+            <p>Reorganize your portfolio. Move projects between teams, adjust hierarchy, search knowledge. Project/knowledge detail opens as slide-over.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. Information Architecture -->
+    <section class="panel">
+      <div class="section-num">4</div>
+      <h2>Information Architecture</h2>
+      <p>What each page absorbs, what becomes a panel, and what gets killed.</p>
+      <div class="absorb-grid">
+        <div class="absorb-card">
+          <h4>Home Absorbs</h4>
+          <ul>
+            <li>Dashboard (briefing, summary cards)</li>
+            <li>Inbox / Notifications (action stream)</li>
+            <li>Todos (inline list + completion)</li>
+            <li>Activity feed (merged into stream)</li>
+            <li>Costs summary (alert cards)</li>
+            <li>Goals / milestones (status cards)</li>
+            <li>Decision queue (inline approve/reject)</li>
+          </ul>
+        </div>
+        <div class="absorb-card">
+          <h4>Agents Absorbs</h4>
+          <ul>
+            <li>Agent list (all running + recent)</li>
+            <li>Agent detail (as slide-over panel)</li>
+            <li>Agent output viewer (as slide-over)</li>
+            <li>Orb spawn (floating action button)</li>
+          </ul>
+        </div>
+        <div class="absorb-card">
+          <h4>Tree Absorbs</h4>
+          <ul>
+            <li>Projects page (as slide-over)</li>
+            <li>Team hierarchy (inline tree view)</li>
+            <li>Knowledge search (inline search bar)</li>
+            <li>Knowledge items (as slide-over)</li>
+          </ul>
+        </div>
+        <div class="absorb-card">
+          <h4>Self-Improve (Studio)</h4>
+          <ul>
+            <li>Code analysis tools</li>
+            <li>Folder analysis results</li>
+            <li>Improvement suggestions</li>
+            <li>Quality metrics dashboard</li>
+          </ul>
+        </div>
+        <div class="absorb-card killed-card">
+          <h4>Killed Pages (No Longer Exist)</h4>
+          <ul>
+            <li>Settings page (becomes modal dialog)</li>
+            <li>Knowledge page (absorbed into Tree search)</li>
+            <li>Costs page (summary in Home, detail in panel)</li>
+            <li>Activity page (merged into Home stream)</li>
+            <li>Goals page (merged into Home stream)</li>
+            <li>Inbox page (merged into Home stream)</li>
+            <li>Decision queue page (inline on Home)</li>
+            <li>People / Org chart (merged into Tree)</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. Slide-Over Stack Diagram -->
+    <section class="panel">
+      <div class="section-num">5</div>
+      <h2>Slide-Over Panel Stack</h2>
+      <p>
+        Panels stack from right to left. Each panel pushes the previous one slightly left and dims it.
+        Pressing Escape pops the top panel. The stream is always visible underneath as a faded background.
+      </p>
+      <div class="diagram-wrap">
+        <div class="diagram-label">Panel Stacking Behavior</div>
+        <div id="diagram-stack"></div>
+      </div>
+      <div style="margin-top:1rem;">
+        <h3>Stack Rules</h3>
+        <div class="philosophy-grid" style="margin-top:0.75rem;">
+          <div class="philosophy-card">
+            <h4>Max Depth: 3</h4>
+            <p>At most 3 panels can stack. Opening a 4th replaces the bottom panel. This prevents "panel hell."</p>
+          </div>
+          <div class="philosophy-card">
+            <h4>Escape = Pop</h4>
+            <p>Escape always closes the topmost panel. Clicking outside the panel stack also closes the top. Muscle memory from modal UIs.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. Pros & Cons -->
+    <section class="panel">
+      <div class="section-num">6</div>
+      <h2>Pros & Cons</h2>
+      <div class="proscons-grid">
+        <div class="proscons-card pros">
+          <h4>Pros</h4>
+          <ul>
+            <li>Massive complexity reduction -- 17 pages to 4 pages</li>
+            <li>One-place workflow -- 90% of work happens without leaving Home</li>
+            <li>Keyboard-friendly -- Escape to go back, Tab/Enter to navigate</li>
+            <li>Modal muscle memory -- slide-overs feel familiar from Notion, Linear, Slack</li>
+            <li>Sidebar shrinks from 17 links to 4 -- instantly less overwhelming</li>
+            <li>Context preserved -- the stream is always visible behind panels</li>
+            <li>Easier to build new features -- just add a panel type, no new route</li>
+          </ul>
+        </div>
+        <div class="proscons-card cons">
+          <h4>Cons</h4>
+          <ul>
+            <li>Slide-over panels can feel cramped for complex content</li>
+            <li>Loses the "full page" feel for deep work (e.g., long agent output)</li>
+            <li>Chat as a panel may feel limited vs. a dedicated page</li>
+            <li>Higher upfront effort -- requires rearchitecting navigation + layout</li>
+            <li>Panel state management adds complexity (stack, animations, focus trap)</li>
+            <li>Risk of "panel fatigue" if too many things are crammed into slide-overs</li>
+            <li>Deep links harder -- URL routing for panel state is non-trivial</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. Migration Path -->
+    <section class="panel">
+      <div class="section-num">7</div>
+      <h2>Migration Path</h2>
+      <p>
+        How to get from the current 17-page app to Path B's 4-page structure. Ordered by priority:
+        merge the highest-traffic pages first, then convert secondary pages to panels, then kill the rest.
+      </p>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Action</th>
+              <th>Current Page</th>
+              <th>Becomes</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="priority-num">1</span></td>
+              <td>Build the slide-over panel system</td>
+              <td>--</td>
+              <td>Reusable &lt;SlideOver&gt; component with stack management</td>
+              <td><span class="tag tag-merge">Foundation</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">2</span></td>
+              <td>Merge Dashboard + Inbox + Activity into Home stream</td>
+              <td>Dashboard, Inbox, Activity</td>
+              <td>Home action stream with unified feed</td>
+              <td><span class="tag tag-merge">Merge</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">3</span></td>
+              <td>Merge Todos + Decisions into Home inline actions</td>
+              <td>Todos, Decision Queue</td>
+              <td>Inline action cards in Home stream</td>
+              <td><span class="tag tag-merge">Merge</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">4</span></td>
+              <td>Convert Agent detail to slide-over panel</td>
+              <td>Agent Detail page</td>
+              <td>Slide-over on Agents page</td>
+              <td><span class="tag tag-panel">Panel</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">5</span></td>
+              <td>Build Tree page absorbing Projects + Knowledge</td>
+              <td>Projects, Knowledge Hub</td>
+              <td>Tree with hierarchy view + search</td>
+              <td><span class="tag tag-merge">Merge</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">6</span></td>
+              <td>Convert Project detail + Knowledge item to panels</td>
+              <td>Project Detail, Knowledge Detail</td>
+              <td>Slide-over panels on Tree page</td>
+              <td><span class="tag tag-panel">Panel</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">7</span></td>
+              <td>Merge Costs summary into Home, detail into panel</td>
+              <td>Costs page</td>
+              <td>Summary cards in Home + Cost detail panel</td>
+              <td><span class="tag tag-merge">Merge</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">8</span></td>
+              <td>Convert Chat to slide-over panel</td>
+              <td>Chat page</td>
+              <td>Chat panel (accessible from anywhere)</td>
+              <td><span class="tag tag-panel">Panel</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">9</span></td>
+              <td>Convert Settings to modal dialog</td>
+              <td>Settings page</td>
+              <td>Modal dialog triggered from sidebar</td>
+              <td><span class="tag tag-modal">Modal</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">10</span></td>
+              <td>Merge People/Org chart into Tree</td>
+              <td>People page</td>
+              <td>People node type in Tree hierarchy</td>
+              <td><span class="tag tag-merge">Merge</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">11</span></td>
+              <td>Kill Goals page, merge into Home stream</td>
+              <td>Goals page</td>
+              <td>Milestone cards in Home stream</td>
+              <td><span class="tag tag-kill">Kill</span></td>
+            </tr>
+            <tr>
+              <td><span class="priority-num">12</span></td>
+              <td>Remove old routes + update sidebar to 4 links</td>
+              <td>All killed pages</td>
+              <td>404 redirects to Home</td>
+              <td><span class="tag tag-kill">Kill</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    CoCo Platform -- Path B Design Rationale &middot; Generated <code>2026-04-06</code>
+  </footer>
+
+  <script type="module">
+    import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+    const theme = {
+      bg: '#1e293b',
+      fg: '#cbd5e1',
+      accent: '#34d399',
+      muted: '#64748b',
+      surface: '#334155',
+      border: '#475569',
+      transparent: true
+    }
+
+    async function render(elementId, diagram) {
+      const el = document.getElementById(elementId)
+      try {
+        const svg = await renderMermaidSVGAsync(diagram, { theme })
+        if (typeof svg === 'string') {
+          el.innerHTML = svg
+        } else if (svg instanceof SVGElement || svg instanceof HTMLElement) {
+          el.appendChild(svg)
+        } else if (svg?.outerHTML) {
+          el.innerHTML = svg.outerHTML
+        }
+      } catch (err) {
+        el.innerHTML = `<pre style="color:#f87171;font-size:0.8rem;">Diagram render error: ${err.message}</pre>`
+        console.error(`Error rendering ${elementId}:`, err)
+      }
+    }
+
+    // 2. Page Reduction Diagram
+    const reductionDiagram = `flowchart LR
+  subgraph BEFORE["Current: 17 Pages"]
+    direction TB
+    P1["Dashboard"]
+    P2["Inbox"]
+    P3["Activity"]
+    P4["Todos"]
+    P5["Decisions"]
+    P6["Agents"]
+    P7["Agent Detail"]
+    P8["Projects"]
+    P9["Project Detail"]
+    P10["Knowledge Hub"]
+    P11["Knowledge Detail"]
+    P12["Chat"]
+    P13["Costs"]
+    P14["People"]
+    P15["Goals"]
+    P16["Settings"]
+    P17["Self-Improve"]
+  end
+
+  subgraph AFTER["Path B: 4 Pages"]
+    direction TB
+    HOME["HOME\\n(command center)"]
+    AGENTS["AGENTS\\n(delegate + monitor)"]
+    TREE["TREE\\n(organize portfolio)"]
+    STUDIO["SELF-IMPROVE\\n(Studio only)"]
+  end
+
+  P1 --> HOME
+  P2 --> HOME
+  P3 --> HOME
+  P4 --> HOME
+  P5 --> HOME
+  P13 --> HOME
+  P15 --> HOME
+
+  P6 --> AGENTS
+  P7 -.->|"panel"| AGENTS
+
+  P8 --> TREE
+  P9 -.->|"panel"| TREE
+  P10 --> TREE
+  P11 -.->|"panel"| TREE
+  P14 --> TREE
+
+  P12 -.->|"panel"| HOME
+  P16 -.->|"modal"| HOME
+
+  P17 --> STUDIO`
+
+    // 3. Core User Flow
+    const flowDiagram = `flowchart TD
+  A["Open CoCo"] --> B["HOME\\n(action stream)"]
+  B --> C{"See item\\nin stream"}
+  C -->|"Quick action"| D["Act inline\\n(approve / complete / dismiss)"]
+  D --> B
+  C -->|"Need detail?"| E["Click item\\n(slide-over opens)"]
+  E --> F["Act in panel"]
+  F --> G["Panel closes\\n(Escape / click outside)"]
+  G --> B
+  E -->|"Need more context?"| H["Open nested panel\\n(chat, related item)"]
+  H --> I["Act in nested panel"]
+  I --> J["Close nested panel"]
+  J --> F
+  B -->|"Monitor agents"| K["AGENTS page"]
+  K -->|"Click agent"| L["Agent detail\\n(slide-over)"]
+  L --> K
+  B -->|"Reorganize"| M["TREE page"]
+  M -->|"Click project"| N["Project detail\\n(slide-over)"]
+  N --> M`
+
+    // 5. Slide-Over Stack
+    const stackDiagram = `flowchart LR
+  A["Action Stream\\n(always visible)"] --> B["Panel 1:\\nItem Detail"]
+  B --> C["Panel 2:\\nChat About It"]
+  C --> D["Esc: Close Chat"]
+  D --> E["Back to\\nItem Detail"]
+  E --> F["Esc: Close Detail"]
+  F --> G["Back to\\nAction Stream"]
+
+  style A fill:#334155,stroke:#34d399,color:#cbd5e1
+  style B fill:#334155,stroke:#475569,color:#cbd5e1
+  style C fill:#334155,stroke:#475569,color:#cbd5e1
+  style D fill:#064e3b,stroke:#34d399,color:#34d399
+  style E fill:#334155,stroke:#475569,color:#cbd5e1
+  style F fill:#064e3b,stroke:#34d399,color:#34d399
+  style G fill:#334155,stroke:#34d399,color:#cbd5e1`
+
+    // Render all diagrams
+    await Promise.all([
+      render('diagram-reduction', reductionDiagram),
+      render('diagram-flow', flowDiagram),
+      render('diagram-stack', stackDiagram)
+    ])
+  </script>
+
+</body>
+</html>
