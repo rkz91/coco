@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CoCo Platform — User Journey Gap Analysis</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #cbd5e1; padding: 40px 20px; line-height: 1.6; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { color: #60a5fa; font-size: 28px; margin-bottom: 4px; }
+  h2 { color: #34d399; font-size: 20px; margin-top: 40px; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+  h3 { color: #fbbf24; font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 32px; }
+  .diagram { background: #1e293b; border-radius: 16px; padding: 24px; margin: 20px 0; border: 1px solid #334155; }
+  .diagram svg { max-width: 100%; height: auto; display: block; }
+  .diagram .loading { color: #64748b; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: #1e293b; color: #94a3b8; text-align: left; padding: 10px 12px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-top: 1px solid #1e293b; }
+  tr:hover td { background: #1e293b40; }
+  .red { color: #f87171; }
+  .yellow { color: #fbbf24; }
+  .green { color: #34d399; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tag-gap { background: #f8717120; color: #f87171; }
+  .tag-friction { background: #fbbf2420; color: #fbbf24; }
+  .tag-ok { background: #34d39920; color: #34d399; }
+  .tag-dead { background: #64748b20; color: #64748b; }
+  p { margin: 8px 0; font-size: 14px; }
+  .callout { background: #1e293b; border-left: 3px solid #60a5fa; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  code { background: #334155; padding: 1px 6px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .priority { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .p0 { background: #f87171; }
+  .p1 { background: #fbbf24; }
+  .p2 { background: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CoCo Platform — User Journey Gap Analysis</h1>
+<p class="subtitle">Mapping the real experience. Finding where complexity kills flow.</p>
+
+<!-- ============================================================ -->
+<h2>1. The Core Loop (What Should Happen)</h2>
+<!-- ============================================================ -->
+
+<div class="diagram" data-code='graph LR
+    A["Open CoCo"] --> B["See what matters"]
+    B --> C["Act on it"]
+    C --> D["Delegate to agents"]
+    D --> E["Monitor progress"]
+    E --> F["Review results"]
+    F --> B'></div>
+
+<p>This is the ideal: <strong>5 steps, no dead ends, always cycling back</strong>. Every feature should serve one of these steps. If it doesn't, it's noise.</p>
+
+<!-- ============================================================ -->
+<h2>2. What Actually Happens (Current Journey)</h2>
+<!-- ============================================================ -->
+
+<div class="diagram" data-code='graph TD
+    START["Open localhost:5173"] --> HOME["HomePage"]
+    HOME --> SCAN["Scan briefing + health grid"]
+    SCAN --> DECIDE{"What needs attention?"}
+
+    DECIDE -->|"Todos"| TODOS["TodosPage"]
+    DECIDE -->|"Inbox items"| INBOX["InboxPage<br/>8 tabs"]
+    DECIDE -->|"Agent work"| AGENTS["AgentsPage"]
+    DECIDE -->|"Project deep dive"| PROJ["ProjectDetailPage<br/>10 tabs"]
+    DECIDE -->|"Knowledge"| KNOW["KnowledgePage<br/>3 tabs"]
+    DECIDE -->|"Cost check"| COSTS["CostsPage"]
+
+    INBOX --> LOST1["Lost: which tab?<br/>All? Urgent? Drafts?<br/>Actions? Classify?"]
+    PROJ --> LOST2["Lost: which tab?<br/>Overview? Knowledge?<br/>Agents? Todos? Costs?"]
+
+    TODOS --> ACT1["Transition todo state"]
+    ACT1 --> BACK1["Back to... where?"]
+
+    AGENTS --> SPAWN["Spawn agent"]
+    SPAWN --> WAIT["Wait... monitor..."]
+    WAIT --> LOG["Check log output"]
+    LOG --> DONE{"Agent done?"}
+    DONE -->|"Yes"| RESULT["Read output"]
+    DONE -->|"No"| WAIT
+
+    RESULT --> NOW{"What now?"}
+    NOW -->|"More work"| SPAWN
+    NOW -->|"Done"| HOME
+
+    LOST1 --> GIVE_UP["Give up / go back"]
+    LOST2 --> GIVE_UP
+    BACK1 --> HOME'></div>
+
+<!-- ============================================================ -->
+<h2>3. Gap Analysis</h2>
+<!-- ============================================================ -->
+
+<h3>Navigation Gaps (Getting Lost)</h3>
+
+<table>
+<tr><th>Gap</th><th>Where</th><th>Problem</th><th>Severity</th></tr>
+<tr>
+  <td><span class="priority p0"></span>Inbox tab overload</td>
+  <td>InboxPage</td>
+  <td>8 tabs is decision paralysis. User opens inbox and freezes: All? Urgent? Drafts? Actions? Classify? Health? Suggestions? Auto-handled?</td>
+  <td><span class="tag tag-gap">GAP</span></td>
+</tr>
+<tr>
+  <td><span class="priority p0"></span>ProjectDetail is a kitchen sink</td>
+  <td>ProjectDetailPage</td>
+  <td>10 tabs crammed into one page. 1000+ LOC. User wanted to check agents but ends up in the wrong tab. No clear entry point.</td>
+  <td><span class="tag tag-gap">GAP</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>No "back to where I was"</td>
+  <td>Global</td>
+  <td>After acting on a todo or reviewing an agent, there's no breadcrumb trail or "return to context". User restarts from Home.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Scope context is invisible</td>
+  <td>ScopeContext</td>
+  <td>Clicking a tree node scopes the whole app but there's no persistent visual indicator. User forgets they're scoped.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p2"></span>Dead routes in CommandPalette</td>
+  <td>CommandPalette</td>
+  <td><code>/people</code> and <code>/tasks</code> commands exist but pages don't. Cmd+K search sends you nowhere.</td>
+  <td><span class="tag tag-dead">DEAD</span></td>
+</tr>
+</table>
+
+<h3>Action Gaps (Can't Do the Thing)</h3>
+
+<table>
+<tr><th>Gap</th><th>Where</th><th>Problem</th><th>Severity</th></tr>
+<tr>
+  <td><span class="priority p0"></span>No quick action from Home</td>
+  <td>HomePage</td>
+  <td>Home shows what's happening but you can't ACT from there. Every action requires navigating to another page. Should be: see it, do it, done.</td>
+  <td><span class="tag tag-gap">GAP</span></td>
+</tr>
+<tr>
+  <td><span class="priority p0"></span>Agent spawning is buried</td>
+  <td>AgentsPage</td>
+  <td>To spawn an agent: navigate to agents page → find/create agent → click spawn → fill task. Should be: "do this" from anywhere.</td>
+  <td><span class="tag tag-gap">GAP</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>No inline todo completion</td>
+  <td>HomePage / Inbox</td>
+  <td>Can see todos on Home but must navigate to TodosPage to mark done. Should be a checkbox right there.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Chat is disconnected</td>
+  <td>ChatPage</td>
+  <td>Chat with Claude exists but is a separate island. Can't easily say "chat about this agent's output" or "chat about this todo".</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p2"></span>No batch operations</td>
+  <td>TodosPage / InboxPage</td>
+  <td>Can't select 5 todos and mark all done. Can't approve 3 drafts at once. Everything is one-by-one.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+</table>
+
+<h3>Feedback Gaps (Don't Know What Happened)</h3>
+
+<table>
+<tr><th>Gap</th><th>Where</th><th>Problem</th><th>Severity</th></tr>
+<tr>
+  <td><span class="priority p0"></span>Agent output is a wall of text</td>
+  <td>LogViewer</td>
+  <td>Agent finishes → user reads a raw log stream. No summary, no "here's what I did". Should show structured output first, raw log on expand.</td>
+  <td><span class="tag tag-gap">GAP</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>No success/failure summary</td>
+  <td>AgentsPage</td>
+  <td>Agent completes → card says "completed". But WHAT did it produce? No preview, no summary, no deliverable link.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Silent failures</td>
+  <td>Multiple</td>
+  <td>ScopeContext fails silently. Inbox classify fails silently. Chat stream drops silently. No error states.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+<tr>
+  <td><span class="priority p2"></span>Cost surprise</td>
+  <td>CostsPage</td>
+  <td>No real-time cost indicator while agents run. You find out the spend AFTER. Should show running cost on agent card.</td>
+  <td><span class="tag tag-friction">FRICTION</span></td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>4. The Simplified Journey (Target)</h2>
+<!-- ============================================================ -->
+
+<div class="diagram" data-code='graph TD
+    START["Open CoCo"] --> HOME["Home<br/>Briefing + Action Cards"]
+    HOME -->|"Click card"| ACT["Inline Action<br/>Approve / Complete / Spawn"]
+    HOME -->|"Need details"| DETAIL["Slide-over Panel<br/>NOT a new page"]
+    HOME -->|"Spawn agent"| QUICK["Quick Spawn<br/>from anywhere via Orb"]
+    DETAIL --> ACT
+    ACT --> HOME
+    QUICK --> MONITOR["Agent Running<br/>Toast + progress badge"]
+    MONITOR --> SUMMARY["Agent Done<br/>Structured Summary Card"]
+    SUMMARY -->|"Looks good"| HOME
+    SUMMARY -->|"Need more"| QUICK'></div>
+
+<div class="callout">
+<strong>Key principle:</strong> Home is the hub. Everything flows OUT from Home and BACK to Home. No page-hopping. Slide-over panels for detail. Inline actions everywhere. The Orb is the universal "do something" button.
+</div>
+
+<!-- ============================================================ -->
+<h2>5. Fix Priority List</h2>
+<!-- ============================================================ -->
+
+<table>
+<tr><th>#</th><th>Fix</th><th>What Changes</th><th>Impact</th></tr>
+<tr>
+  <td>1</td>
+  <td><span class="priority p0"></span><strong>Inline actions on Home cards</strong></td>
+  <td>Add approve/complete/dismiss buttons directly on Home briefing cards. No navigation needed.</td>
+  <td class="green">Eliminates 60% of page-hops</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><span class="priority p0"></span><strong>Collapse Inbox to 3 tabs</strong></td>
+  <td>Urgent + Drafts + Everything Else. Kill: Classify, Suggestions, Health, Auto-handled, Actions tabs.</td>
+  <td class="green">Kills decision paralysis</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><span class="priority p0"></span><strong>Agent summary card on completion</strong></td>
+  <td>When agent finishes, show structured summary (what it did, files changed, key output) not raw log.</td>
+  <td class="green">Makes agent output usable</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><span class="priority p0"></span><strong>Quick spawn from Orb</strong></td>
+  <td>CoCo Orb becomes "do this" button: type task → picks best agent → spawns. No navigate to AgentsPage.</td>
+  <td class="green">Agent spawning in 2 clicks</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><span class="priority p1"></span><strong>Split ProjectDetailPage</strong></td>
+  <td>Replace 10-tab monster with: Overview page + slide-over panels for each section.</td>
+  <td class="yellow">Reduces cognitive load</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><span class="priority p1"></span><strong>Persistent scope indicator</strong></td>
+  <td>Show current scope in top bar: "Viewing: AuditBoard > AB Config" with clear X to unscope.</td>
+  <td class="yellow">User always knows context</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><span class="priority p1"></span><strong>Running cost on agent cards</strong></td>
+  <td>Show live token count + estimated USD on the agent card while it runs.</td>
+  <td class="yellow">No cost surprises</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><span class="priority p1"></span><strong>Contextual chat</strong></td>
+  <td>Add "Chat about this" button on agent output, todo detail, knowledge content. Opens chat with context pre-loaded.</td>
+  <td class="yellow">Connects the islands</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><span class="priority p2"></span><strong>Error states everywhere</strong></td>
+  <td>Add visible error UI for: scope failure, SSE disconnect, classify failure, chat stream drop.</td>
+  <td>Stops silent failures</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><span class="priority p2"></span><strong>Remove dead routes</strong></td>
+  <td>Remove /people and /tasks from CommandPalette. Remove unused Zustand dep. Clean up.</td>
+  <td>Less confusion</td>
+</tr>
+</table>
+
+</div>
+
+<script type="module">
+import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+const theme = { bg: '#1e293b', fg: '#cbd5e1', accent: '#60a5fa', muted: '#64748b', surface: '#334155', border: '#475569', transparent: true }
+
+for (const el of document.querySelectorAll('[data-code]')) {
+  el.innerHTML = '<span class="loading">Rendering diagram...</span>'
+  await new Promise(r => requestAnimationFrame(r))
+  try {
+    el.innerHTML = await renderMermaidSVGAsync(el.dataset.code, theme)
+  } catch (e) {
+    el.innerHTML = `<pre style="color:#f87171;font-size:12px;">${e.message}\n\nRaw:\n${el.dataset.code}</pre>`
+  }
+}
+</script>
+</body>
+</html>

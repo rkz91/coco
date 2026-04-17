@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CoCo Platform — Updated User Journey (April 15, 2026)</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #cbd5e1; padding: 40px 20px; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { color: #60a5fa; font-size: 28px; margin-bottom: 4px; }
+  h2 { color: #34d399; font-size: 20px; margin-top: 48px; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+  h3 { color: #fbbf24; font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 32px; }
+  .diagram { background: #1e293b; border-radius: 16px; padding: 24px; margin: 20px 0; border: 1px solid #334155; overflow-x: auto; }
+  .diagram svg { max-width: 100%; height: auto; display: block; }
+  .diagram .loading { color: #64748b; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: #1e293b; color: #94a3b8; text-align: left; padding: 10px 12px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-top: 1px solid #1e293b; }
+  tr:hover td { background: #1e293b40; }
+  .red { color: #f87171; }
+  .yellow { color: #fbbf24; }
+  .green { color: #34d399; }
+  .blue { color: #60a5fa; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tag-fixed { background: #34d39920; color: #34d399; }
+  .tag-partial { background: #fbbf2420; color: #fbbf24; }
+  .tag-open { background: #f8717120; color: #f87171; }
+  .tag-new { background: #60a5fa20; color: #60a5fa; }
+  p { margin: 8px 0; font-size: 14px; }
+  .callout { background: #1e293b; border-left: 3px solid #60a5fa; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  .callout-warn { border-left-color: #fbbf24; }
+  .callout-good { border-left-color: #34d399; }
+  code { background: #334155; padding: 1px 6px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .priority { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .p0 { background: #f87171; }
+  .p1 { background: #fbbf24; }
+  .p2 { background: #60a5fa; }
+  .status-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; margin: 16px 0; }
+  .status-card { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; }
+  .status-card h4 { font-size: 14px; margin-bottom: 6px; }
+  .status-card p { font-size: 12px; color: #94a3b8; margin: 0; }
+  .status-card .num { font-size: 24px; font-weight: 700; }
+  .legend { display: flex; gap: 16px; flex-wrap: wrap; margin: 12px 0; font-size: 12px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CoCo Platform — Updated User Journey</h1>
+<p class="subtitle">April 15, 2026 — Progress check since April 8 gap analysis. What shipped, what's still broken, and the updated fix plan.</p>
+
+<!-- ============================================================ -->
+<h2>1. Progress Scorecard</h2>
+<!-- ============================================================ -->
+
+<div class="status-grid">
+  <div class="status-card">
+    <h4 class="green">Fixed</h4>
+    <div class="num green">3</div>
+    <p>Home inline actions, CocoOrb, Slide-over panels</p>
+  </div>
+  <div class="status-card">
+    <h4 class="yellow">Partial</h4>
+    <div class="num yellow">2</div>
+    <p>Scope indicator (sidebar only), Agent output (detail panel, no summary)</p>
+  </div>
+  <div class="status-card">
+    <h4 class="red">Still Broken</h4>
+    <div class="num red">5</div>
+    <p>Inbox 8 tabs, ProjectDetail 10 tabs, dead routes, no batch ops, no contextual chat</p>
+  </div>
+  <div class="status-card">
+    <h4 class="blue">New Since Apr 8</h4>
+    <div class="num blue">4</div>
+    <p>Knowledge Wiki, Brain v3, Agent Lightning, Graph viz</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Current Navigation Map (What Exists Today)</h2>
+<!-- ============================================================ -->
+
+<p>The sidebar has 4 sections with 15 live routes. Two ghost routes haunt the CommandPalette.</p>
+
+<div class="diagram" data-code='graph TD
+    subgraph Sidebar["Sidebar (4 sections, 15 routes)"]
+        direction TB
+        subgraph Home_Section["🏠 Home"]
+            HOME["/ Home"]
+            ANALYTICS["/analytics"]
+            INBOX["/inbox<br/>⚠️ 8 tabs"]
+        end
+        subgraph Work_Section["📋 Work"]
+            TREE["/tree Portfolio"]
+            PROJECTS["/projects Teams"]
+            TODOS["/todos"]
+            GOALS["/goals"]
+        end
+        subgraph Intel_Section["🧠 Intelligence"]
+            KNOWLEDGE["/knowledge<br/>Wiki + RAG Q&A"]
+            GRAPH["/graph"]
+            CANVAS["/canvas Brain Map"]
+            CHAT["/chat"]
+        end
+        subgraph System_Section["⚙️ System"]
+            AGENTS["/agents"]
+            COSTS["/costs"]
+            ACTIVITY["/activity"]
+            SETTINGS["/settings"]
+        end
+    end
+
+    subgraph Global["Global Overlays"]
+        ORB["CocoOrb ✅<br/>Floating action button"]
+        CMD["Cmd+K Palette<br/>⚠️ has /people + /tasks ghosts"]
+        NOTIF["Notifications"]
+    end
+
+    subgraph Detail["Detail Layer"]
+        PROJ_DETAIL["/projects/:id<br/>⚠️ 10 tabs, 2060 LOC"]
+        AGENT_DETAIL["AgentDetail<br/>Slide-over panel ✅"]
+        KNOWLEDGE_DETAIL["ArticleViewer<br/>Slide-over panel ✅"]
+    end
+
+    PROJECTS --> PROJ_DETAIL
+    AGENTS --> AGENT_DETAIL
+    KNOWLEDGE --> KNOWLEDGE_DETAIL
+    ORB -.->|"spawn agent"| AGENTS
+    ORB -.->|"quick action"| HOME'></div>
+
+<!-- ============================================================ -->
+<h2>3. Actual User Journey Today (Post April 8 Fixes)</h2>
+<!-- ============================================================ -->
+
+<div class="legend">
+  <div class="legend-item"><div class="legend-dot" style="background:#34d399"></div> Fixed / smooth</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#fbbf24"></div> Friction / partial fix</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#f87171"></div> Broken / gap</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#60a5fa"></div> New feature (post Apr 8)</div>
+</div>
+
+<div class="diagram" data-code='graph TD
+    START["Open localhost:5173"] --> HOME["🏠 HomePage<br/>Briefing + FocusList"]
+
+    HOME --> SCAN["Scan briefing card<br/>+ project health grid"]
+    SCAN --> DECIDE{"What needs attention?"}
+
+    %% ✅ FIXED: inline actions from home
+    DECIDE -->|"Quick todo"| INLINE_ACT["✅ Inline Action<br/>Mark done from FocusList"]
+    INLINE_ACT --> HOME
+
+    %% ✅ FIXED: Orb for quick spawn
+    DECIDE -->|"Need agent"| ORB["✅ CocoOrb<br/>Type task → spawn"]
+    ORB --> AGENT_RUN["Agent Running<br/>⚠️ No live cost display"]
+    AGENT_RUN --> AGENT_DONE{"Done?"}
+    AGENT_DONE -->|"No"| AGENT_RUN
+    AGENT_DONE -->|"Yes"| AGENT_RESULT["⚠️ Agent slide-over<br/>Has detail but no<br/>structured summary card"]
+    AGENT_RESULT --> HOME
+
+    %% ❌ STILL BROKEN: Inbox paralysis
+    DECIDE -->|"Inbox items"| INBOX["❌ InboxPage<br/>8 tabs unchanged"]
+    INBOX --> TAB_LOST["Which tab?<br/>All? Urgent? Drafts?<br/>Classify? Suggestions?<br/>Health? Auto-handled? Actions?"]
+    TAB_LOST -->|"Found it"| INBOX_ACT["Approve / Dismiss / Classify"]
+    TAB_LOST -->|"Overwhelmed"| BACK_HOME["Give up → Home"]
+    INBOX_ACT --> HOME
+
+    %% ❌ STILL BROKEN: ProjectDetail overload
+    DECIDE -->|"Project deep dive"| PROJ["❌ ProjectDetailPage<br/>10 tabs, 2060 LOC"]
+    PROJ --> TAB_LOST2["Which tab?<br/>Overview? Knowledge?<br/>Agents? Todos? Goals?<br/>Costs? People? Settings?<br/>Collab? Folder?"]
+    TAB_LOST2 --> PROJ_ACT["Do something"]
+    PROJ_ACT --> HOME
+
+    %% 🆕 NEW: Knowledge Wiki
+    DECIDE -->|"Knowledge"| KNOW["🆕 KnowledgePage<br/>Wiki + RAG Q&A + Graph"]
+    KNOW --> WIKI["Browse articles<br/>Ask questions"]
+    WIKI --> HOME
+
+    %% ⚠️ PARTIAL: Chat still disconnected
+    DECIDE -->|"Chat"| CHAT_PAGE["⚠️ ChatPage<br/>Works but isolated<br/>No context linking"]
+    CHAT_PAGE --> HOME
+
+    BACK_HOME --> HOME'></div>
+
+<div class="callout callout-good">
+<strong>What improved:</strong> The Home → act → Home loop now works for simple todos (FocusList inline actions) and agent spawning (CocoOrb). These were the two biggest P0 gaps. The core loop is 60% tighter than April 8.
+</div>
+
+<div class="callout callout-warn">
+<strong>What didn't move:</strong> InboxPage (8 tabs), ProjectDetailPage (10 tabs), and dead CommandPalette routes are exactly where they were. These are the remaining walls where users hit cognitive overload.
+</div>
+
+<!-- ============================================================ -->
+<h2>4. Gap Resolution Tracker</h2>
+<!-- ============================================================ -->
+
+<table>
+<tr><th>#</th><th>Fix (from Apr 8)</th><th>Status</th><th>Evidence</th></tr>
+<tr>
+  <td>1</td>
+  <td><span class="priority p0"></span>Inline actions on Home cards</td>
+  <td><span class="tag tag-fixed">FIXED</span></td>
+  <td>FocusList has <code>onMarkDone</code>, BriefingCard has sync action. No page-hop needed.</td>
+</tr>
+<tr>
+  <td>2</td>
+  <td><span class="priority p0"></span>Collapse Inbox to 3 tabs</td>
+  <td><span class="tag tag-open">OPEN</span></td>
+  <td><code>TAB_CONFIG</code> in InboxPage.tsx still has 8 entries (line 59-68). Zero tabs removed.</td>
+</tr>
+<tr>
+  <td>3</td>
+  <td><span class="priority p0"></span>Agent summary card on completion</td>
+  <td><span class="tag tag-partial">PARTIAL</span></td>
+  <td>AgentDetail uses PropertiesPanel (slide-over ✅) but shows status + raw logs — no structured "here's what I did" summary.</td>
+</tr>
+<tr>
+  <td>4</td>
+  <td><span class="priority p0"></span>Quick spawn from Orb</td>
+  <td><span class="tag tag-fixed">FIXED</span></td>
+  <td>CocoOrb in App.tsx (line 89). Floating button, text input, auto-collapse. Globally available.</td>
+</tr>
+<tr>
+  <td>5</td>
+  <td><span class="priority p1"></span>Split ProjectDetailPage</td>
+  <td><span class="tag tag-open">OPEN</span></td>
+  <td>Still 10 tabs, 2060 LOC. No structural change attempted.</td>
+</tr>
+<tr>
+  <td>6</td>
+  <td><span class="priority p1"></span>Persistent scope indicator</td>
+  <td><span class="tag tag-partial">PARTIAL</span></td>
+  <td>ScopePicker exists in Sidebar (line 278) but NOT in AppShell top bar. User forgets scope when collapsed.</td>
+</tr>
+<tr>
+  <td>7</td>
+  <td><span class="priority p1"></span>Running cost on agent cards</td>
+  <td><span class="tag tag-open">OPEN</span></td>
+  <td>No live cost display. CostsPage exists but is a separate page, not inline on agent cards.</td>
+</tr>
+<tr>
+  <td>8</td>
+  <td><span class="priority p1"></span>Contextual chat</td>
+  <td><span class="tag tag-open">OPEN</span></td>
+  <td>ChatPage works but is an island. No "chat about this" button on agent output or knowledge articles.</td>
+</tr>
+<tr>
+  <td>9</td>
+  <td><span class="priority p2"></span>Error states everywhere</td>
+  <td><span class="tag tag-partial">PARTIAL</span></td>
+  <td>ErrorBoundary wraps all routes. Toast system exists. But SSE/scope/classify failures still silent.</td>
+</tr>
+<tr>
+  <td>10</td>
+  <td><span class="priority p2"></span>Remove dead routes</td>
+  <td><span class="tag tag-open">OPEN</span></td>
+  <td><code>/people</code> and <code>/tasks</code> still in CommandPalette.tsx. No page components. Cmd+K search sends you to 404.</td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>5. Updated Target Journey (Revised April 15)</h2>
+<!-- ============================================================ -->
+
+<p>Refined target based on what shipped and new features (Knowledge Wiki, Brain v3, Agent Lightning). The journey is now about <strong>3 zones</strong>: Triage, Deep Work, and Review.</p>
+
+<div class="diagram" data-code='graph TD
+    START["Open CoCo"] --> HOME["🏠 Home Hub<br/>Briefing + Focus + Health"]
+
+    HOME --> TRIAGE{"Triage Zone<br/>(< 30 seconds each)"}
+
+    TRIAGE -->|"Todo"| T1["✅ Mark done inline"]
+    TRIAGE -->|"Draft"| T2["Approve/Reject inline<br/>or expand slide-over"]
+    TRIAGE -->|"Urgent item"| T3["Act from Inbox<br/>(3 tabs: Urgent / Drafts / Rest)"]
+    TRIAGE -->|"Spawn agent"| T4["CocoOrb → type task → go"]
+
+    T1 --> HOME
+    T2 --> HOME
+    T3 --> HOME
+    T4 --> MONITOR
+
+    MONITOR["Agent Monitor<br/>Live cost + progress badge"] --> DONE{"Done?"}
+    DONE -->|"No"| MONITOR
+    DONE -->|"Yes"| SUMMARY["Summary Card<br/>What changed · Key output · Cost"]
+
+    SUMMARY --> DECIDE2{"Next?"}
+    DECIDE2 -->|"More work"| T4
+    DECIDE2 -->|"Chat about it"| CONTEXT_CHAT["💬 Contextual Chat<br/>Pre-loaded with agent output"]
+    DECIDE2 -->|"Done"| HOME
+
+    HOME --> DEEP{"Deep Work Zone<br/>(minutes, not seconds)"}
+
+    DEEP -->|"Knowledge"| WIKI["📚 Knowledge Wiki<br/>Browse · Search · Ask RAG"]
+    DEEP -->|"Project"| PROJECT["📁 Project View<br/>Overview + slide-over sections"]
+    DEEP -->|"Graph"| GRAPH_VIZ["🕸️ Graph Explorer<br/>Nodes · Communities · Paths"]
+    DEEP -->|"Brain Map"| CANVAS["🧠 Canvas<br/>Visual brain mapping"]
+
+    WIKI --> HOME
+    PROJECT --> HOME
+    GRAPH_VIZ --> HOME
+    CANVAS --> HOME
+
+    CONTEXT_CHAT --> HOME'></div>
+
+<div class="callout">
+<strong>Key changes from April 8 target:</strong><br/>
+1. Added Knowledge Wiki and Graph as first-class deep work destinations (they shipped after the original analysis)<br/>
+2. Split the journey into explicit <strong>Triage</strong> (fast, < 30s) and <strong>Deep Work</strong> (slow, minutes) zones<br/>
+3. Contextual Chat is now a bridge between agent output and follow-up, not a separate island<br/>
+4. Brain Map / Canvas added as deep work zone<br/>
+5. Project view simplified to "Overview + slide-overs" instead of 10 tabs
+</div>
+
+<!-- ============================================================ -->
+<h2>6. Remaining Fix Priority (Re-ranked)</h2>
+<!-- ============================================================ -->
+
+<p>Re-ranked based on what shipped and what delivers the most journey improvement per effort.</p>
+
+<div class="diagram" data-code='graph LR
+    subgraph Wave_1["Wave 1 — Declutter (1-2 days)"]
+        FIX1["Inbox: 8→3 tabs<br/>Urgent / Drafts / Rest"]
+        FIX2["Kill dead routes<br/>/people + /tasks from Palette"]
+        FIX3["Scope badge in top bar<br/>Show current scope always"]
+    end
+
+    subgraph Wave_2["Wave 2 — Agent Polish (2-3 days)"]
+        FIX4["Agent summary card<br/>Structured output on complete"]
+        FIX5["Live cost on agent card<br/>Token count + USD estimate"]
+    end
+
+    subgraph Wave_3["Wave 3 — Connect Islands (3-5 days)"]
+        FIX6["Contextual chat button<br/>on agent output + articles"]
+        FIX7["Split ProjectDetailPage<br/>Overview + slide-over sections"]
+    end
+
+    subgraph Wave_4["Wave 4 — Power Features"]
+        FIX8["Batch operations<br/>Multi-select + bulk actions"]
+        FIX9["Error states<br/>SSE disconnect, scope fail, etc"]
+    end
+
+    Wave_1 --> Wave_2 --> Wave_3 --> Wave_4'></div>
+
+<table>
+<tr><th>Wave</th><th>Fix</th><th>Impact</th><th>Effort</th></tr>
+<tr>
+  <td rowspan="3"><strong>1 — Declutter</strong></td>
+  <td><span class="priority p0"></span>Inbox 8→3 tabs</td>
+  <td class="green">Kills decision paralysis</td>
+  <td>~2 hours</td>
+</tr>
+<tr>
+  <td><span class="priority p2"></span>Remove /people + /tasks from Palette</td>
+  <td>Stops 404 dead ends</td>
+  <td>~15 min</td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Scope badge in AppShell top bar</td>
+  <td class="yellow">User always knows context</td>
+  <td>~1 hour</td>
+</tr>
+<tr>
+  <td rowspan="2"><strong>2 — Agent Polish</strong></td>
+  <td><span class="priority p0"></span>Agent summary card</td>
+  <td class="green">Makes agent output usable</td>
+  <td>~4 hours</td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Live cost on agent card</td>
+  <td class="yellow">No cost surprises</td>
+  <td>~3 hours</td>
+</tr>
+<tr>
+  <td rowspan="2"><strong>3 — Connect</strong></td>
+  <td><span class="priority p1"></span>Contextual chat ("Chat about this")</td>
+  <td class="yellow">Bridges the islands</td>
+  <td>~6 hours</td>
+</tr>
+<tr>
+  <td><span class="priority p1"></span>Split ProjectDetailPage</td>
+  <td class="yellow">Reduces cognitive load</td>
+  <td>~8 hours</td>
+</tr>
+<tr>
+  <td rowspan="2"><strong>4 — Power</strong></td>
+  <td><span class="priority p2"></span>Batch operations</td>
+  <td>Multi-select for todos/drafts</td>
+  <td>~6 hours</td>
+</tr>
+<tr>
+  <td><span class="priority p2"></span>Error states everywhere</td>
+  <td>Stops silent failures</td>
+  <td>~4 hours</td>
+</tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>7. The Before / After</h2>
+<!-- ============================================================ -->
+
+<div class="diagram" data-code='graph LR
+    subgraph Before["April 8 — Before"]
+        direction TB
+        B1["Home: read-only briefing"] --> B2["Navigate to page"]
+        B2 --> B3["Find tab in 8-10 tab page"]
+        B3 --> B4["Do the action"]
+        B4 --> B5["Navigate back to Home"]
+        B5 --> B6["5 hops per task"]
+    end
+
+    subgraph After_Now["April 15 — Now"]
+        direction TB
+        N1["Home: briefing + actions ✅"] --> N2["Mark done inline ✅"]
+        N1 --> N3["CocoOrb spawn ✅"]
+        N1 --> N4["Navigate to page"]
+        N4 --> N5["Still 8-10 tabs ❌"]
+        N5 --> N6["Do the action"]
+        N6 --> N7["3 hops for deep work<br/>1 hop for quick tasks ✅"]
+    end
+
+    subgraph After_Target["Target — After Waves 1-3"]
+        direction TB
+        T1["Home: briefing + actions"] --> T2["Triage: 1 hop"]
+        T1 --> T3["CocoOrb: 1 hop"]
+        T1 --> T4["Deep work: 2 hops"]
+        T4 --> T5["3 tabs max per page"]
+        T5 --> T6["Slide-over for detail"]
+        T6 --> T7["Every task: ≤ 2 hops"]
+    end'></div>
+
+<div class="callout callout-good">
+<strong>Bottom line:</strong> The quick-task loop (Home → act → Home) is now solid thanks to FocusList and CocoOrb. The remaining pain is all about <em>cognitive overload in deep pages</em> — InboxPage (8 tabs), ProjectDetailPage (10 tabs), and disconnected features (Chat, Costs). Waves 1-3 address these systematically.
+</div>
+
+</div>
+
+<script type="module">
+import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+const theme = { bg: '#1e293b', fg: '#cbd5e1', accent: '#60a5fa', muted: '#64748b', surface: '#334155', border: '#475569', transparent: true }
+
+const diagrams = document.querySelectorAll('[data-code]')
+for (const el of diagrams) {
+  el.innerHTML = '<span class="loading">Rendering diagram…</span>'
+  await new Promise(r => requestAnimationFrame(r))
+  try {
+    el.innerHTML = await renderMermaidSVGAsync(el.dataset.code, theme)
+  } catch (e) {
+    el.innerHTML = `<pre style="color:#f87171;font-size:12px;">${e.message}\n\nRaw:\n${el.dataset.code}</pre>`
+  }
+}
+</script>
+</body>
+</html>

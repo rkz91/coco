@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CoCo Platform — Complete Feature Inventory & Audit</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #cbd5e1; padding: 40px 20px; line-height: 1.6; }
+  .container { max-width: 1300px; margin: 0 auto; }
+  h1 { color: #60a5fa; font-size: 28px; margin-bottom: 4px; }
+  h2 { color: #34d399; font-size: 20px; margin-top: 48px; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+  h3 { color: #fbbf24; font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 32px; }
+  .diagram { background: #1e293b; border-radius: 16px; padding: 24px; margin: 20px 0; border: 1px solid #334155; overflow-x: auto; }
+  .diagram svg { max-width: 100%; height: auto; display: block; }
+  .diagram .loading { color: #64748b; font-size: 13px; }
+  p { margin: 8px 0; font-size: 14px; }
+  .callout { background: #1e293b; border-left: 3px solid #60a5fa; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  .callout-keep { border-left-color: #34d399; }
+  .callout-rethink { border-left-color: #fbbf24; }
+  .callout-cut { border-left-color: #f87171; }
+  code { background: #334155; padding: 1px 6px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+  th { background: #1e293b; color: #94a3b8; text-align: left; padding: 8px 10px; font-weight: 600; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; position: sticky; top: 0; }
+  td { padding: 8px 10px; border-top: 1px solid #1e293b; vertical-align: top; }
+  tr:hover td { background: #1e293b40; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; white-space: nowrap; }
+  .tag-keep { background: #34d39920; color: #34d399; }
+  .tag-core { background: #60a5fa20; color: #60a5fa; }
+  .tag-rethink { background: #fbbf2420; color: #fbbf24; }
+  .tag-cut { background: #f8717120; color: #f87171; }
+  .tag-new { background: #a78bfa20; color: #a78bfa; }
+  .red { color: #f87171; } .yellow { color: #fbbf24; } .green { color: #34d399; } .blue { color: #60a5fa; } .purple { color: #a78bfa; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; margin: 16px 0; }
+  .stat { background: #1e293b; border-radius: 12px; padding: 16px; border: 1px solid #334155; text-align: center; }
+  .stat .num { font-size: 28px; font-weight: 700; }
+  .stat .label { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  .section-tag { display: inline-block; background: #334155; color: #94a3b8; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; margin-right: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CoCo Platform — Complete Feature Inventory</h1>
+<p class="subtitle">Deep audit of everything that exists. April 15, 2026. What to keep, what to rethink, what to cut.</p>
+
+<!-- ============================================================ -->
+<h2>The Numbers</h2>
+<!-- ============================================================ -->
+
+<div class="stats">
+  <div class="stat"><div class="num blue">11</div><div class="label">launchd Cron Jobs</div></div>
+  <div class="stat"><div class="num blue">~70</div><div class="label">Knowledge Engine Scripts</div></div>
+  <div class="stat"><div class="num blue">24</div><div class="label">Backend API Routers</div></div>
+  <div class="stat"><div class="num blue">19</div><div class="label">Frontend Pages</div></div>
+  <div class="stat"><div class="num blue">55+</div><div class="label">Database Tables</div></div>
+  <div class="stat"><div class="num blue">5</div><div class="label">Databases</div></div>
+  <div class="stat"><div class="num blue">15</div><div class="label">Backend Services</div></div>
+  <div class="stat"><div class="num blue">7</div><div class="label">MCP Tools</div></div>
+</div>
+
+<!-- ============================================================ -->
+<h2>1. Autonomous Layer — Cron Jobs (launchd)</h2>
+<!-- ============================================================ -->
+
+<p>These run without you. The backbone of CoCo's autonomy.</p>
+
+<div class="diagram" data-code='graph TD
+    subgraph Always_On["Always-On Services"]
+        MEMPALACE["MemPalace Service<br/>ChromaDB semantic search<br/>Unix socket: /tmp/coco-mempalace.sock"]
+        LITESTREAM["Litestream<br/>SQLite → S3 replication"]
+    end
+
+    subgraph Every_10_Min["Every 10 Min"]
+        EMAIL["Email Watcher<br/>email_watcher.py<br/>Scans Outlook inbox"]
+    end
+
+    subgraph Every_15_Min["Every 15 Min"]
+        THINK["Think Pass<br/>think.py<br/>Classify → prioritize → auto-handle → queue"]
+        MEETING["Meeting Prep<br/>meeting_prep.py<br/>Calendar-aware context builder"]
+    end
+
+    subgraph Daily["Daily Schedules"]
+        BRIEFING["Morning Briefing<br/>6:00 AM — morning_briefing.py<br/>12hr lookback JSON report"]
+        MASTER["Master Cron<br/>1:00 AM + 2:00 PM<br/>13-phase Knowledge Engine<br/>across ALL 21 projects"]
+    end
+
+    subgraph Weekly["Weekly"]
+        REPORT["Weekly Report<br/>weekly_report.py"]
+        BACKUP["DB Backup"]
+        LOGROT["Log Rotate"]
+    end
+
+    subgraph On_Demand["On-Demand"]
+        PYKEEN["PyKEEN Training<br/>pykeen_bridge.py --full --top 50<br/>Knowledge graph embeddings<br/>(GROKing)"]
+        TRIGGERS["Trigger Engine<br/>Cron + file-watch triggers<br/>inside FastAPI process"]
+        SELF_IMPROVE["Self-Improve Cycle<br/>10-agent squad<br/>PM→Architect→Dev→Test→Review"]
+    end
+
+    EMAIL -->|"new emails"| THINK
+    THINK -->|"queue.json"| BRIEFING
+    MASTER -->|"knowledge.db"| MEMPALACE
+    MASTER -->|"graph.json"| PYKEEN'></div>
+
+<table>
+<tr><th>Job</th><th>Script</th><th>Schedule</th><th>What It Does</th><th>Verdict</th></tr>
+<tr>
+  <td><strong>Master Cron</strong></td>
+  <td><code>master_cron.py</code></td>
+  <td>1:00 AM + 2:00 PM</td>
+  <td>13-phase Knowledge Engine across 21 projects: brain rescan → entity extraction → article generation → cross-project linking → graph build. 6hr timeout.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>Think Pass</strong></td>
+  <td><code>think.py</code></td>
+  <td>Every 15 min</td>
+  <td>Reads hub.db, classifies new items, applies attention rules (brain.json), auto-handles noise/FYI, queues by priority. Writes queue.json atomically.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>Email Watcher</strong></td>
+  <td><code>email_watcher.py</code></td>
+  <td>Every 10 min</td>
+  <td>Scans Outlook inbox for new emails. Extracts sender, subject, body, attachments. Routes to hub.db via Knowledge Hub ingest.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>MemPalace</strong></td>
+  <td><code>mempalace_service.py</code></td>
+  <td>Always-on</td>
+  <td>ChromaDB-backed semantic search service. Keeps vector embeddings warm. Listens on Unix socket. Used by search.py for semantic queries. Cold start ~8s without it.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>Morning Briefing</strong></td>
+  <td><code>morning_briefing.py</code></td>
+  <td>6:00 AM daily</td>
+  <td>Generates JSON briefing: what happened in last 12h, new emails, decisions, action items. Saved to last-morning-briefing.json. Powers HomePage BriefingCard.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>Meeting Prep</strong></td>
+  <td><code>meeting_prep.py</code></td>
+  <td>Every 15 min</td>
+  <td>Checks calendar for upcoming meetings. Builds context from brain (attendees, project history, open items). Critical for the voice memo workflow.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>PyKEEN Train</strong></td>
+  <td><code>pykeen_bridge.py</code></td>
+  <td>On-demand</td>
+  <td>Trains knowledge graph embeddings using PyKEEN (TransE/RotatE). Top-50 predictions. This IS the GROKing — learning hidden relationships from the graph.</td>
+  <td><span class="tag tag-core">CORE</span></td>
+</tr>
+<tr>
+  <td><strong>Weekly Report</strong></td>
+  <td><code>weekly_report.py</code></td>
+  <td>Weekly</td>
+  <td>Auto-generates weekly status report from brain data.</td>
+  <td><span class="tag tag-keep">KEEP</span></td>
+</tr>
+<tr>
+  <td><strong>Litestream</strong></td>
+  <td><code>litestream replicate</code></td>
+  <td>Always-on</td>
+  <td>Continuous SQLite replication to S3. Disaster recovery for all DBs.</td>
+  <td><span class="tag tag-keep">KEEP</span></td>
+</tr>
+<tr>
+  <td><strong>Backup</strong></td>
+  <td><code>backup.sh</code></td>
+  <td>Weekly</td>
+  <td>Full backup script.</td>
+  <td><span class="tag tag-keep">KEEP</span></td>
+</tr>
+<tr>
+  <td><strong>Log Rotate</strong></td>
+  <td><code>log-rotate.sh</code></td>
+  <td>Weekly</td>
+  <td>Rotates log files to prevent disk fill.</td>
+  <td><span class="tag tag-keep">KEEP</span></td>
+</tr>
+</table>
+
+<div class="callout callout-keep">
+<strong>Verdict:</strong> All 11 cron jobs serve real purposes. 7 are CORE (the autonomous intelligence backbone). 4 are KEEP (infrastructure). None should be cut. The key insight: <strong>these run sequentially via master_cron.py</strong> — the master cron is the orchestrator that prevents parallel DB access conflicts.
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Knowledge Engine (~70 scripts at ~/.coco/knowledge/)</h2>
+<!-- ============================================================ -->
+
+<h3>Content Harvesting</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>email_watcher.py</code></td><td>Scans Outlook for new emails every 10 min</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>email_processor.py</code></td><td>Processes email content, extracts entities</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>email_to_brain.py</code></td><td>Routes extracted email data to brain DB</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>email_content_harvester.py</code></td><td>Deep email content extraction</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>voice_memo_watcher.py</code></td><td>Auto-transcribes voice memos via Deepgram, extracts action items, routes to projects</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>doc_content_harvester.py</code></td><td>Extracts content from project folder documents</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>extract_content.py</code></td><td>General content extraction pipeline</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<h3>Article Generation & Wiki</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>article_generator.py</code></td><td>Generates wiki articles from brain entities</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>article_writer.py</code></td><td>Writes/updates individual articles</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>wiki_improver.py</code></td><td>Improves stale/low-confidence articles</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>article_feedback.py</code></td><td>Quality feedback loop for articles</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>batch_regen.py</code></td><td>Bulk article regeneration</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>wiki_auth.py</code></td><td>PIN auth for wiki</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>wiki_server.py</code></td><td>Wiki HTTP server</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<h3>Entity & Relationship Intelligence</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>entity_resolver.py</code></td><td>Entity deduplication and resolution</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>relationship_generator.py</code></td><td>Generates relationships between entities</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>relationship_inferrer.py</code></td><td>Infers hidden relationships</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>cross_project_detector.py</code></td><td>Finds entities that span projects</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>cross_project_linker.py</code></td><td>Links entities across projects</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>cross_project_generator.py</code></td><td>Generates cross-project articles</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>community_summarizer.py</code></td><td>Graph community summaries</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<h3>Knowledge Graph & GROKing</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>graphrag_bridge.py</code></td><td>Bridge between brain DB and graph format</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>pykeen_bridge.py</code></td><td>PyKEEN model training — TransE/RotatE embeddings. THIS is GROKing.</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>pykeen_dashboard.py</code></td><td>Training metrics dashboard</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>search.py</code></td><td>Semantic search (MemPalace + FTS5 fallback)</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>mempalace_service.py</code></td><td>Always-on ChromaDB vector search service</td><td><span class="tag tag-core">CORE</span></td></tr>
+</table>
+
+<h3>Intelligence & Automation</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>decision_detector.py</code></td><td>Detects decisions from content</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>action_item_generator.py</code></td><td>Extracts action items → todos</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>action_router.py</code></td><td>Routes actions to right agents</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>urgency_scorer.py</code></td><td>Urgency scoring for queue items</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>deadline_tracker.py</code></td><td>Extracts deadlines from emails/docs</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>stakeholder_pulse.py</code></td><td>Tracks communication frequency per stakeholder</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>morning_briefing.py</code></td><td>Generates morning briefing JSON</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>meeting_prep.py</code></td><td>Calendar-aware meeting prep</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>weekly_report.py</code></td><td>Auto weekly status report</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>meeting_generator.py</code></td><td>Meeting notes from transcripts</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>notification_rules.py</code></td><td>Notification rule engine</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<h3>Data Quality & Maintenance</h3>
+<table>
+<tr><th>Script</th><th>Role</th><th>Verdict</th></tr>
+<tr><td><code>fix_data_quality.py</code></td><td>Fix data quality issues</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>cleanup_noisy_entities.py</code></td><td>Remove noisy entities</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>pii_scrub.py</code></td><td>PII scrubbing for security</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>circuit_breaker.py</code></td><td>Cost circuit breaker for API calls</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>auto_merge.py</code></td><td>Auto-merges knowledge from multiple sources</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>3. Backend Services (FastAPI)</h2>
+<!-- ============================================================ -->
+
+<table>
+<tr><th>Service</th><th>Role</th><th>Used By</th><th>Verdict</th></tr>
+<tr><td><code>process_manager.py</code></td><td>Agent spawning, heartbeat, concurrency control (max 3)</td><td>AgentsPage, Self-Improve</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>rag_tools.py</code></td><td>Agentic RAG: 4 tools + multi-hop Ultrathink with Sonnet extended thinking</td><td>KnowledgePage Q&A</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>trigger_engine.py</code></td><td>Cron + file-watch triggers inside FastAPI. Runs self-improve cycles.</td><td>Self-Improve, custom automations</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>self_improve.py</code></td><td>10-agent improvement squad: PM→Architect→Dev→Test→Review→Doc→Merge</td><td>SelfImprovePage</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>auto_classifier.py</code></td><td>Rule + LLM content classification. >=0.85 auto, <0.85 suggest.</td><td>InboxPage Classify tab</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>insight_engine.py</code></td><td>Cross-source insights: co-references, temporal patterns, contradictions</td><td>InsightsPage (inactive)</td><td><span class="tag tag-rethink">RETHINK</span></td></tr>
+<tr><td><code>entity_extractor.py</code></td><td>Extracts entities from content (people, dates, topics)</td><td>Content processing</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>knowledge_sync.py</code></td><td>Polls knowledge.db every 60s, emits SSE events for frontend refresh</td><td>KnowledgePage auto-refresh</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>hub_sync.py</code></td><td>Syncs hub.db → platform.db mirror tables</td><td>All pages reading hub data</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>delegation.py</code></td><td>Inter-agent task delegation + subtasks</td><td>Agent collaboration</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>attention_tracker.py</code></td><td>Tracks which projects get attention (views)</td><td>HomePage attention scoring</td><td><span class="tag tag-rethink">RETHINK</span></td></tr>
+<tr><td><code>podcast.py</code></td><td>Generates briefing scripts (Haiku). No TTS yet.</td><td>HomePage PodcastCard</td><td><span class="tag tag-rethink">RETHINK</span></td></tr>
+<tr><td><code>kokoro_engine.py</code></td><td>Local TTS (82M-param Kokoro model, 4 voices)</td><td>TTS endpoint</td><td><span class="tag tag-rethink">RETHINK</span></td></tr>
+<tr><td><code>folder_scanner.py</code></td><td>Recursive folder scanning for analysis pipeline</td><td>ProjectDetail Analyze</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>event_bus.py</code></td><td>SSE event bus for real-time updates</td><td>All pages</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>verification.py</code></td><td>Verification gates for agent work</td><td>Self-Improve, agent output</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>worktree_manager.py</code></td><td>Git worktree management for isolated agent work</td><td>Self-Improve</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><code>agent_sdk_client.py</code></td><td>Agent SDK client for spawning Claude processes</td><td>Agent spawning</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>collaboration_context.py</code></td><td>Builds knowledge + YOLO constraints for agents</td><td>Agent spawning</td><td><span class="tag tag-core">CORE</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>4. Frontend Pages (19 pages)</h2>
+<!-- ============================================================ -->
+
+<table>
+<tr><th>Page</th><th>What It Does</th><th>Line Count</th><th>Verdict</th></tr>
+<tr><td><strong>HomePage</strong></td><td>Briefing, FocusList (inline actions), ProjectHealthGrid, KnowledgeEngineCard, PodcastCard</td><td>~300</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>InboxPage</strong></td><td>8-tab inbox: All, Urgent, Drafts, Classify, Suggestions, Health, Auto-handled, Actions</td><td>~600</td><td><span class="tag tag-rethink">RETHINK</span> 8→3 tabs</td></tr>
+<tr><td><strong>ProjectDetailPage</strong></td><td>10-tab project view: Overview, Knowledge, Folder, Agents, Collab, Todos, Goals, Costs, People, Settings</td><td>~2060</td><td><span class="tag tag-rethink">RETHINK</span> needs splitting</td></tr>
+<tr><td><strong>AgentsPage</strong></td><td>Agent grid/org chart, spawn, detail panel</td><td>~400</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>KnowledgePage</strong></td><td>Wiki browser, RAG Q&A, article viewer, search</td><td>~500</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>GraphPage</strong></td><td>Knowledge graph visualization, community explorer</td><td>~400</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>ChatPage</strong></td><td>Chat with Claude (spawns subprocess with MCP tools)</td><td>~300</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>TodosPage</strong></td><td>Todo list with status transitions, priorities</td><td>~400</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>GoalsPage</strong></td><td>OKR-style goals with progress tracking</td><td>~300</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>CostsPage</strong></td><td>API cost tracking, budgets, per-agent spend</td><td>~300</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>DashboardPage</strong></td><td>Analytics dashboard (charts, trends)</td><td>~300</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>TreePage</strong></td><td>Portfolio tree: hierarchy of teams/projects/nodes</td><td>~300</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>ProjectsPage</strong></td><td>Teams/projects list view</td><td>~200</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>ActivityPage</strong></td><td>Event feed / activity log</td><td>~200</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>CanvasPage</strong></td><td>Brain Map visual canvas</td><td>~300</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>SettingsPage</strong></td><td>Platform settings, preferences</td><td>~200</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>SelfImprovePage</strong></td><td>Self-improvement cycle UI (Studio only)</td><td>~400</td><td><span class="tag tag-rethink">RETHINK</span> niche</td></tr>
+<tr><td><strong>JarvisPage</strong></td><td>Jarvis command interface (Studio only)</td><td>~200</td><td><span class="tag tag-rethink">RETHINK</span> overlap w/ Chat</td></tr>
+<tr><td><strong>ReplayPage</strong></td><td>Agent replay viewer (Studio only)</td><td>~200</td><td><span class="tag tag-rethink">RETHINK</span> niche</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>5. Databases</h2>
+<!-- ============================================================ -->
+
+<table>
+<tr><th>Database</th><th>Location</th><th>Access</th><th>What It Stores</th><th>Verdict</th></tr>
+<tr><td><strong>hub.db</strong></td><td><code>~/.hub/hub.db</code></td><td>Read-only</td><td>Knowledge Hub: content, drafts, todos, projects, sync state, API costs</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>platform.db</strong></td><td><code>~/.coco/platform.db</code></td><td>Read-write</td><td>55+ tables: agents, tasks, costs, triggers, self-improve, chat, goals, workflows, inbox</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>knowledge.db</strong></td><td><code>~/.coco/knowledge/knowledge.db</code></td><td>Read-only</td><td>Wiki articles, global entities, cross-project connections, generation log. ~530MB.</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><strong>project_brain.db</strong></td><td><code>~/.coco/graphify-bridge/</code></td><td>Read-only</td><td>Graphify bridge data for graph visualization</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+<tr><td><strong>MemPalace (ChromaDB)</strong></td><td><code>~/.mempalace/palace/</code></td><td>Read-only (via socket)</td><td>Vector embeddings for semantic search</td><td><span class="tag tag-core">CORE</span></td></tr>
+</table>
+
+<h3>JSON Stores</h3>
+<table>
+<tr><th>File</th><th>Access</th><th>Content</th><th>Verdict</th></tr>
+<tr><td><code>~/.coco/brain.json</code></td><td>Atomic write</td><td>People graph, attention rules, stats</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>~/.coco/queue.json</code></td><td>Atomic write</td><td>Decision queue, auto-handled items, deferred</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>~/.coco/config.json</code></td><td>Atomic write</td><td>CoCo configuration (auto-handle thresholds, etc.)</td><td><span class="tag tag-core">CORE</span></td></tr>
+<tr><td><code>~/.coco/last-morning-briefing.json</code></td><td>Write</td><td>Last morning briefing output</td><td><span class="tag tag-keep">KEEP</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2>6. The Full Architecture</h2>
+<!-- ============================================================ -->
+
+<div class="diagram" data-code='graph TD
+    subgraph Input_Layer["Input Sources"]
+        OUTLOOK["Outlook Email"]
+        VOICE["Voice Memos"]
+        CALENDAR["Calendar"]
+        DOCS["Project Folders<br/>(OneDrive, Local)"]
+        MANUAL["Manual Ingest<br/>(drag+drop, /ingest)"]
+    end
+
+    subgraph Cron_Layer["Autonomous Cron Layer (launchd)"]
+        EMAIL_WATCH["Email Watcher<br/>every 10 min"]
+        VOICE_WATCH["Voice Memo Watcher"]
+        MEETING_PREP["Meeting Prep<br/>every 15 min"]
+        THINK["Think Pass<br/>every 15 min"]
+        MASTER_CRON["Master Cron<br/>1AM + 2PM"]
+        BRIEFING["Morning Briefing<br/>6AM"]
+        PYKEEN["PyKEEN Train<br/>on-demand"]
+    end
+
+    subgraph Brain_Layer["Knowledge & Memory"]
+        HUB_DB["hub.db<br/>(KH owned)"]
+        KNOWLEDGE_DB["knowledge.db<br/>~530MB<br/>articles · entities · connections"]
+        MEMPALACE["MemPalace<br/>ChromaDB vectors"]
+        BRAIN_JSON["brain.json<br/>People · Rules"]
+        QUEUE_JSON["queue.json<br/>Decision queue"]
+        GRAPH_JSON["graph.json<br/>17K nodes · 29K edges"]
+    end
+
+    subgraph Platform["CoCo Platform (FastAPI + React)"]
+        BACKEND["FastAPI Backend<br/>24 routers · 15 services"]
+        PLATFORM_DB["platform.db<br/>55+ tables"]
+        FRONTEND["React 19 Frontend<br/>19 pages · 22 component dirs"]
+        TRIGGER_ENG["Trigger Engine<br/>cron + file-watch"]
+        AGENT_MGR["Process Manager<br/>max 3 concurrent agents"]
+        RAG["Ultrathink RAG<br/>4 tools · multi-hop"]
+        SELF_IMPROVE["Self-Improve<br/>10-agent squad"]
+    end
+
+    subgraph Agent_Layer["Agent Teams (per project)"]
+        AGENTS["Claude Code Agents<br/>claude -p subprocess<br/>with MCP tools"]
+    end
+
+    OUTLOOK --> EMAIL_WATCH
+    VOICE --> VOICE_WATCH
+    CALENDAR --> MEETING_PREP
+    DOCS --> MASTER_CRON
+
+    EMAIL_WATCH --> HUB_DB
+    VOICE_WATCH --> HUB_DB
+    MASTER_CRON --> KNOWLEDGE_DB
+    MASTER_CRON --> MEMPALACE
+    MASTER_CRON --> GRAPH_JSON
+    THINK --> QUEUE_JSON
+    BRIEFING --> QUEUE_JSON
+    PYKEEN --> GRAPH_JSON
+
+    BACKEND --> HUB_DB
+    BACKEND --> KNOWLEDGE_DB
+    BACKEND --> MEMPALACE
+    BACKEND --> BRAIN_JSON
+    BACKEND --> QUEUE_JSON
+    BACKEND --> PLATFORM_DB
+    TRIGGER_ENG --> AGENT_MGR
+    AGENT_MGR --> AGENTS
+    RAG --> KNOWLEDGE_DB
+    RAG --> MEMPALACE
+
+    FRONTEND --> BACKEND'></div>
+
+<!-- ============================================================ -->
+<h2>7. Verdict Summary</h2>
+<!-- ============================================================ -->
+
+<div class="stats">
+  <div class="stat"><div class="num green">38</div><div class="label">CORE — essential for the workflow</div></div>
+  <div class="stat"><div class="num blue">24</div><div class="label">KEEP — valuable, not critical path</div></div>
+  <div class="stat"><div class="num yellow">7</div><div class="label">RETHINK — exists but needs redesign</div></div>
+  <div class="stat"><div class="num red">0</div><div class="label">CUT — nothing to cut</div></div>
+</div>
+
+<h3>What Needs RETHINKING (not cutting)</h3>
+
+<table>
+<tr><th>Feature</th><th>Problem</th><th>Proposed Fix</th></tr>
+<tr>
+  <td><strong>InboxPage (8 tabs)</strong></td>
+  <td>Cognitive overload. User freezes choosing a tab.</td>
+  <td>Collapse to 3: Urgent / Drafts / Everything. Move Suggestions, Health, Auto-handled into smart filters within "Everything".</td>
+</tr>
+<tr>
+  <td><strong>ProjectDetailPage (10 tabs)</strong></td>
+  <td>Kitchen sink. 2060 LOC monolith.</td>
+  <td>Overview page + slide-over panels for each section. Max 4 visible tabs.</td>
+</tr>
+<tr>
+  <td><strong>Insight Engine</strong></td>
+  <td>Generates insights but no UI surfaces them prominently. Cross-references are powerful but invisible.</td>
+  <td>Feed insights into the Morning Briefing and HomePage cards instead of a separate page.</td>
+</tr>
+<tr>
+  <td><strong>Podcast/Kokoro TTS</strong></td>
+  <td>Cool tech but script-only, no audio. Kokoro is 330MB download.</td>
+  <td>Keep as opt-in "audio briefing" mode. Don't load by default.</td>
+</tr>
+<tr>
+  <td><strong>Attention Tracker</strong></td>
+  <td>Tracks page views but doesn't influence routing decisions.</td>
+  <td>Feed into action_router to prioritize agent work for neglected projects.</td>
+</tr>
+<tr>
+  <td><strong>JarvisPage</strong></td>
+  <td>Overlaps with ChatPage. Both talk to Claude.</td>
+  <td>Merge into Chat. Jarvis becomes a "mode" of Chat, not a separate page.</td>
+</tr>
+<tr>
+  <td><strong>SelfImprove + ReplayPage</strong></td>
+  <td>Studio-only features. Niche audience.</td>
+  <td>Keep behind feature gate. Useful for power users. Not part of daily journey.</td>
+</tr>
+</table>
+
+<div class="callout callout-keep">
+<strong>Key finding:</strong> CoCo has zero bloat to cut. Everything serves a purpose. The problem isn't feature count — it's that the autonomous backend is extremely powerful (11 cron jobs, 70 scripts, 5 databases) but the frontend doesn't surface this work well. The V2 journey should be: <em>CoCo does the work autonomously → the platform presents the results clearly → you review and approve in minutes.</em>
+</div>
+
+</div>
+
+<script type="module">
+import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+const theme = { bg: '#1e293b', fg: '#cbd5e1', accent: '#60a5fa', muted: '#64748b', surface: '#334155', border: '#475569', transparent: true }
+
+const diagrams = document.querySelectorAll('[data-code]')
+for (const el of diagrams) {
+  el.innerHTML = '<span class="loading">Rendering diagram...</span>'
+  await new Promise(r => requestAnimationFrame(r))
+  try {
+    el.innerHTML = await renderMermaidSVGAsync(el.dataset.code, theme)
+  } catch (e) {
+    el.innerHTML = `<pre style="color:#f87171;font-size:12px;">${e.message}\n\nRaw:\n${el.dataset.code}</pre>`
+  }
+}
+</script>
+</body>
+</html>

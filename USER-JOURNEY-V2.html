@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>CoCo Platform — User Journey V2</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: #0f172a; color: #cbd5e1; padding: 40px 20px; line-height: 1.6; }
+  .container { max-width: 1200px; margin: 0 auto; }
+  h1 { color: #60a5fa; font-size: 28px; margin-bottom: 4px; }
+  h2 { color: #34d399; font-size: 20px; margin-top: 56px; margin-bottom: 16px; border-bottom: 1px solid #1e293b; padding-bottom: 8px; }
+  h3 { color: #fbbf24; font-size: 16px; margin-top: 24px; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 14px; margin-bottom: 8px; }
+  .version { color: #334155; font-size: 12px; margin-bottom: 40px; }
+  .diagram { background: #1e293b; border-radius: 16px; padding: 24px; margin: 20px 0; border: 1px solid #334155; overflow-x: auto; }
+  .diagram svg { max-width: 100%; height: auto; display: block; }
+  .diagram .loading { color: #64748b; font-size: 13px; }
+  p { margin: 8px 0; font-size: 14px; }
+  .callout { background: #1e293b; border-left: 3px solid #60a5fa; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; font-size: 13px; }
+  .callout-key { border-left-color: #34d399; }
+  .callout-pain { border-left-color: #f87171; }
+  .callout-auto { border-left-color: #a78bfa; }
+  code { background: #334155; padding: 1px 6px; border-radius: 4px; font-size: 13px; font-family: 'JetBrains Mono', monospace; }
+  .phase-label { display: inline-block; background: #60a5fa20; color: #60a5fa; padding: 4px 12px; border-radius: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0.5px; margin-bottom: 12px; }
+  .toc { background: #1e293b; border-radius: 12px; padding: 20px 24px; margin: 24px 0; border: 1px solid #334155; }
+  .toc h3 { color: #94a3b8; margin-top: 0; font-size: 13px; text-transform: uppercase; letter-spacing: 1px; }
+  .toc ol { padding-left: 20px; margin: 12px 0 0; }
+  .toc li { margin: 6px 0; font-size: 14px; }
+  .toc a { color: #60a5fa; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc .active { color: #34d399; font-weight: 600; }
+  .toc .upcoming { color: #475569; }
+  .tag { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+  .tag-auto { background: #a78bfa20; color: #a78bfa; }
+  .tag-human { background: #fbbf2420; color: #fbbf24; }
+  .tag-coco { background: #34d39920; color: #34d399; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  th { background: #1e293b; color: #94a3b8; text-align: left; padding: 10px 12px; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  td { padding: 10px 12px; border-top: 1px solid #1e293b; }
+  tr:hover td { background: #1e293b40; }
+  .step-num { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: #60a5fa20; color: #60a5fa; font-size: 13px; font-weight: 700; margin-right: 8px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>CoCo Platform — User Journey V2</h1>
+<p class="subtitle">How Rijul actually operates. Not a product walkthrough — a day-in-the-life operating system.</p>
+<p class="version">Living document · Started April 15, 2026 · Updated as we go</p>
+
+<!-- ============================================================ -->
+<!-- TABLE OF CONTENTS                                            -->
+<!-- ============================================================ -->
+
+<div class="toc">
+  <h3>The Day — Table of Contents</h3>
+  <p style="color:#64748b; font-size:12px; margin: 8px 0 4px;">Foundations</p>
+  <ol start="0" style="padding-left: 20px; margin: 4px 0 8px;">
+    <li value="0"><a href="#foundation-cost" class="active">Cost Architecture — "Don't burn $4K/month"</a></li>
+    <li value="0"><a href="#foundation-memory" class="active">Memory Infrastructure — "The Brain behind it all"</a></li>
+    <li value="0"><a href="#foundation-cron" class="active">Cron Orchestration — "What runs without me"</a></li>
+  </ol>
+  <p style="color:#64748b; font-size:12px; margin: 8px 0 4px;">The Day</p>
+  <ol>
+    <li><a href="#phase1" class="active">Email Triage — "What landed while I was away?"</a></li>
+    <li><a href="#phase1b" class="active">Meetings & Voice — "What happened in my meetings?"</a></li>
+    <li><a href="#phase2" class="upcoming">Morning Briefing — "What matters today?"</a></li>
+    <li><a href="#phase3" class="upcoming">Deep Work — "Let me focus on the hard stuff"</a></li>
+    <li><a href="#phase4" class="upcoming">Agent Review — "What did my team produce?"</a></li>
+    <li><a href="#phase5" class="upcoming">Comms & Decisions — "Who needs what from me?"</a></li>
+    <li><a href="#phase6" class="upcoming">End of Day — "Close the loop"</a></li>
+  </ol>
+</div>
+
+<div class="callout callout-key">
+<strong>Design principle:</strong> CoCo should have already done 80% of the work before Rijul even opens the app. The platform is not a dashboard to stare at — it's an autonomous operating system that runs agents overnight, processes emails, updates documents, and presents a curated summary. The human job is: review, approve, redirect.
+</div>
+
+<!-- ============================================================ -->
+<!-- FOUNDATION: COST ARCHITECTURE                                 -->
+<!-- ============================================================ -->
+
+<h2 id="foundation-cost">Foundation — Cost Architecture</h2>
+<p class="phase-label">$4,033 IN 15 DAYS IS NOT SUSTAINABLE</p>
+
+<div class="callout callout-pain">
+<strong>The problem:</strong> Building and running CoCo has cost $4,033.73 in the first 15 days of April 2026. At this rate, that's $8K/month. The Knowledge Engine generates ~1,700 articles across 21 projects, processes 40-80 emails/day, trains graph embeddings, and runs a 10-agent self-improvement squad — all hitting the Anthropic API. Most of this work does NOT need Claude Opus or Sonnet.
+</div>
+
+<h3>The Two-Tier Model</h3>
+
+<div class="diagram" data-code='graph TD
+    subgraph Tier_1["Tier 1: Local LLM (Free after hardware)"]
+        direction TB
+        LOCAL["Gemma 27B / Llama 3.1 8B<br/>Running on Mac (MLX / llama.cpp)"]
+        LOCAL_TASKS["Bulk tasks:<br/>• Email classification (noise/FYI/action)<br/>• Entity extraction<br/>• Article generation (1,700 articles)<br/>• Auto-classification (>0.85 threshold)<br/>• Document summarization<br/>• Voice transcription (Whisper local)<br/>• Meeting note generation<br/>• Brain entity updates"]
+        LOCAL --> LOCAL_TASKS
+    end
+
+    subgraph Tier_2["Tier 2: Claude API (Pay per token)"]
+        direction TB
+        CLOUD["Claude Sonnet/Opus<br/>API calls only when quality matters"]
+        CLOUD_TASKS["High-stakes tasks:<br/>• Reply drafting (tone matters)<br/>• Ultrathink RAG Q&A<br/>• Agent reasoning (complex decisions)<br/>• Document verification<br/>• Self-improve architect/review<br/>• Stakeholder communication"]
+        CLOUD --> CLOUD_TASKS
+    end
+
+    subgraph Router["Smart Router (circuit_breaker.py)"]
+        direction LR
+        INCOMING["Incoming task"] --> DECISION{"Needs human-quality<br/>reasoning?"}
+        DECISION -->|"No — bulk work"| LOCAL
+        DECISION -->|"Yes — high stakes"| CLOUD
+    end'></div>
+
+<h3>Estimated Savings</h3>
+
+<table>
+<tr><th>Task</th><th>Current</th><th>Volume/day</th><th>Est. Cost/mo</th><th>Target</th><th>New Cost/mo</th></tr>
+<tr>
+  <td>Article generation</td>
+  <td>Haiku API</td>
+  <td>~50 articles</td>
+  <td>~$600</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 27B</span></td>
+  <td class="green">$0</td>
+</tr>
+<tr>
+  <td>Email classification</td>
+  <td>Haiku API</td>
+  <td>40-80 emails</td>
+  <td>~$200</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 9B</span></td>
+  <td class="green">$0</td>
+</tr>
+<tr>
+  <td>Entity extraction</td>
+  <td>Regex + Haiku</td>
+  <td>~200 entities</td>
+  <td>~$150</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 9B</span></td>
+  <td class="green">$0</td>
+</tr>
+<tr>
+  <td>Voice transcription</td>
+  <td>Deepgram API</td>
+  <td>2-5 memos</td>
+  <td>~$50</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Apple native transcription (free)<br/>Whisper.cpp as fallback</span></td>
+  <td class="green">$0</td>
+</tr>
+<tr>
+  <td>Auto-classification</td>
+  <td>Haiku API</td>
+  <td>~100 items</td>
+  <td>~$100</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 9B</span></td>
+  <td class="green">$0</td>
+</tr>
+<tr>
+  <td>Self-improve cycle</td>
+  <td>Opus + Sonnet</td>
+  <td>1-2 cycles</td>
+  <td>~$800</td>
+  <td><span class="tag tag-rethink" style="background:#fbbf2420;color:#fbbf24;">Reduce to Sonnet only</span></td>
+  <td class="yellow">~$300</td>
+</tr>
+<tr>
+  <td>Reply drafting</td>
+  <td>—</td>
+  <td>5-10 replies</td>
+  <td>~$100</td>
+  <td><span class="tag tag-core" style="background:#60a5fa20;color:#60a5fa;">Keep Claude Sonnet</span></td>
+  <td>~$100</td>
+</tr>
+<tr>
+  <td>Ultrathink RAG</td>
+  <td>Sonnet 4.5</td>
+  <td>5-10 queries</td>
+  <td>~$200</td>
+  <td><span class="tag tag-core" style="background:#60a5fa20;color:#60a5fa;">Keep Sonnet</span></td>
+  <td>~$200</td>
+</tr>
+<tr>
+  <td>Agent spawning</td>
+  <td>Claude Code</td>
+  <td>3-5 agents</td>
+  <td>~$500</td>
+  <td><span class="tag tag-core" style="background:#60a5fa20;color:#60a5fa;">Keep Claude</span></td>
+  <td>~$500</td>
+</tr>
+<tr style="font-weight:700; border-top: 2px solid #334155;">
+  <td colspan="3">Total</td>
+  <td class="red">~$2,700/mo</td>
+  <td></td>
+  <td class="green">~$1,100/mo (60% reduction)</td>
+</tr>
+</table>
+
+<div class="callout callout-key">
+<strong>The rule:</strong> If a task is <em>bulk processing</em> (articles, classification, extraction) → Local LLM. If a task is <em>human-facing communication</em> or <em>complex reasoning</em> (replies, RAG, agent logic) → Claude API. The <code>circuit_breaker.py</code> already exists in the Knowledge Engine — extend it to be the smart router.
+</div>
+
+<h3>Local LLM Stack</h3>
+
+<table>
+<tr><th>Model</th><th>Size</th><th>Use Case</th><th>Runtime</th></tr>
+<tr><td><strong>Gemma 2 27B</strong></td><td>~16GB VRAM</td><td>Article generation, document summarization, meeting notes</td><td>MLX (Apple Silicon optimized)</td></tr>
+<tr><td><strong>Gemma 2 9B</strong></td><td>~6GB VRAM</td><td>Classification, entity extraction, triage</td><td>MLX or llama.cpp</td></tr>
+<tr><td><strong>Apple Voice Memos</strong></td><td>0 (built-in)</td><td>Voice memo transcription — Apple provides transcriptions natively via AppleScript. Free.</td><td>AppleScript extraction</td></tr>
+<tr><td><strong>Whisper Large v3</strong></td><td>~3GB</td><td>Fallback transcription for older memos or when Apple transcription unavailable</td><td>whisper.cpp (free GitHub repo)</td></tr>
+<tr><td><strong>all-MiniLM-L6-v2</strong></td><td>~80MB</td><td>Embeddings for MemPalace (already in use via ChromaDB)</td><td>ChromaDB built-in</td></tr>
+</table>
+
+<!-- ============================================================ -->
+<!-- FOUNDATION: MEMORY INFRASTRUCTURE                             -->
+<!-- ============================================================ -->
+
+<h2 id="foundation-memory">Foundation — Memory Infrastructure</h2>
+<p class="phase-label">THE BRAIN BEHIND EVERYTHING</p>
+
+<p>CoCo's memory is not a single database — it's a 5-layer system where each layer serves a different access pattern.</p>
+
+<div class="diagram" data-code='graph TD
+    subgraph Layer_1["Layer 1: Real-Time State"]
+        BRAIN_JSON["brain.json<br/>People graph + attention rules<br/>Atomic writes every 15 min"]
+        QUEUE_JSON["queue.json<br/>Decision queue + deferred items<br/>Updated by Think Pass"]
+        CONFIG_JSON["config.json<br/>Auto-handle thresholds + prefs"]
+    end
+
+    subgraph Layer_2["Layer 2: Operational Store"]
+        PLATFORM_DB["platform.db (55+ tables)<br/>Agents · Tasks · Costs · Triggers<br/>Chat · Goals · Workflows · Inbox<br/>Read-write, WAL mode"]
+    end
+
+    subgraph Layer_3["Layer 3: Knowledge Hub"]
+        HUB_DB["hub.db (KH owned)<br/>Content · Drafts · Todos · Projects<br/>Sync state · API costs<br/>Read-only from Platform"]
+    end
+
+    subgraph Layer_4["Layer 4: Knowledge Engine"]
+        KNOWLEDGE_DB["knowledge.db (~530MB)<br/>1,700+ wiki articles<br/>17K+ global entities<br/>Cross-project connections<br/>Generation log · FTS5 index"]
+    end
+
+    subgraph Layer_5["Layer 5: Semantic Memory"]
+        MEMPALACE["MemPalace (ChromaDB)<br/>Vector embeddings<br/>Unix socket service<br/>Semantic search in ~50ms"]
+        GRAPH["graph.json (Graphify)<br/>17K nodes · 29K edges<br/>43 communities<br/>PyKEEN trained embeddings"]
+    end
+
+    BRAIN_JSON -->|"people lookup"| PLATFORM_DB
+    QUEUE_JSON -->|"inbox items"| PLATFORM_DB
+    HUB_DB -->|"hub_sync service"| PLATFORM_DB
+    KNOWLEDGE_DB -->|"RAG search"| MEMPALACE
+    KNOWLEDGE_DB -->|"graph build"| GRAPH'></div>
+
+<h3>How Data Flows Through Memory</h3>
+
+<div class="diagram" data-code='graph LR
+    subgraph Input["Raw Input"]
+        EMAIL["Email"]
+        VOICE["Voice Memo"]
+        DOC["Document"]
+        MANUAL["Manual Note"]
+    end
+
+    subgraph Ingest["Ingest (hub.db)"]
+        KH["Knowledge Hub<br/>normalize + store"]
+    end
+
+    subgraph Process["Process (Knowledge Engine)"]
+        direction TB
+        P1["1. Brain Rescan"]
+        P2["2. Entity Extraction"]
+        P3["3. Relationship Inference"]
+        P4["4. Article Generation"]
+        P5["5. Cross-Project Linking"]
+        P6["6. Graph Build"]
+        P7["7. MemPalace Embed"]
+        P8["8. PyKEEN Train"]
+        P1 --> P2 --> P3 --> P4 --> P5 --> P6 --> P7 --> P8
+    end
+
+    subgraph Output["Queryable Memory"]
+        SEARCH["Semantic Search<br/>(MemPalace)"]
+        RAG["Ultrathink RAG<br/>(4 tools, multi-hop)"]
+        WIKI["Wiki Articles<br/>(knowledge.db)"]
+        GRAPH_Q["Graph Queries<br/>(Graphify MCP)"]
+    end
+
+    EMAIL --> KH
+    VOICE --> KH
+    DOC --> KH
+    MANUAL --> KH
+    KH --> P1
+    P8 --> SEARCH
+    P8 --> RAG
+    P8 --> WIKI
+    P8 --> GRAPH_Q'></div>
+
+<div class="callout callout-key">
+<strong>Sequential execution is critical.</strong> The Master Cron (<code>master_cron.py</code>) runs phases 1-6 per project sequentially, then phases 7-10 globally. This prevents SQLite write conflicts. The pipeline takes ~2-4 hours for all 21 projects. It runs at 1:00 AM and 2:00 PM.
+</div>
+
+<!-- ============================================================ -->
+<!-- FOUNDATION: CRON ORCHESTRATION                                -->
+<!-- ============================================================ -->
+
+<h2 id="foundation-cron">Foundation — Cron Orchestration</h2>
+<p class="phase-label">10 LAUNCHD JOBS — THE AUTONOMOUS BACKBONE</p>
+
+<p>These are the actual launchd plists running on the Mac. This is what makes CoCo autonomous.</p>
+
+<div class="diagram" data-code='graph TD
+    subgraph Timeline["24-Hour Timeline"]
+        direction LR
+        T1["1:00 AM<br/>Master Cron<br/>(all 21 projects)"]
+        T2["6:00 AM<br/>Morning Briefing<br/>(12hr lookback)"]
+        T3["Every 10 min<br/>Email Watcher"]
+        T4["Every 15 min<br/>Think Pass"]
+        T5["2:00 PM<br/>Master Cron<br/>(afternoon refresh)"]
+        T6["On-demand<br/>PyKEEN Train<br/>(GROKing)"]
+        T1 --> T2 --> T3
+        T3 --> T4 --> T5 --> T6
+    end
+
+    subgraph Always_On["Always Running"]
+        MEM["MemPalace Service<br/>ChromaDB on Unix socket"]
+        LITE["Litestream<br/>SQLite → S3 backup"]
+        TRIGGER["Trigger Engine<br/>(inside FastAPI)"]
+    end
+
+    subgraph Sequence["Execution Sequence (no parallelism)"]
+        direction TB
+        S1["Email Watcher scans Outlook"]
+        S2["Think Pass classifies + queues"]
+        S3["Master Cron runs pipeline"]
+        S4["Morning Briefing aggregates"]
+        S1 -->|"hub.db"| S2
+        S2 -->|"queue.json"| S4
+        S3 -->|"knowledge.db"| S4
+    end'></div>
+
+<div class="callout callout-auto">
+<strong>No parallelism rule:</strong> The cron jobs are designed to run sequentially. Email Watcher writes to hub.db → Think Pass reads hub.db and writes queue.json → Master Cron reads hub.db and writes knowledge.db → Morning Briefing reads everything. Running them in parallel would cause SQLite lock conflicts. The <code>StartInterval</code> staggering and <code>master_cron.py</code> orchestrator enforce this.
+</div>
+
+<!-- ============================================================ -->
+<!-- PHASE 1: EMAIL TRIAGE                                        -->
+<!-- ============================================================ -->
+
+<h2 id="phase1">Phase 1 — Email Triage</h2>
+<p class="phase-label">FIRST THING IN THE MORNING</p>
+
+<div class="callout callout-pain">
+<strong>The pain:</strong> Outlook opens. 40-80 emails. A wall of threads — vendor updates, meeting invites, project replies, FYI forwards, compliance alerts, approvals. No way to know what actually matters without reading each one. This is 30-60 minutes of dead time every morning.
+</div>
+
+<h3>What CoCo Does Autonomously (Before You Open It)</h3>
+
+<div class="diagram" data-code='graph TD
+    subgraph Autonomous["⚡ CoCo Autonomous Layer — runs every 30 min via launchd"]
+        direction TB
+
+        SCAN["📧 Email Monitor<br/>Scans Outlook inbox every 30 min"]
+        SCAN --> EXTRACT["Extract sender, subject,<br/>body, attachments, thread ID"]
+        EXTRACT --> CLASSIFY{"Classify each email"}
+
+        CLASSIFY -->|"Known sender<br/>(People Graph)"| PERSON["Match to person<br/>in Brain: role, project, history"]
+        CLASSIFY -->|"Unknown sender"| FLAG["Flag as new contact<br/>or noise"]
+
+        PERSON --> PROJECT["Map to project<br/>using WikiBrain + keywords<br/>+ sender→project history"]
+        FLAG --> NOISE{"Noise filter"}
+        NOISE -->|"Newsletter / Auto"| ARCHIVE["Archive silently"]
+        NOISE -->|"Might matter"| PROJECT
+
+        PROJECT --> GROUP["Group emails by project<br/>3PI · AuditBoard · Cross Risk · etc."]
+
+        GROUP --> CONTEXT["Per-project: Load context<br/>• Last brain update<br/>• Recent decisions<br/>• Open threads<br/>• Active docs"]
+
+        CONTEXT --> ANALYZE{"Analyze against<br/>project state"}
+
+        ANALYZE -->|"New information"| NEW_INFO["Extract new facts,<br/>dates, requirements,<br/>action items"]
+        ANALYZE -->|"Needs reply"| REPLY_DRAFT["Draft reply<br/>using project context +<br/>communication style"]
+        ANALYZE -->|"FYI only"| SUMMARIZE["Add to project summary"]
+
+        NEW_INFO --> DOC_SCAN["Scan project documents<br/>PRD · BRD · Deck · Notes"]
+        DOC_SCAN --> DOC_UPDATE{"Which docs<br/>need updating?"}
+        DOC_UPDATE -->|"PRD"| AGENT_PRD["🤖 Agent: Update PRD"]
+        DOC_UPDATE -->|"BRD"| AGENT_BRD["🤖 Agent: Update BRD"]
+        DOC_UPDATE -->|"Deck"| AGENT_DECK["🤖 Agent: Update Deck"]
+        DOC_UPDATE -->|"Meeting Notes"| AGENT_NOTES["🤖 Agent: Update Notes"]
+
+        AGENT_PRD --> VERIFY["🤖 Verify Agent<br/>Cross-check updates<br/>against source email"]
+        AGENT_BRD --> VERIFY
+        AGENT_DECK --> VERIFY
+        AGENT_NOTES --> VERIFY
+
+        REPLY_DRAFT --> OUTBOX["Place draft in<br/>Outlook Drafts folder"]
+
+        VERIFY --> BRAIN_UPDATE["Update Brain DB<br/>entities · decisions · events"]
+        SUMMARIZE --> BRAIN_UPDATE
+
+        BRAIN_UPDATE --> READY["✅ Package ready<br/>for morning review"]
+    end'></div>
+
+<h3>What Rijul Sees When He Opens CoCo</h3>
+
+<div class="diagram" data-code='graph TD
+    OPEN["Open CoCo Platform"] --> BRIEFING["📋 Email Briefing Card"]
+
+    BRIEFING --> SUMMARY["Summary: 47 emails processed<br/>• 12 noise → archived<br/>• 23 FYI → summarized<br/>• 8 need reply → drafts ready<br/>• 4 had new info → docs updated"]
+
+    SUMMARY --> PROJECTS["Grouped by Project"]
+
+    PROJECTS --> P1["📁 3PI Phase 2<br/>3 emails from Pankaj<br/>→ PRD updated with contract data<br/>→ Reply draft ready<br/>→ 1 action item extracted"]
+
+    PROJECTS --> P2["📁 AuditBoard<br/>5 emails (2 from Aude)<br/>→ Config doc updated<br/>→ 2 reply drafts ready"]
+
+    PROJECTS --> P3["📁 Cross Risk<br/>2 from Chris M.<br/>→ FYI only, summarized"]
+
+    P1 --> REVIEW{"Review each project"}
+    P2 --> REVIEW
+    P3 --> REVIEW
+
+    REVIEW -->|"Expand"| DETAIL["See: email thread<br/>+ what CoCo did<br/>+ doc diff preview<br/>+ draft reply"]
+
+    DETAIL --> APPROVE["✅ Approve draft reply<br/>→ Moves to Outbox"]
+    DETAIL --> EDIT["✏️ Edit reply<br/>→ Opens editor"]
+    DETAIL --> REJECT["❌ Reject<br/>→ I will handle manually"]
+    DETAIL --> SKIP["⏭️ Skip for now"]
+
+    APPROVE --> NEXT["Next project"]
+    EDIT --> NEXT
+    REJECT --> NEXT
+    SKIP --> NEXT
+    NEXT --> REVIEW
+
+    REVIEW -->|"All done"| DONE["✅ Email triage complete<br/>Time spent: ~5 minutes<br/>vs. 45 min manually"]'></div>
+
+<div class="callout callout-auto">
+<strong>Autonomy principle:</strong> CoCo doesn't ask permission to read and analyze. It asks permission to <em>send</em> and to <em>write to shared docs</em>. Everything else happens in the background. The human gate is: approve the reply, approve the doc update, or override.
+</div>
+
+<h3>The 10-Agent Team Per Project</h3>
+
+<p>Each project folder has a dedicated squad. When an email triggers document updates, CoCo doesn't use one monolithic agent — it dispatches from the team:</p>
+
+<table>
+<tr><th>Agent</th><th>Role in Email Flow</th><th>Trigger</th></tr>
+<tr>
+  <td><span class="tag tag-auto">Researcher</span></td>
+  <td>Loads current project state, recent brain updates, open threads</td>
+  <td>Always — first agent to run on any email batch</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">Analyst</span></td>
+  <td>Extracts new facts, dates, requirements, action items from emails</td>
+  <td>When email contains new information</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">Writer</span></td>
+  <td>Updates PRD, BRD, meeting notes, decks with new info</td>
+  <td>When Analyst flags document-worthy content</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">Reviewer</span></td>
+  <td>Cross-checks updated docs against source email for accuracy</td>
+  <td>After Writer finishes any doc update</td>
+</tr>
+<tr>
+  <td><span class="tag tag-coco">Communicator</span></td>
+  <td>Drafts reply emails matching Rijul's tone and project context</td>
+  <td>When email needs a response</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">Archivist</span></td>
+  <td>Updates Brain DB: entities, decisions, events, relationships</td>
+  <td>After all processing — captures what happened</td>
+</tr>
+</table>
+
+<p>The remaining agents (Planner, Developer, Tester, Presenter) activate in later phases — not during email triage.</p>
+
+<h3>What This Replaces</h3>
+
+<div class="diagram" data-code='graph LR
+    subgraph Before["Before CoCo — 45 min"]
+        direction TB
+        B1["Open Outlook"] --> B2["Scroll through 47 emails"]
+        B2 --> B3["Read each one"]
+        B3 --> B4["Mentally map to project"]
+        B4 --> B5["Open project folder"]
+        B5 --> B6["Find relevant doc"]
+        B6 --> B7["Copy info from email"]
+        B7 --> B8["Paste into doc"]
+        B8 --> B9["Write reply"]
+        B9 --> B10["Repeat × 47"]
+    end
+
+    subgraph After["With CoCo — 5 min"]
+        direction TB
+        A1["Open CoCo"] --> A2["See: 47 processed"]
+        A2 --> A3["Review 8 draft replies"]
+        A3 --> A4["Approve / Edit / Reject"]
+        A4 --> A5["Glance at 4 doc updates"]
+        A5 --> A6["Done"]
+    end'></div>
+
+<!-- ============================================================ -->
+<!-- PHASE 1B: MEETINGS & VOICE MEMOS                              -->
+<!-- ============================================================ -->
+
+<h2 id="phase1b">Phase 1b — Meetings & Voice Memos</h2>
+<p class="phase-label">DURING AND AFTER MEETINGS</p>
+
+<div class="callout callout-pain">
+<strong>The pain:</strong> You leave a 45-minute meeting with a voice memo, action items in your head, and a Zoom recording link in your email. The meeting notes don't get written for hours (or ever). Documents that should be updated with what was discussed stay stale. Follow-up replies never get sent because you forgot who said what.
+</div>
+
+<h3>How CoCo Handles Meetings</h3>
+
+<p>When a voice memo or Zoom summary arrives, CoCo builds calendar context <strong>on-demand</strong> — no separate cron job needed. It checks your calendar, matches the meeting, loads project context from the brain, and processes everything in one shot.</p>
+
+<div class="diagram" data-code='graph TD
+    subgraph After_Meeting["After Meeting (Two Input Paths + On-Demand Context)"]
+        direction TB
+
+        TRIGGER_A["🎙️ Voice memo detected<br/>or 📧 Zoom email arrives"]
+        TRIGGER_A --> CALENDAR["📅 On-demand calendar lookup<br/>Match to meeting by time window"]
+        CALENDAR --> CONTEXT["Build context on the fly:<br/>• Attendees from calendar invite<br/>• Project from brain (people→project map)<br/>• Open items · Last notes · Decisions"]
+    end
+
+    subgraph Input_Paths["Input Paths"]
+        direction TB
+
+        PATH_A["🎙️ Path A: Voice Memo"]
+        PATH_B["📧 Path B: Zoom Summary"]
+
+        PATH_A --> TRANSCRIBE["Extract transcription<br/>via AppleScript (free)<br/>Whisper.cpp fallback"]
+        PATH_B --> ZOOM_DETECT["Email Watcher detects<br/>Zoom email"]
+        ZOOM_DETECT --> ACCEPT{"CoCo asks:<br/>Process this?"}
+        ACCEPT -->|"Yes"| ZOOM_AGENT["🤖 Process Zoom summary"]
+    end
+
+    TRANSCRIBE --> CONTEXT
+    ZOOM_AGENT --> CONTEXT
+
+    subgraph Generate["Generate (on-demand)"]
+        CONTEXT --> NOTES_GEN["🤖 Meeting Notes Agent<br/>meeting_generator.py<br/>Uses: transcript + context<br/>+ attendee roles + project state"]
+    end
+
+    subgraph Output["What Gets Created"]
+        NOTES_GEN --> MEETING_NOTES["📝 Meeting Notes<br/>Saved to project folder"]
+        NOTES_GEN --> ACTIONS["✅ Action Items<br/>Extracted → Todos"]
+        NOTES_GEN --> DECISIONS["📋 Decisions<br/>Logged to Brain DB"]
+        NOTES_GEN --> DOC_UPDATES["📄 Document Updates<br/>PRD/BRD flagged for refresh"]
+        NOTES_GEN --> FOLLOW_UPS["📧 Follow-up Drafts<br/>Reply to attendees if needed"]
+    end
+
+    MEETING_NOTES --> FOLDER["Saved in project/<br/>meeting-notes/ folder"]
+    ACTIONS --> TODOS["Added to TodosPage"]
+    DECISIONS --> BRAIN["Updated in Brain DB"]
+    DOC_UPDATES --> AGENT_TEAM["10-agent team spawned<br/>to update flagged docs"]
+    FOLLOW_UPS --> DRAFTS["Placed in Outlook Drafts"]'></div>
+
+<h3>Voice Memo Flow (Existing: voice_memo_watcher.py)</h3>
+
+<div class="callout callout-key">
+<strong>Key insight:</strong> Apple Voice Memos already provides transcriptions natively. CoCo uses AppleScript to extract the transcription directly — no API cost, no Deepgram, no Whisper needed. Whisper.cpp is kept as a fallback for older memos or if Apple transcription isn't available. This is a <strong>$0/month</strong> operation.
+</div>
+
+<table>
+<tr><th>Step</th><th>What Happens</th><th>Model Used</th><th>Cost</th></tr>
+<tr>
+  <td><span class="tag tag-auto">1. Detect</span></td>
+  <td>voice_memo_watcher.py detects new .m4a in Apple Voice Memos folder</td>
+  <td>None (file watcher)</td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">2. Transcribe</span></td>
+  <td>AppleScript extracts native transcription from Voice Memos app. Fallback: Whisper.cpp local</td>
+  <td>Apple built-in / Whisper local</td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">3. Context</span></td>
+  <td>Match transcript to calendar meeting. Load project context, attendees, open items.</td>
+  <td>None (DB lookup)</td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">4. Generate Notes</span></td>
+  <td>meeting_generator.py builds structured notes: summary, attendees, action items, decisions</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 27B</span></td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">5. Extract Actions</span></td>
+  <td>action_item_generator.py pulls todos with owners, deadlines</td>
+  <td><span class="tag tag-keep" style="background:#34d39920;color:#34d399;">Local Gemma 9B</span></td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">6. Route</span></td>
+  <td>Notes saved to project folder. Todos created. Brain updated. Docs flagged for update.</td>
+  <td>None (file write + DB)</td>
+  <td>$0</td>
+</tr>
+<tr>
+  <td><span class="tag tag-coco">7. Follow-up</span></td>
+  <td>If follow-up emails needed, draft using Claude Sonnet (tone matters)</td>
+  <td><span class="tag tag-core" style="background:#60a5fa20;color:#60a5fa;">Claude Sonnet</span></td>
+  <td>~$0.05/reply</td>
+</tr>
+</table>
+
+<h3>Zoom Summary Flow</h3>
+
+<p>When Zoom sends a meeting summary email:</p>
+
+<table>
+<tr><th>Step</th><th>What Happens</th></tr>
+<tr>
+  <td><span class="tag tag-auto">1</span></td>
+  <td>Email Watcher detects Zoom summary email (sender: <code>no-reply@zoom.us</code>)</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">2</span></td>
+  <td>CoCo shows in inbox: <em>"Zoom summary received for [Meeting Name]. Want me to process it?"</em></td>
+</tr>
+<tr>
+  <td><span class="tag tag-human" style="background:#fbbf2420;color:#fbbf24;">3</span></td>
+  <td>You tap <strong>Accept</strong> — one click. (Or provide your own summary if Zoom's isn't great.)</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">4</span></td>
+  <td>Agent processes: calendar context + Zoom summary → meeting notes + action items + doc updates</td>
+</tr>
+<tr>
+  <td><span class="tag tag-auto">5</span></td>
+  <td>Same output pipeline as voice memos: notes in folder, todos created, brain updated, docs flagged</td>
+</tr>
+</table>
+
+<h3>What Rijul Sees in CoCo</h3>
+
+<div class="diagram" data-code='graph TD
+    OPEN["Open CoCo"] --> MEETING_CARD["🎙️ Meeting Card on Home<br/>2 meetings processed since last check"]
+
+    MEETING_CARD --> EXPAND["Expand: 3PI Standup (10:00 AM)<br/>• 4 action items extracted<br/>• PRD flagged for update<br/>• Follow-up draft ready for Pankaj"]
+
+    EXPAND --> REVIEW_NOTES["📝 Review notes<br/>(looks good)"]
+    EXPAND --> REVIEW_TODOS["✅ Review todos<br/>(adjust 1 deadline)"]
+    EXPAND --> REVIEW_DRAFT["📧 Review follow-up<br/>(approve or edit)"]
+
+    REVIEW_NOTES --> DONE["Done — 2 min total"]
+    REVIEW_TODOS --> DONE
+    REVIEW_DRAFT --> DONE'></div>
+
+<div class="callout callout-auto">
+<strong>Cost for meeting processing: ~$0.</strong> Transcription is free (Apple native). Notes generation runs on local Gemma. Only the follow-up email drafts hit Claude API (~$0.05 each). A 5-meeting day costs less than $0.25 total.
+</div>
+
+<!-- ============================================================ -->
+<!-- PHASES 2-6: PLACEHOLDER                                      -->
+<!-- ============================================================ -->
+
+<h2 id="phase2" style="color: #475569;">Phase 2 — Morning Briefing <span style="font-size:13px; color:#334155;">(coming next)</span></h2>
+<p style="color:#475569;">After email triage: "What's on my plate today? Which agents ran overnight? What decisions need me?"</p>
+
+<h2 id="phase3" style="color: #475569;">Phase 3 — Deep Work <span style="font-size:13px; color:#334155;">(coming next)</span></h2>
+<p style="color:#475569;">Focus blocks: document authoring, strategy, analysis. CoCo holds interruptions, queues decisions.</p>
+
+<h2 id="phase4" style="color: #475569;">Phase 4 — Agent Review <span style="font-size:13px; color:#334155;">(coming next)</span></h2>
+<p style="color:#475693;">Review what the 10-agent teams produced. Approve, redirect, or escalate.</p>
+
+<h2 id="phase5" style="color: #475569;">Phase 5 — Comms & Decisions <span style="font-size:13px; color:#334155;">(coming next)</span></h2>
+<p style="color:#475569;">Stakeholder updates, decision queue, meeting prep.</p>
+
+<h2 id="phase6" style="color: #475569;">Phase 6 — End of Day <span style="font-size:13px; color:#334155;">(coming next)</span></h2>
+<p style="color:#475569;">Brain flush, overnight agent dispatch, tomorrow's prep.</p>
+
+</div>
+
+<script type="module">
+import { renderMermaidSVGAsync } from 'https://esm.sh/beautiful-mermaid@1.1.3'
+
+const theme = { bg: '#1e293b', fg: '#cbd5e1', accent: '#60a5fa', muted: '#64748b', surface: '#334155', border: '#475569', transparent: true }
+
+const diagrams = document.querySelectorAll('[data-code]')
+for (const el of diagrams) {
+  el.innerHTML = '<span class="loading">Rendering diagram…</span>'
+  await new Promise(r => requestAnimationFrame(r))
+  try {
+    el.innerHTML = await renderMermaidSVGAsync(el.dataset.code, theme)
+  } catch (e) {
+    el.innerHTML = `<pre style="color:#f87171;font-size:12px;">${e.message}\n\nRaw:\n${el.dataset.code}</pre>`
+  }
+}
+</script>
+</body>
+</html>
