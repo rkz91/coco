@@ -1,0 +1,203 @@
+{
+  "timestamp": "20260417T024045Z",
+  "entity": {
+    "name": "OneTrust",
+    "type": "system",
+    "project": "3pi-v2"
+  },
+  "evidence": {
+    "chunks_total": 171,
+    "categories": {
+      "decisions": 0,
+      "events": 0,
+      "tasks": 0,
+      "relationships": 0,
+      "email_snippets": 45,
+      "doc_snippets": 123,
+      "graph_neighbors": 15,
+      "projects": 1
+    },
+    "evidence_block_chars": 19443,
+    "user_prompt_chars": 19519,
+    "system_prompt_chars": 6112
+  },
+  "gemma_26b_a4b": {
+    "model_id": "mlx-community/gemma-4-26b-a4b-it-4bit",
+    "transport": "warm MLX server :8088",
+    "elapsed_s": 384.97,
+    "usage": {
+      "input_tokens": 8778,
+      "output_tokens": 2449,
+      "total_tokens": 11227,
+      "prompt_tps": 940.2069115496425,
+      "generation_tps": 16.267928211949638,
+      "peak_memory": 17.828685496
+    },
+    "cost_usd": 0.0,
+    "quality": {
+      "word_count": 1559,
+      "char_count": 11393,
+      "unique_dates": 4,
+      "dates_sample": [
+        "February 10, 2026",
+        "February 27, 2026",
+        "March 19, 2026",
+        "March 3, 2026"
+      ],
+      "unique_named_people": 22,
+      "top_named_people": {
+        "OneTrust System": 1,
+        "Reference Guide": 1,
+        "Party Interest": 2,
+        "Party Risk": 2,
+        "Compliance Data": 1,
+        "Business Requirements": 1,
+        "API Integration": 1,
+        "Optimize Solutions": 2,
+        "On March": 1,
+        "Technical Details": 1,
+        "False Positive": 1,
+        "Use Case": 2,
+        "Rijul Kalra": 2,
+        "Leobardo Mora": 3,
+        "Pankaj Arora": 3,
+        "Deepti Zimmerman": 2,
+        "Cyber Security": 1,
+        "Graham Holton": 1,
+        "Tobias Dietrich": 1,
+        "OneTrust TPRM": 1,
+        "Vendor Security": 1,
+        "Cyber API": 1
+      },
+      "unique_tech_artifacts": 7,
+      "top_tech_artifacts": {
+        "TPI": 11,
+        "API": 10,
+        "TPRM": 3,
+        "customField1158": 3,
+        "BRD": 1,
+        "OHD": 1,
+        "VSA": 1
+      },
+      "section_word_counts": {
+        "Overview": 252,
+        "History & Context": 280,
+        "Technical Details": 317,
+        "Key Relationships": 290,
+        "Current Status": 164,
+        "Open Questions": 121
+      },
+      "section_floor_compliance": {
+        "Overview": true,
+        "History & Context": false,
+        "Technical Details": false,
+        "Key Relationships": false,
+        "Current Status": false,
+        "Open Questions": false
+      },
+      "sections_detected": 6
+    }
+  },
+  "gpt5_nano": {
+    "model_id": "gpt-5-nano-2025-08-07",
+    "transport": "QB Gateway /v1/chat/completions",
+    "elapsed_s": 34.8,
+    "usage": {
+      "prompt_tokens": 6513,
+      "completion_tokens": 7114,
+      "total_tokens": 13627,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "audio_tokens": 0
+      },
+      "completion_tokens_details": {
+        "reasoning_tokens": 3264,
+        "audio_tokens": 0,
+        "accepted_prediction_tokens": 0,
+        "rejected_prediction_tokens": 0
+      }
+    },
+    "cost_usd": {
+      "prompt_tokens": 6513,
+      "cached_tokens": 0,
+      "completion_tokens": 7114,
+      "reasoning_tokens": 3264,
+      "visible_output_tokens": 3850,
+      "total_cost_usd": 0.003171,
+      "breakdown": {
+        "uncached_input_usd": 0.000326,
+        "cached_input_usd": 0.0,
+        "output_usd": 0.002846
+      }
+    },
+    "quality": {
+      "word_count": 2658,
+      "char_count": 19201,
+      "unique_dates": 2,
+      "dates_sample": [
+        "February 27, 2026",
+        "March 12, 2026"
+      ],
+      "unique_named_people": 27,
+      "top_named_people": {
+        "Project Reference": 1,
+        "Party Risk": 2,
+        "OneTrust TPRM": 4,
+        "TPI Comments": 7,
+        "Rijul Kalra": 4,
+        "Deepti Zimmerman": 4,
+        "The OneTrust": 4,
+        "API Integration": 2,
+        "On February": 1,
+        "Pankaj Arora": 2,
+        "Use Case": 6,
+        "Graham Holton": 4,
+        "Tobias Dietrich": 4,
+        "By March": 1,
+        "Technical Details": 1,
+        "The BRD": 1,
+        "Parth Patel": 3,
+        "The Product": 1,
+        "Tendayi Owens": 1,
+        "Alexandra Rada": 1,
+        "Third Party": 1,
+        "Risk Strategy": 1,
+        "Cyber Risk": 1,
+        "Optimize Solutions": 3,
+        "Product Manager": 2,
+        "The March": 1,
+        "The Nigeria": 1
+      },
+      "unique_tech_artifacts": 10,
+      "top_tech_artifacts": {
+        "API": 28,
+        "TPI": 18,
+        "BRD": 12,
+        "TPRM": 11,
+        "customField1158": 11,
+        "PM": 2,
+        "TL": 2,
+        "OHD": 1,
+        "AR": 1,
+        "IA": 1
+      },
+      "section_word_counts": {
+        "Overview": 422,
+        "History & Context": 428,
+        "Technical Details": 514,
+        "Key Relationships": 427,
+        "Current Status": 313,
+        "Open Questions": 266
+      },
+      "section_floor_compliance": {
+        "Overview": true,
+        "History & Context": true,
+        "Technical Details": true,
+        "Key Relationships": true,
+        "Current Status": true,
+        "Open Questions": true
+      },
+      "sections_detected": 6
+    }
+  }
+}

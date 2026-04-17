@@ -7,6 +7,8 @@
 
 ## 0. TL;DR — what to do tomorrow
 
+**Late-session model swap:** gpt-5-nano via QB OpenAI Gateway is now the **primary** article-generation path everywhere (cron, batch_regen, platform UI). Benchmark (Section 2.16): 11× faster than Gemma, 6/6 section-floor compliance vs 1/6, ~$0.003/article. Wiring in Section 2.17. Full 1,138-article refresh now collapses from ~3 weeks to ~hours.
+
 **Post-handoff execution:** the user's 5 follow-up tasks were executed in-session — pykeen restart, OneTrust article review, log-rotate re-enabled, docs committed (e963af9), Section 11.2 resolved. See Section 2.14 for details. Steps below are verification-only now.
 
 1. **Verify no overnight jetsam:** `find /Library/Logs/DiagnosticReports -name 'JetsamEvent-*' -newermt '2026-04-16 18:00:00'` → must be empty.
@@ -16,7 +18,8 @@
 5. **Close the 12:00 fire unknown:** `launchctl print gui/$UID/com.coco.master-cron | grep -A8 'calendar interval'` — plist says 01:00+14:00 but 12:00 fired today.
 6. **Check email-watcher + think have been firing:** `ls -la ~/.coco/knowledge/.last-cron-run`, plus recent entries in `~/.coco/logs/email-watcher.log`.
 7. ~~**Fix stale Haiku model IDs** before re-enabling digests — Section 11.3.~~ ✅ Fixed in Section 2.14.
-8. Then pick from Section 6 priorities.
+8. **Confirm gpt-5-nano is live in production (NEW, Section 2.17):** after Fri 01:00 fire, `grep "gpt-5-nano done" ~/.coco/knowledge/master-cron.stderr.log | tail -10` should show per-article cost lines. If it's silent → gateway down or key issue, Gemma fallback should still be generating articles (check `grep "warm_llm done"`).
+9. Then pick from Section 6 priorities.
 
 ---
 
@@ -327,6 +330,82 @@ Warm v2 per-section vs floors: Overview 185 (250), History 271 (300), Technical 
 - The "guard bypass" observation (18:22 master-cron start while pykeen was live) is **resolved** — it was the Section 2.6 flock-validation test where the user intentionally disabled the guard and then `pkill -TERM`'d the run (exit 143 ≡ SIGTERM). The guard is restored and has not been observed failing in production.
 - One unknown remains: the 12:00 fire does not match the plist's `StartCalendarInterval` (01:00 + 14:00). Close tomorrow with `launchctl print gui/$UID/com.coco.master-cron | grep -A8 'calendar interval'`.
 
+### 2.16 Gemma26B-A4B vs gpt-5-nano benchmark (~22:40 EDT)
+
+Direct A/B on **the same** 19,519-char OneTrust prompt (171 evidence chunks, `3pi-v2`), using the same improved system prompt from Section 2.11. Artifacts in `benchmarks/runs/gemma-vs-gpt5nano-20260417T024045Z/`.
+
+| Metric | Gemma 26B-A4B (warm MLX) | gpt-5-nano (QB Gateway) |
+|---|---|---|
+| Wall time | 385.0s | **34.8s** (11× faster) |
+| Output words | 1,559 | **2,658** (+70%) |
+| ms/word | 247 | **13** (19× better) |
+| Section floors met | **1/6** | **6/6** |
+| Unique named people | 22 | 27 |
+| Unique tech artifacts | 7 | 10 (incl. `customField1158` ×11 vs ×3) |
+| Unique dates cited | 4 | 2 |
+| Cost | $0 | **$0.003171** |
+
+**Interpretation.** gpt-5-nano beat Gemma on volume, floor compliance, specificity, and latency simultaneously — unusual. Only Gemma advantage: +2 dates. gpt-5-nano burned 3,264 of its 7,114 completion tokens on reasoning (46%), which is how it enforced every floor.
+
+**Unexpected sub-finding:** Gemma's 385s was 5.7× its 67s from Section 2.12. Evidence block grew from ~148→171 chunks, but that alone shouldn't explain it. Possible: warm-server prefill degradation as context grows. **Not investigated** — superseded by the model swap below.
+
+**Cost at scale.** 1,138-article full-wiki refresh:
+- Gemma warm path at 43s/article = ~13.6 hours of machine time
+- gpt-5-nano at 35s/article = ~11 hours wall, **~$3.60 total spend**, no local compute
+
+**Benchmark infra (new, in repo):**
+- `benchmarks/gemma_vs_gpt5nano.py` — end-to-end harness. Reuses `article_generator._build_user_prompt`, `EntityArticleGenerator.build_evidence_block`, `KnowledgeEngine.harvest_evidence` so the prompt matches production exactly.
+- `benchmarks/rescore.py` — re-scores an existing run from `raw_*.txt` without re-calling models. Parses JSON article envelope, not markdown headers.
+- `benchmarks/smoke_gpt5.py` — 5-line sanity check that `call_claude()` hits gpt-5-nano.
+- `benchmarks/runs/gemma-vs-gpt5nano-20260417T024045Z/` — `REPORT.md`, `metrics.json`, `raw_gemma.txt`, `raw_gpt5nano.txt`, both `raw_*_response.json`, `system_prompt.txt`, `user_prompt.txt`.
+
+### 2.17 gpt-5-nano wired as primary article-generation path (~22:55 EDT)
+
+Based on Section 2.16 verdict, swapped gpt-5-nano into every article-generation call site. **All production jobs (daily cron, batch regen, platform UI) now flow through gpt-5-nano** with Gemma MLX as fallback and Anthropic Sonnet as last-resort.
+
+**New QB OpenAI Gateway endpoint** (in addition to the existing `anthropic.prod.ai-gateway…`):
+```
+https://openai.prod.ai-gateway.quantumblack.com/{QB_PROJECT}/v1/chat/completions
+```
+Same `~/.coco/.qb-gateway-key` works for both endpoints.
+
+**Files changed:**
+
+Outside the repo:
+| File | Change |
+|---|---|
+| `~/.coco/knowledge/base_generator.py` | Added QB OpenAI config block (`_GPT5_NANO_MODEL`, `_QB_OPENAI_URL`, `_read_qb_key`), new `_call_gpt5_nano()` method, rewired `call_claude()` cascade: **gpt-5-nano → Gemma MLX → (if `_LOCAL_ONLY=1` raise) → Anthropic SDK → CLI**. Logs per-call cost (uncached/cached input, reasoning/visible output). |
+| `~/.coco/knowledge/article_generator.py` | Added `_call_gpt5_nano_async()` for batch concurrency. Rewired `generate_articles_batch._gen_one()` — gpt-5-nano primary, Claude SDK async fallback. |
+| `~/.coco/knowledge/batch_regen.py` | Added `_generate_via_gpt5_nano()` using `response_format: json_object`. `generate_article_sdk()` now tries gpt-5-nano first, Anthropic SDK second, CLI last. |
+
+Inside the repo:
+| File | Change |
+|---|---|
+| `backend/app/services/local_llm_client.py` | Added QB config block + `_call_gpt5_nano()`. `quick_command()` now routes `article-stub`/`article-standard`/`article-rich` task types to gpt-5-nano first (with usage accounting via `cost_usd`), falls back to existing warm MLX path on failure. Non-article task types (classification, extraction, summarization, briefing, rag-lightning, meeting-notes) stay local. |
+
+**Cascade (new, all call sites):**
+1. gpt-5-nano via QB OpenAI Gateway (**primary**)
+2. Gemma 26B-A4B via warm MLX server (fallback, unchanged)
+3. Anthropic SDK via QB Anthropic Gateway (if `COCO_LOCAL_ONLY=0`)
+4. `claude -p` CLI (enterprise license)
+
+**Env flags:**
+- `COCO_DISABLE_GPT5_NANO=1` — escape hatch, forces the legacy MLX-first path
+- `COCO_GPT5_NANO_MODEL` — override model id (default `gpt-5-nano-2025-08-07`)
+- `COCO_GPT5_NANO_MAX_TOKENS` — `max_completion_tokens` cap (default 16000, must accommodate reasoning)
+- `COCO_GPT5_NANO_TIMEOUT` — HTTP timeout seconds (default 120)
+- `QB_OPENAI_URL`, `QB_OPENAI_PROJECT`, `QB_KEY_PATH` — transport overrides
+
+**Verification:**
+- `benchmarks/smoke_gpt5.py` → `HTTP 200 OK`, `$0.00015` for test prompt, JSON parses cleanly through `parse_response()`.
+- `ast.parse()` on all 4 files: OK.
+- Backend module not smoke-tested in this session (structlog not in system python; use backend's uv venv to exercise end-to-end).
+
+**What production will see on next cron fire (Fri 01:00):**
+- `master-cron.stderr.log` will show `gpt-5-nano done: … $0.00NN` lines instead of warm_llm lines for article generation. Phase 14 (wiki_improver) now flows through gpt-5-nano for its depth-pass too.
+- Expected: ~11× faster, 6/6 section-floor compliance, ~$0.003/article. The `~3 weeks` Phase 14 refresh estimate from Section 2.11 collapses to hours.
+- Gemma warm server stays loaded as fallback. If gateway is down, `call_claude()` seamlessly falls through.
+
 ---
 
 ## 3. All files modified today
@@ -344,6 +423,14 @@ Warm v2 per-section vs floors: Overview 185 (250), History 271 (300), Technical 
 - `backend/app/services/local_llm_client.py` — warm-server client for platform station path (Section 2.14)
 - `scripts/generate_product_articles.py` — warm-server client for batch article gen path (Section 2.14)
 
+### Inside the repo (committed late session — gpt-5-nano primary path)
+- `backend/app/services/local_llm_client.py` — added gpt-5-nano QB OpenAI Gateway route for article task types (Section 2.17)
+- `benchmarks/gemma_vs_gpt5nano.py` — benchmark harness (Section 2.16)
+- `benchmarks/rescore.py` — re-score harness (JSON-aware)
+- `benchmarks/smoke_gpt5.py` — 5-line wiring smoke test
+- `benchmarks/runs/gemma-vs-gpt5nano-20260417T024045Z/` — benchmark artifacts (REPORT.md, metrics.json, raw outputs, prompts)
+- `SESSION-HANDOFF-2026-04-16.md` — this file, updated with Sections 2.16 and 2.17
+
 ### Inside the repo (untracked, NOT committed — earlier session artifacts)
 - ~100 files: `PLATFORM-ANALYSIS-*.pdf/.svg`, `FEATURE-INVENTORY.html`, `KNOWLEDGE-QUALITY-REPORT.html`, `prototypes/path-*.html`, `frontend/pw-*.cjs`, `Screenshots-clone/`, etc. See `git status` in main checkout.
 
@@ -356,6 +443,13 @@ Warm v2 per-section vs floors: Overview 185 (250), History 271 (300), Technical 
 | `~/.coco/knowledge/batch_regen.py` | `max_tokens` 2048→4096 |
 | `~/.coco/knowledge/wiki_improver.py` | `pass_depth()` threshold rewritten to `LENGTH(body_json) < 5000 OR sections < 5`; entity types expanded to include `role, org_unit, document`; fixed bug where query referenced non-existent `word_count` column |
 | `~/.coco/knowledge/master_cron.py` | NEW **Phase 14**: runs `wiki_improver.pass_depth(batch_size=15)` after global phases 7-13 |
+
+### Outside the repo — gpt-5-nano wiring (Section 2.17, late session)
+| Path | Change |
+|---|---|
+| `~/.coco/knowledge/base_generator.py` | NEW gpt-5-nano config block (`_GPT5_NANO_MODEL`, `_QB_OPENAI_URL`, `_read_qb_key`), NEW `_call_gpt5_nano()` method, rewrote `call_claude()` cascade: **gpt-5-nano → Gemma MLX → (if `_LOCAL_ONLY=1` raise) → Anthropic SDK → CLI**. Logs per-call cost (uncached/cached input, reasoning/visible output). |
+| `~/.coco/knowledge/article_generator.py` | NEW `_call_gpt5_nano_async()` for batch concurrency. `generate_articles_batch._gen_one()` rewired — gpt-5-nano primary, Claude SDK async fallback. |
+| `~/.coco/knowledge/batch_regen.py` | NEW `_generate_via_gpt5_nano()` using `response_format: json_object`. `generate_article_sdk()` now tries gpt-5-nano first, Anthropic SDK second, CLI last. |
 
 ### Outside the repo — MLX warm-pool shipped (Section 2.13)
 | Path | Change |

@@ -218,6 +218,119 @@ def _call_warm_server(
 
 
 # ---------------------------------------------------------------------------
+# gpt-5-nano via QB OpenAI Gateway — PRIMARY path for article task types
+# (2026-04-16 benchmark: 11× faster than Gemma, 6/6 section floors vs 1/6,
+# ~$0.003/article. See /benchmarks/runs/gemma-vs-gpt5nano-*)
+# ---------------------------------------------------------------------------
+
+_GPT5_NANO_TASK_TYPES: set[str] = {"article-stub", "article-standard", "article-rich"}
+_GPT5_NANO_MODEL = os.environ.get("COCO_GPT5_NANO_MODEL", "gpt-5-nano-2025-08-07")
+_QB_OPENAI_PROJECT = os.environ.get(
+    "QB_OPENAI_PROJECT", "39867e95-6e22-4c1b-b20d-aba44c739c72",
+)
+_QB_OPENAI_URL = os.environ.get(
+    "QB_OPENAI_URL",
+    f"https://openai.prod.ai-gateway.quantumblack.com/{_QB_OPENAI_PROJECT}/v1/chat/completions",
+)
+_QB_KEY_PATH = Path(os.environ.get(
+    "QB_KEY_PATH", str(Path.home() / ".coco" / ".qb-gateway-key"),
+))
+_GPT5_NANO_ENABLED: bool = os.environ.get(
+    "COCO_DISABLE_GPT5_NANO", "0",
+).lower() in ("false", "0", "")
+_GPT5_NANO_MAX_COMPLETION_TOKENS = int(os.environ.get("COCO_GPT5_NANO_MAX_TOKENS", "16000"))
+_GPT5_NANO_TIMEOUT_S = int(os.environ.get("COCO_GPT5_NANO_TIMEOUT", "120"))
+_qb_key_cache: str | None = None
+
+
+def _read_qb_key() -> str | None:
+    global _qb_key_cache
+    if _qb_key_cache is not None:
+        return _qb_key_cache or None
+    try:
+        _qb_key_cache = _QB_KEY_PATH.read_text().strip()
+        return _qb_key_cache or None
+    except (OSError, FileNotFoundError):
+        _qb_key_cache = ""
+        return None
+
+
+def _call_gpt5_nano(
+    prompt: str,
+    system: str | None,
+    max_tokens: int,
+) -> dict | None:
+    """POST to the QB OpenAI Gateway's chat endpoint. Never raises.
+
+    Returns {"content": str, "input_tokens": int, "output_tokens": int,
+    "reasoning_tokens": int, "cost_usd": float} on success, None on any
+    failure (so caller can fall through to local MLX)."""
+    if not _GPT5_NANO_ENABLED:
+        return None
+    key = _read_qb_key()
+    if not key:
+        return None
+    try:
+        import httpx  # noqa: PLC0415
+    except ImportError:
+        return None
+
+    messages: list[dict[str, str]] = []
+    if system:
+        messages.append({"role": "system", "content": system})
+    messages.append({"role": "user", "content": prompt})
+
+    # Use max_tokens from caller as a floor, but ensure we can accommodate
+    # reasoning tokens (gpt-5-nano's reasoning routinely consumes 40–50%
+    # of completion_tokens for long-form output).
+    mct = max(max_tokens, _GPT5_NANO_MAX_COMPLETION_TOKENS)
+    payload = {
+        "model": _GPT5_NANO_MODEL,
+        "messages": messages,
+        "max_completion_tokens": mct,
+    }
+    headers = {"Authorization": f"Bearer {key}", "Content-Type": "application/json"}
+
+    try:
+        with httpx.Client(timeout=httpx.Timeout(float(_GPT5_NANO_TIMEOUT_S), connect=10.0)) as client:
+            r = client.post(_QB_OPENAI_URL, json=payload, headers=headers)
+            r.raise_for_status()
+            data = r.json()
+    except httpx.HTTPStatusError as exc:
+        log.warning("gpt5_nano_http_error", status=exc.response.status_code,
+                    body=exc.response.text[:200])
+        return None
+    except (httpx.ConnectError, httpx.TimeoutException) as exc:
+        log.info("gpt5_nano_unreachable", error_type=type(exc).__name__)
+        return None
+    except Exception as exc:  # noqa: BLE001
+        log.warning("gpt5_nano_unexpected", error=str(exc))
+        return None
+
+    try:
+        content = data["choices"][0]["message"]["content"]
+        usage = data.get("usage", {}) or {}
+        in_tok = int(usage.get("prompt_tokens", 0))
+        out_tok = int(usage.get("completion_tokens", 0))
+        cached = int((usage.get("prompt_tokens_details") or {}).get("cached_tokens", 0))
+        reasoning = int((usage.get("completion_tokens_details") or {}).get("reasoning_tokens", 0))
+        # $0.05/MTok input, $0.005/MTok cached, $0.40/MTok output
+        uncached_in = max(0, in_tok - cached)
+        cost = (uncached_in * 0.05 + cached * 0.005 + out_tok * 0.40) / 1_000_000
+        return {
+            "content": content or "",
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
+            "cached_tokens": cached,
+            "reasoning_tokens": reasoning,
+            "cost_usd": cost,
+        }
+    except (KeyError, IndexError, TypeError) as exc:
+        log.warning("gpt5_nano_malformed", error=str(exc))
+        return None
+
+
+# ---------------------------------------------------------------------------
 # Error type
 # ---------------------------------------------------------------------------
 
@@ -306,67 +419,59 @@ class LocalLLMClient:
         model_id, framework = self.get_model_for_task(task_type)
         timeout: int = LOCAL_LLM_TIMEOUT
 
+        # ---- PRIMARY path: gpt-5-nano via QB Gateway (for article tasks) ---
+        # 2026-04-16 benchmark: 11× faster than Gemma, 6/6 floor compliance
+        # vs 1/6, ~$0.003/article. Non-article task_types stay local.
+        if task_type in _GPT5_NANO_TASK_TYPES and _GPT5_NANO_ENABLED:
+            gpt_result = _call_gpt5_nano(prompt, system, max_tokens)
+            if gpt_result is not None:
+                log.info(
+                    "gpt5_nano_done",
+                    task_type=task_type,
+                    model=_GPT5_NANO_MODEL,
+                    input_tokens=gpt_result["input_tokens"],
+                    output_tokens=gpt_result["output_tokens"],
+                    reasoning_tokens=gpt_result["reasoning_tokens"],
+                    cost_usd=round(gpt_result["cost_usd"], 6),
+                    path="gpt5_nano",
+                )
+                return {
+                    "content": gpt_result["content"],
+                    "input_tokens": gpt_result["input_tokens"],
+                    "output_tokens": gpt_result["output_tokens"],
+                    "model": _GPT5_NANO_MODEL,
+                    "local": False,
+                }
+            log.info(
+                "gpt5_nano_failed_falling_back_to_mlx",
+                task_type=task_type,
+                model_wanted=_GPT5_NANO_MODEL,
+            )
+
         # ---- Fast path: warm MLX server ------------------------------------
         # When the com.coco.mlx-vlm-server launchd agent is running and has
         # the requested model loaded, route the call through its OpenAI-
         # compatible endpoint. Inference is ~2-7× faster because the 15 GB
         # model stays resident instead of cold-loading per call.
+        # Warm MLX server is the ONLY allowed inference path — cold-load
+        # subprocess fallback is disabled by model-reload policy (2026-04-16:
+        # double-loading ~15 GB of Gemma4 weights caused OOM crashes, RCA in
+        # .claude/.../memory/project_crash_rca.md). If the warm server is
+        # unreachable or serving a different model, raise loudly — callers
+        # must either start/configure the server or fall through to cloud.
         warm_model = _warm_server_model()
-        if warm_model and warm_model == model_id:
-            log.info(
-                "local_llm_call",
-                task_type=task_type,
-                model=model_id,
-                framework=framework,
-                max_tokens=max_tokens,
-                path="warm_server",
+        if not warm_model:
+            raise LocalLLMError(
+                "Warm MLX server unreachable — refusing to cold-load weights. "
+                f"Start com.coco.mlx-vlm-server or set LOCAL_LLM_ENABLED=False. "
+                f"task_type={task_type} wanted model={model_id}",
             )
-            warm_result = _call_warm_server(model_id, prompt, system, max_tokens, timeout)
-            if warm_result is not None:
-                log.info(
-                    "local_llm_done",
-                    task_type=task_type,
-                    model=model_id,
-                    output_tokens=warm_result["output_tokens"],
-                    generation_tps=warm_result.get("generation_tps", 0.0),
-                    path="warm_server",
-                )
-                return {
-                    "content": warm_result["content"],
-                    "input_tokens": 0,
-                    "output_tokens": warm_result["output_tokens"],
-                    "model": model_id,
-                    "local": True,
-                }
-            log.info("warm_llm_fallback_to_subprocess", model=model_id)
-        # ---- Slow path: cold-load subprocess (original behaviour) ----------
-
-        # Build prompt text — prepend system message as a plain prefix when
-        # the CLI has no dedicated --system flag (both mlx_lm and mlx_vlm
-        # accept a single --prompt string).
-        full_prompt = prompt
-        if system:
-            full_prompt = f"{system}\n\n{prompt}"
-
-        # Build subprocess command.
-        # Use absolute path to system python3 — MLX is installed there,
-        # not in the FastAPI venv. Bare "python3" resolves to venv python.
-        _python = "/opt/homebrew/bin/python3"
-        if framework == "lm":
-            cmd = [
-                _python, "-m", "mlx_lm", "generate",
-                "--model", model_id,
-                "--prompt", full_prompt,
-                "--max-tokens", str(max_tokens),
-            ]
-        else:
-            # vlm path (Gemma 4 family) — use "mlx_vlm generate" (non-deprecated form)
-            cmd = [
-                _python, "-m", "mlx_vlm", "generate",
-                "--model", model_id,
-                "--prompt", full_prompt,
-                "--max-tokens", str(max_tokens),
-            ]
+        if warm_model != model_id:
+            raise LocalLLMError(
+                f"Warm MLX server has {warm_model} loaded but task_type={task_type} "
+                f"wants {model_id} — a model swap would re-load weights. "
+                f"Either reconfigure the server or route this task to the loaded model.",
+            )
 
         log.info(
             "local_llm_call",
@@ -374,57 +479,27 @@ class LocalLLMClient:
             model=model_id,
             framework=framework,
             max_tokens=max_tokens,
+            path="warm_server",
         )
-
-        with _mlx_exclusive():
-            try:
-                result = subprocess.run(
-                    cmd,
-                    capture_output=True,
-                    text=True,
-                    timeout=timeout,
-                )
-            except subprocess.TimeoutExpired as exc:
-                raise LocalLLMError(
-                    f"Local LLM timed out after {timeout}s (model={model_id})",
-                    cause=exc,
-                ) from exc
-            except Exception as exc:
-                raise LocalLLMError(
-                    f"Failed to launch local LLM subprocess: {exc}",
-                    cause=exc,
-                ) from exc
-
-        if result.returncode != 0:
-            stderr_snippet = (result.stderr or "")[:400]
+        warm_result = _call_warm_server(model_id, prompt, system, max_tokens, timeout)
+        if warm_result is None:
             raise LocalLLMError(
-                f"Local LLM exited with code {result.returncode}: {stderr_snippet}",
+                f"Warm MLX server responded with an error (model={model_id}). "
+                "Cold-load subprocess disabled by model-reload policy.",
             )
-
-        # ------------------------------------------------------------------
-        # Parse output
-        # The CLI prints:
-        #   <generated text>
-        #   (blank line)
-        #   ==========
-        #   Prompt: N tokens, X tok/s
-        #   Generation: M tokens, Y tok/s
-        #   Peak memory: Z GB
-        # ------------------------------------------------------------------
-        raw_output = result.stdout or ""
-        content, output_tokens = _parse_mlx_output(raw_output, model_id)
 
         log.info(
             "local_llm_done",
             task_type=task_type,
             model=model_id,
-            output_tokens=output_tokens,
+            output_tokens=warm_result["output_tokens"],
+            generation_tps=warm_result.get("generation_tps", 0.0),
+            path="warm_server",
         )
-
         return {
-            "content": content,
+            "content": warm_result["content"],
             "input_tokens": 0,
-            "output_tokens": output_tokens,
+            "output_tokens": warm_result["output_tokens"],
             "model": model_id,
             "local": True,
         }
