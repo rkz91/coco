@@ -1628,3 +1628,144 @@ Phase 8 still reports 0 failures — generators succeed via alternate code paths
 3. **Decision extraction pipeline (Option C)** — still a separate initiative.
 4. **Warm-server resilience** — today it died silently mid-run. Needs a healthcheck+auto-recover wrapper, or a watchdog in master-cron that probes `/health` before Phase 8.
 5. **`COCO_LOCAL_ONLY=1` trap** — when warm server dies, runner refuses Anthropic fallthrough and emits stub articles via gpt-5-nano-only. Worth a logged warning or circuit-breaker that clears `COCO_LOCAL_ONLY` for one retry after 60s of warm-server unavailability.
+
+---
+
+## 18. Reanalysis snapshot — state as of 2026-04-19 ≈16:00 EDT (~2 days after Section 17)
+
+> This section is a reconciliation pass between what Sections 0–17 claimed and what the system actually looks like now. The document had drifted — several PIDs, launchd labels, and "pending" items are now stale. Use this as the live dashboard instead of scrolling to find the latest truth.
+
+### 18.1 Architecture pivot since Section 17
+
+Two structural changes since the last section was written. Both affect how much of the earlier doc is still true.
+
+1. **Dotfiles repo created** — `~/projects/coco-dotfiles/` is the new source of truth for knowledge-engine code + launchd plists. `~/.coco/knowledge/*.py` and a handful of top-level files are now symlinks into `coco-dotfiles/coco/`. The `~/.coco` git repo captured the typechange in commits `1cf257c` + `6fe21eb` and added a `.gitignore` in `f16fc02`. Historical commits (`eff2b97` force-fix, `48632db` SEC-7 gate, `f7bb1d0` stakeholder_pulse circuit-breaker) live in `~/.coco` history; ongoing edits land in `coco-dotfiles`.
+2. **gpt-5-nano is the only LLM path** — `coco-dotfiles` commit `0f342e9 Rip Anthropic SDK + claude CLI fallback paths — gpt-5-nano only` retired both the warm MLX server and the Anthropic SDK/CLI fallback. `max_workers` bumped twice (3→8→20) in `3420bde` + `33b7c32`. Consequence: the "warm-pool fix" celebrated in Section 2.13 is gone, and the `COCO_LOCAL_ONLY=1` trap (17.8 #5) is no longer reachable.
+
+### 18.2 Handoff claims vs reality — delta table
+
+| Section | Claim | Current reality | Verdict |
+|---|---|---|---|
+| 1 | pykeen PID **57376** | pykeen now PID **2024**, 1d 13h elapsed, Adam checkpoint 8 MB written 15:47 today | ⚠️ **stale PID**, but semantics hold — training running, Adam active |
+| 1 | Warm MLX server PID **55642**, 15–16 GB RSS | **NO mlx_vlm process running**. `com.coco.mlx-vlm-server` not in `launchctl list` (plist file still on disk at `~/Library/LaunchAgents/`) | ❌ **retired** — superseded by 18.1 architecture pivot |
+| 1 | `com.coco.log-rotate` loaded (§2.14) | Loaded via `coco-dotfiles/launchagents/com.coco.log-rotate.plist`, active count 0 (idle) | ✅ still true |
+| 1 | `com.coco.think` + `com.coco.email-watcher` loaded on interval | Both show `-` (not running) in `launchctl list` — booted out again | ⚠️ regressed vs §1 but probably deliberate — email-watcher was the 14h hung process from §15.2 |
+| 2.13 | Warm-pool measured −36% wall time | Irrelevant — warm server is gone, article-gen is 100% cloud via gpt-5-nano | ❌ obsolete |
+| 2.15 task 3 | "Dotfiles repo for `~/.coco/` — deferred" | ✅ **done** — `~/projects/coco-dotfiles` created, 79 `.py` files under `coco/knowledge/` tracked, 4 commits | ✅ resolved |
+| 2.17 | gpt-5-nano primary, Gemma + Anthropic as fallbacks | gpt-5-nano **only** — Gemma warm-server retired, Anthropic SDK+CLI ripped | ⚠️ stricter than claim; cascade is now single-rail |
+| 13.15 #4 | `/tmp/conftest/*.sh` keep spawning orphans | Directory **gone** (`no matches found: /tmp/conftest/*.sh`) | ✅ resolved |
+| 13.17 | `article_writer.py:106` dedup hardcodes `>= 0.95` | Superseded by §16 fix — dedup now force-gated (`if source_hash and not force`) | ✅ resolved |
+| 14.8 / 14.11 #1-2 | Articles not landing; needs write-path instrumentation | Root cause was dedup (not write path). Fix shipped `eff2b97`. Corpus grew from ~2,400 → **13,371 articles** (+10,968 since 2026-04-17 commit) | ✅ resolved |
+| 14.11 #3 | Scale-verify on audit-board (2,766 entities) | audit-board now has **4,480 articles**. Implicitly scaled — the `--all` nightly runs got there | ✅ resolved |
+| 14.11 #4 | Disarm rogue test scripts | `/tmp/conftest/` empty | ✅ resolved |
+| 14.11 #5 | Dashboard label verification | Queue-jobs dir last updated 2026-04-17 00:12 — dashboard queue unused for 2+ days. No active dashboard runs to verify labels on; production cron uses gpt-5-nano exclusively (verifiable via master-cron logs) | ⚠️ moot — dashboard queue dormant |
+| 15.8 #4 | stakeholder_pulse 7h hang | Fixed in `~/.coco` commit `f7bb1d0 fix(stakeholder_pulse): add timeout budget + circuit breaker` | ✅ resolved |
+| 15.8 #5 | Unexplained 12:00 master-cron fire | Not looked at again. Master-cron has been firing at 01:00 + 14:00 per plist since; log shows consistent pykeen-yield at both | ⚠️ likely benign, de-prioritized |
+| 16.5 | parent_project backfill, 1,946 rows pending | Blank-parent count now **53** (down from 2,144). Backfill effectively done — 2,091 rows tagged since the doc was written | ✅ resolved |
+| 17.6 | `r.rel_type` error residual | **0 occurrences** in current `master-cron.stderr.log`. Either the migration ran or the query was patched in a later `coco-dotfiles` commit | ✅ resolved |
+| 17.8 #4 | Warm-server resilience watchdog | Moot — warm server removed entirely | ❌ obsolete |
+| 17.8 #5 | `COCO_LOCAL_ONLY=1` fallback trap | Moot — Anthropic SDK/CLI path ripped, nothing to trap | ❌ obsolete |
+
+### 18.3 Actual live state at 2026-04-19 15:48 EDT
+
+**Running processes** (knowledge engine only):
+
+| PID | Process | Elapsed | RSS | Notes |
+|---|---|---|---|---|
+| 2023 | `knowledge-dashboard.py --serve` (port 9876) | 1d 13h | 37 MB | KeepAlive via launchd |
+| 2024 | `pykeen_bridge.py --full --top 50` | 1d 13h | **518 MB** | Training healthy, checkpoint written 1h ago |
+| 2013 | `com.coco.mempalace` | — | — | Running via launchd (re-enabled at some point) |
+| 2016 | `com.coco.pykeen-dashboard` | — | — | Running |
+| 2030 | `com.coco.litestream` | — | — | Running |
+| **75266** | `master_cron.py --all` | 1h 41m | — | **Active nightly sweep** — kicked off ~14:07 EDT |
+
+**Launchd agents** (`launchctl list | grep coco`):
+
+| Label | State | Notes |
+|---|---|---|
+| `com.coco.master-cron` | PID 75234 (wrapper), last exit 143 | Actively running — see PID 75266 above |
+| `com.coco.pykeen-train` | PID 2024 | KeepAlive |
+| `com.coco.litestream` | PID 2030 | KeepAlive |
+| `com.coco.mempalace` | PID 2013 | KeepAlive |
+| `com.coco.knowledge-dashboard` | PID 2023 | KeepAlive |
+| `com.coco.pykeen-dashboard` | PID 2016 | KeepAlive |
+| `com.coco.log-rotate` | Loaded (coco-dotfiles plist), idle | Fires weekly |
+| `com.coco.meeting-prep` | `-` (not running) | Booted out |
+| `com.coco.think` | `-` (not running) | Booted out |
+| `com.coco.email-watcher` | `-` (not running) | Booted out — was the 14h hung process |
+| `com.coco.morning-briefing` | `-` (not running) | Booted out |
+| `com.coco.weekly-report` | `-` (not running) | Booted out |
+| `com.coco.backup` | `-` (not running) | Booted out |
+| **`com.coco.mlx-vlm-server`** | **NOT LISTED** | Retired per §18.1 #2 |
+
+**Health signals:**
+
+| Check | Result |
+|---|---|
+| Jetsam events since 2026-04-17 00:00 | **0** (flock fix + warm-server removal closed the pathway entirely) |
+| Article corpus | **13,371 articles** (+10,968 since §16 commit) |
+| Blank `parent_project` rows | **53** (was 2,144 in §16.5) |
+| audit-board article count | 4,480 |
+| pykeen Adam checkpoint file | 8 MB, updated 15:47 EDT (1 h ago) |
+| `~/.coco/knowledge/.last-cron-run` | Updated 2026-04-19 14:07 EDT |
+| `/tmp/conftest/*.sh` orphan source | Directory gone |
+
+### 18.4 Uncommitted inventory (2026-04-19 ≈16:00 EDT)
+
+**`~/projects/coco-platform` main branch:**
+- Modified: `frontend/src/bones/home-dashboard.bones.json` (pre-existing, flagged in §3 as unrelated)
+- Untracked top-level: ~70 PDF/SVG/HTML prototype artifacts from earlier sessions (§3 note)
+- Latest commit: `89927ce docs(prototypes): Path A/B/C design exploration HTMLs` (2026-04-17)
+- **This file (`SESSION-HANDOFF-2026-04-16.md`)** edited today with Section 18 — not yet committed
+
+**`~/projects/coco-platform` worktree `claude/elastic-hopper-5dbd17`:** clean
+
+**`~/projects/coco-dotfiles`:** clean (4 commits, last `0f342e9` at 2026-04-19 09:10 EDT)
+
+**`~/.coco`:**
+- Modified tracked: `deleted: public/index.html` (leftover from coco-platform migration, not yet committed)
+- Untracked: 114 items including `.gitignore`, plan docs (`ROADMAP-V4.md`, `UNIFICATION-PLAN.md`, `WIKI-IMPROVEMENT-PLAN*.md`, `knowledge/V2-*.md`, `knowledge/V3-*.md`, `knowledge/REVIEW-*.md`), helper scripts (`backup.sh`, `bin/`, `hooks/`), `com.coco.think.plist`, session logs, mostly drafts + one-shot migration scripts. Whitelist keeps these out by design.
+- Latest commit: `6fe21eb chore: reflect coco-platform migration (remaining symlinks)` (2026-04-19)
+
+### 18.5 Consolidated pending list (everything still real from Sections 0–17)
+
+**P0 (if running another big sweep):**
+- None. System is in a stable state.
+
+**P1 (close out Section 17.8 residuals):**
+1. ~~`r.rel_type` fix~~ ✅ resolved (18.2)
+2. **Formalize the 7 brain-DB migrations** into `~/.claude/skills/brain/scripts/brain/schema.py` `MIGRATIONS` dict as V2. Still ad-hoc in `/tmp/migrate_brain_events_columns.py`. Will break again on any legacy brain restore.
+3. **Decision extraction pipeline (Option C)** — `brain.decisions` tables are still empty across all 36 projects (§15.5). Separate initiative. Current gpt-5-nano fallback path produces decision_log articles from other evidence, which has been "good enough" to close §17 errors but doesn't populate the canonical decisions table.
+
+**P2 (wiki hardening — still from §6 Priority 3):**
+4. **Wiki security** — `SEC-1` (stored XSS), `SEC-2` (SQL injection in `q_projects()`), `SEC-3` (FTS5 MATCH injection), `SEC-5` (path traversal). `SEC-7` (personal-doc exposure) already closed in `~/.coco` commit `48632db`. `DEV-1` (1,683-line monolith split) pending. Only blocks external exposure; localhost-only today.
+
+**P3 (observability + cleanup):**
+5. **Email watcher** — still booted out after the 14h hang. Post-§15.8 #4 fix should be stable; decide whether to re-enable or leave Outlook monitoring to manual `/email:*` skills.
+6. **Morning briefing / meeting prep / weekly report** — all still booted out. Re-enable once confidence in the nightly stack is high.
+7. **12:00 master-cron mystery fire** (§15.8 #5) — low priority, defensive `launchctl print` check.
+8. **`~/.coco` housekeeping** — 114 untracked items. Worth one pass deciding what belongs in `coco-dotfiles` vs `.gitignore` vs just deleted.
+9. **`public/index.html` deletion** — still showing as modified in `~/.coco`. Commit or revert.
+
+**P4 (obsolete — can be scrubbed from future handoffs):**
+- §2.13 warm-pool wiring details (warm server retired)
+- §17.8 #4 warm-server watchdog (warm server retired)
+- §17.8 #5 `COCO_LOCAL_ONLY=1` trap (single-rail cloud now)
+- §6 Priority 2 "MLX warm-pool fix" phased plan (shipped then retired)
+- §7 decision #1 "MLX warm-pool Phase 1 vs 2" (moot)
+
+### 18.6 What changed in how the system behaves since §17
+
+- **Cost model** shifted from "hybrid local+cloud with $1 lifetime" to pure cloud (~$0.46/project on gpt-5.4-nano-2026-03-17 per §14.2). Nightly `--all` across 36 projects is now ≈$16 worst case — rounded up, cheaper than a day of engineering.
+- **Reliability model** shifted from "MLX flaky + Sonnet safety net" to "one gateway, no net." If QB OpenAI Gateway is down, article generation fails loudly instead of degrading. No `stub @ conf=0.30` path anymore because dedicated fallbacks are gone.
+- **Throughput** bumped 3→8→20 parallel workers. §14 benchmark of ~10 s/article × 20 workers means ~13 000 articles/hour ceiling; the +10 968 corpus growth between §16 and §18 fits in ~1 h of gateway time. Nightly cron has plenty of headroom.
+- **Code ownership** — `~/.coco/knowledge/*.py` are now symlinks. Never edit them directly; cd into `~/projects/coco-dotfiles/coco/knowledge/` and commit there. The `~/.coco` git repo is now mostly a pointer bag.
+
+### 18.7 "Start here tomorrow" rewrite (replaces §0 TL;DR)
+
+1. **Check master-cron completed cleanly:** `cat ~/.coco/knowledge/last-cron-result.json | jq '.summary'` — expect Phase 8 `48 succeeded 0 failed`.
+2. **Verify corpus still growing:** `sqlite3 -readonly ~/.coco/knowledge/knowledge.db "SELECT COUNT(*), MAX(updated_at) FROM articles"` — should tick past 13 371 with a timestamp from the last cron fire.
+3. **Confirm pykeen still training:** `ls -la ~/.coco/knowledge/pykeen-model/pykeen_training_checkpoint.pt` — mtime within last ~10 min per checkpoint cadence.
+4. **Look at QB gateway spend for the night:** if QB admin console is reachable, confirm total spend < $20 for the 24 h window.
+5. **If something broke:** check `~/.coco/knowledge/master-cron.stderr.log` then `~/projects/coco-dotfiles/coco/knowledge/` for the source. Don't edit `~/.coco/knowledge/*.py` — symlinks.
+6. **Commit this doc:** Section 18 was written in worktree — either cherry to main or edit directly there.
