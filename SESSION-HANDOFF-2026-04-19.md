@@ -583,8 +583,94 @@ Needs one of:
 
 ### 10.6 Resume Monday — first 10 minutes
 
-1. **Fix push:** `cd ~/projects/coco-platform && git remote set-url origin <url>` or create the `Project-Coco` repo on GitHub, then `git push origin main`.
+1. ~~**Fix push**~~ ✅ resolved — see §11.
 2. **Verify master-cron finished:** `cat ~/.coco/knowledge/last-cron-result.json | jq '.summary'` — expect 48/48 Phase 8 per §17.3 pattern.
 3. **Check corpus growth:** `sqlite3 -readonly ~/.coco/knowledge/knowledge.db "SELECT COUNT(*) FROM articles"` — should be past 13,371.
 4. **Dashboard HTTPServer crash** (§4 P1 #1) — open `http://localhost:9876`, confirm it still serves or diagnose.
 5. Pick P1 #3 (audit-board check) if short on time, P2 #4 (decision extraction PRD) if starting fresh.
+
+---
+
+## 11. Late-evening close-out (2026-04-19 20:15 EDT → 2026-04-20)
+
+### 11.1 GitHub repo created + push unblocked
+
+Blocker from §10.2 resolved:
+
+- Repo `rijulkalra2000/Project-Coco` was 404 at session start (`gh api /users/rijulkalra2000/repos` did not list it). User created it during the session.
+- `gh auth` had two accounts — active `rijul-mck` couldn't create under `rijulkalra2000`. Switched active: `gh auth switch --user rijulkalra2000`.
+- `gh auth setup-git` (one-time) wired the credential helper.
+- `git push origin main` succeeded: `11665f7..d84034b  main -> main`.
+- Repo visibility: **PRIVATE**. URL: https://github.com/rijulkalra2000/Project-Coco. Initial push included all 37 local-only commits accumulated since 2026-04-16.
+
+### 11.2 README rewrite
+
+Committed `19f4271 docs(readme): update for 2026-04-19 state — knowledge engine, gpt-5-nano, launchd ports` (+61/-15). Now public face of the repo. Highlights:
+
+- Added status badges (articles=13,371, LLM=gpt-5.4-nano, platform=macOS/launchd).
+- Quick Start split into three flows: dev (`5173+8000`), prod (`start.sh` → `:3001`), wiki (`wiki_server.py` → `:8888`). Prior README only covered dev at `:5173`.
+- Architecture diagram gained a third DB (`knowledge.db`) and a dedicated Knowledge Engine block (cron, pykeen, wiki_server, dashboard, gpt-5.4-nano through QB Gateway).
+- New `## Knowledge Engine` section with a component table.
+- Config expanded to cover `COCO_*` knowledge-engine env vars (`COCO_GPT5_NANO_MODEL`, `COCO_CONFIDENCE_FLOOR`, `COCO_SCORE_DETERMINISTIC`, `COCO_DISABLE_GPT5_NANO`, `COCO_LOCAL_ONLY`).
+- Dropped stale `USE_AGENT_SDK=false` line (Anthropic/CLI paths retired per `coco-dotfiles 0f342e9`).
+- Added link to companion [`coco-dotfiles`](https://github.com/rijulkalra2000/coco-dotfiles) repo — though note that repo is not yet pushed (see §11.5 open item).
+
+### 11.3 Final commit inventory — this session + the evening extension
+
+| Repo | SHA | Message | Status |
+|---|---|---|---|
+| `coco-platform` | `cb108b7` | docs: Section 18 — reanalysis snapshot | pushed |
+| `coco-platform` | `3fe2aca` | docs: Session Handoff 2026-04-19 | pushed |
+| `coco-platform` | `d84034b` | docs: Section 10 — evening pipeline results | pushed |
+| `coco-platform` | `19f4271` | docs(readme): 2026-04-19 state | pushed |
+| `coco-dotfiles` | `33fd758` | security(wiki): SEC-2 parametrize q_projects | not yet pushed (see §11.5) |
+| `~/.coco` | `0259192` | chore: untrack public/index.html | local only (repo has no remote) |
+| `~/.claude/skills/brain/` | on-disk only | V3-V6 migrations + SCHEMA_VERSION=6 | no git |
+
+### 11.4 Refreshed repo + process landscape
+
+```
+~/projects/coco-platform   →  github.com/rijulkalra2000/Project-Coco   [PRIVATE, PUSHED]
+~/projects/coco-dotfiles   →  no remote configured yet                 [LOCAL, 5 commits]
+~/.coco                    →  no remote configured                     [LOCAL, knowledge-runtime]
+~/.claude/skills/brain     →  not git-tracked                          [ON-DISK]
+```
+
+Live services snapshot unchanged since §3:
+
+- `com.coco.pykeen-train` (PID 2024) — training, Adam checkpoints every ~10 min
+- `com.coco.mlx-vlm-server` — **retired** (warm MLX server no longer loaded; gpt-5-nano is sole LLM path)
+- `com.coco.knowledge-dashboard` (PID 2023) — serving :9876
+- `master_cron.py --all` (PID 75266) — in-flight nightly sweep, ~6h elapsed at 20:07 EDT
+- DB corpus: 13,371 articles, 53 blank-parent remaining, no jetsam since 2026-04-17
+
+### 11.5 Remaining open items after 11.1–11.4
+
+**P1 (new this session):**
+1. **`coco-dotfiles` has no remote** — `0f342e9` / `3420bde` / `33b7c32` / `5e8f906` / `33fd758` (5 commits) exist only on disk. README links to a GitHub URL that doesn't yet exist. Either create `rijulkalra2000/coco-dotfiles` + push, or update the README link to point somewhere real. Low effort, high value (code source of truth for the knowledge engine).
+2. **`~/.coco` has no remote** — brain-runtime changes accumulate without off-host backup. Litestream replicates SQLite files but not `.py` edits or launchd plists. Consider adding the same GitHub org as a private remote.
+
+**P2 (carried from §10.4, still valid):**
+3. **DEV-1 `wiki_server.py` split** — 2,109 lines, cosmetic refactor, ~4h. Not urgent.
+4. **Decision extraction pipeline** — §15.8 #1 / §17.8 #3 / §10.4 #4. Highest-leverage forward item. 1-day PRD. `brain.decisions` tables still empty across all projects; decision_log composites currently emerge from email/doc evidence via gpt-5-nano fallback.
+
+**P3 (carried from §10.4):**
+5. **Booted-out launchd agents** — `think`, `email-watcher`, `morning-briefing`, `meeting-prep`, `weekly-report`, `backup`. Stakeholder_pulse safety fix in `~/.coco f7bb1d0` means email-watcher is the safest one to re-enable first.
+6. **12:00 master-cron mystery** — one-shot `launchctl print gui/$UID/com.coco.master-cron` close-out.
+7. **~/.coco housekeeping** — 114 untracked items (plan drafts, migration scripts, runtime state). One-pass decide what to promote to `coco-dotfiles` vs archive vs `.gitignore`.
+
+**Obsolete (prune from next handoff):**
+- ~~Push 34 commits to origin~~ ✅ shipped in §11.1
+- ~~README outdated vs actual ports/scripts/LLM path~~ ✅ shipped in §11.2
+- ~~P3.5 public/index.html~~ ✅ `~/.coco 0259192` (external)
+- ~~P1.1 brain migrations~~ ✅ V3-V6 in §10.1
+- ~~P2 wiki SEC-1/2/3/5/7~~ ✅ four-of-five already patched; SEC-2 shipped §10.1
+- ~~ArticleWriter silent dedup (§16)~~ ✅ force-plumbed `eff2b97`
+
+### 11.6 Resume 2026-04-20 — first 10 minutes
+
+1. **Push coco-dotfiles + ~/.coco** (§11.5 #1, #2). `gh repo create` + `git push origin main` × 2. Unblocks off-host backup of the knowledge engine code.
+2. **Sanity check last nightly sweep:** `cat ~/.coco/knowledge/last-cron-result.json | jq '{started_at, finished_at, phases: .phase_results | to_entries | map({phase:.key, ok:.value.ok, failed:.value.failed})}'`. Expect clean Phase 7+8+9.
+3. **Corpus delta:** `sqlite3 -readonly ~/.coco/knowledge/knowledge.db "SELECT COUNT(*), MAX(updated_at) FROM articles"`. Compare to baseline 13,371 from §11.4.
+4. **Dashboard visual check:** open http://localhost:9876, confirm queue empty or expected content.
+5. **Pick from P2/P3 §11.5** — decision-extraction PRD is the leverage play; DEV-1 split is the deferrable 4h job.
