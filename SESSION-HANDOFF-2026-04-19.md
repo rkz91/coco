@@ -431,3 +431,160 @@ Everything else across the 3 repos = clean.
 4. Housekeeping at end of day (cleanup .bak-20260417 files, update this doc with Apr 20 reality)
 
 End of §9 update.
+
+---
+
+## 10. Evening update (2026-04-19 ≈20:00 EDT) — P1.1 migrations + P2 security audit + push blocker
+
+Appending the evening's `/team:develop` pipeline results onto this doc. Scope from §4 backlog: P1.1 brain migrations, P2.1–P2.4 wiki security, P3.5 public/index.html, push 34 commits to origin.
+
+### 10.1 What shipped
+
+#### P1.1 — Brain schema V2-V6 migrations
+
+Baked the 7 ad-hoc `/tmp/migrate_brain_events_columns.py` ALTERs into `~/.claude/skills/brain/scripts/brain/schema.py` as callable migrations keyed on `SCHEMA_VERSION`.
+
+| Ver | Function | Effect |
+|---|---|---|
+| V2 (pre-existing) | `_migrate_events_columns_v2` | `events.event_date → date`, `events.event_type → type`, add `date`/`type` if missing |
+| V3 (new) | `_migrate_events_participants_v3` | `events.participants → participants_json`, add `participants_json` if missing |
+| V4 (new) | `_migrate_tasks_description_to_notes_v4` | `tasks.description → notes`, add `notes` if missing |
+| V5 (new) | `_migrate_events_description_to_summary_v5` | `events.description → summary`, add `summary` if missing |
+| V6 (new) | `_migrate_tasks_add_due_date_v6` | `tasks` ADD `due_date TEXT` if missing |
+
+`~/.claude/skills/brain/scripts/brain/__init__.py`: `SCHEMA_VERSION = 2 → 6`.
+
+**Smoke test** (via `/opt/homebrew/bin/python3`, fresh temp DB):
+- Legacy-shaped DB (7 old column names) → V1 shape after all migrations applied. Data preserved in `events` (date, type, title, summary, participants_json) and `tasks` (title, notes).
+- Idempotent re-apply: OK.
+- V1-shape DB: no-op, no errors.
+- All 4 assertions passed.
+
+**Not committed** — `~/.claude/skills/brain/` isn't git-tracked. Edits persist on disk. Any restored legacy brain will now auto-migrate on next `migrate()` call. §17.7 / §15.8 item 2 resolved.
+
+#### P2 — Wiki security audit vs reality
+
+Expected 5 pending findings (SEC-1/2/3/5 + DEV-1). Actual audit of current `wiki_server.py` (2,109 lines now, grew from 1,683):
+
+| ID | Handoff claim | Current reality | Action |
+|---|---|---|---|
+| SEC-1 stored XSS | pending (lines 355-386, 1172-1197) | **already fixed** — `md_html()` L429: `escape(text)` FIRST, then wikilinks + markdown | none |
+| SEC-2 SQL injection | pending (`q_projects()` lines 187-189) | f-string concat of `PERSONAL_SLUGS` — constant today so not exploitable, but fragile pattern | **fixed this session** (`33fd758`) |
+| SEC-3 FTS5 MATCH injection | pending (L145 + `knowledge_search.py` 179/189/448) | `sanitize_fts5_query()` at L118, applied at only MATCH site (L203 `q_search`). LIKE sites also sanitized via `sanitize_like_input()` | none |
+| SEC-5 path traversal (`/file/`) | pending (lines 1627-1630, 293-327) | `brain_slug not in PERSONAL_SLUGS` whitelist (L355 `q_personal_file_detail`) + `int(entity_id)` coercion (L1839) + SEC-7 token gate (L2035) | none |
+| SEC-7 personal-doc exposure | — | **fixed** in `~/.coco` commit `48632db` (documented in §1) | none |
+| DEV-1 monolith split | pending | wiki_server.py now **2,109 lines** (grew from 1,683) | **still pending** — cosmetic refactor |
+
+**Conclusion:** 4 of 5 findings were already patched. Only SEC-2 needed the parametrize-placeholders fix. §6 P1.P3 / §4 P2 wiki-security block effectively done.
+
+#### SEC-2 commit detail — `~/projects/coco-dotfiles` `33fd758`
+
+```python
+# Before
+where = "WHERE pr.slug IN ({})".format(",".join("'" + s + "'" for s in PERSONAL_SLUGS))
+rows = db.execute(f"SELECT ... FROM project_registry pr {where}").fetchall()
+
+# After (this commit)
+slugs = tuple(PERSONAL_SLUGS)
+placeholders = ",".join("?" * len(slugs))
+op = "IN" if WIKI_MODE == "personal" else "NOT IN"
+rows = db.execute(
+    f"SELECT ... FROM project_registry pr WHERE pr.slug {op} ({placeholders}) ORDER BY pr.slug",
+    slugs
+).fetchall()
+```
+
+#### P3.5 — public/index.html
+
+Resolved externally during the session in `~/.coco` commit `0259192 chore: untrack public/index.html (now under symlinked public/ -> coco-platform)`. No action needed from the evening pipeline.
+
+### 10.2 What didn't ship — push 34 commits
+
+`git push origin main` failed:
+
+```
+remote: Repository not found.
+fatal: repository 'https://github.com/rijulkalra2000/Project-Coco.git/' not found
+```
+
+Remote URL on `~/projects/coco-platform`:
+```
+origin  https://github.com/rijulkalra2000/Project-Coco.git (fetch/push)
+```
+
+Needs one of:
+- Create `rijulkalra2000/Project-Coco` on GitHub + retry
+- Change remote: `git remote set-url origin <correct-url>`
+- Use different remote/host entirely
+
+**34 commits** local-only as of now. Most are doc work + feature commits from 2026-04-16 → 04-19. No remote backup yet.
+
+### 10.3 State at 2026-04-19 20:07 EDT
+
+**Commits since §9 was written (in order):**
+
+`~/projects/coco-dotfiles`:
+```
+33fd758 security(wiki): SEC-2 — parametrize q_projects to remove f-string SQL concat
+5e8f906 Cross-project dedup — umbrella brains deregistered + freshness window
+```
+(`5e8f906` is someone else's / external work, not this session.)
+
+`~/.coco`:
+```
+0259192 chore: untrack public/index.html (now under symlinked public/ -> coco-platform)
+```
+
+`~/.claude/skills/brain/scripts/brain/schema.py` + `__init__.py`: edits landed on disk, not under git.
+
+`~/projects/coco-platform`: Section 10 append (this) in progress — uncommitted.
+
+**Live processes** (unchanged from §3 direction):
+
+| PID | Process |
+|---|---|
+| 2023 | knowledge-dashboard.py --serve (port 9876) |
+| 2024 | pykeen_bridge.py (Adam checkpoint 15:47 EDT) |
+| 75266 | master_cron.py --all (~6h elapsed, likely the `--force` sweep wrapping up) |
+| 2013/2016/2030 | mempalace + pykeen-dashboard + litestream (KeepAlive) |
+
+**DB state**: corpus still growing, blank-parent at 53, no jetsam since 2026-04-17.
+
+### 10.4 Updated pending list (replaces §4 backlog once this commit lands)
+
+**P1 — active blockers:**
+1. **Push blocker** — fix origin remote for `~/projects/coco-platform`; 34 local commits not backed up. Decision needed: create GitHub repo or change remote URL.
+2. **Dashboard HTTPServer crash** (§4 P1 #1) — still open.
+3. **audit-board verification** — master-cron `--all` probably completed this during its current 6h run. Confirm via DB row-count query for last 24-48h of audit-board articles.
+
+**P2 — forward motion:**
+4. **Decision extraction pipeline** (§4 P2 #4, §15.8 #1, §17.8 #3) — still unaddressed. `brain.decisions` tables remain empty. Highest-leverage data gap. 1-day PRD, separate initiative.
+5. **DEV-1 wiki_server.py split** — 2,109-line monolith. Cosmetic. Split into `wiki/{routes,render,search,auth}.py`. ~4h.
+
+**P3 — observability / cleanup:**
+6. **Booted-out launchd agents** (§4 P3 / §18.3) — `think`, `email-watcher`, `morning-briefing`, `meeting-prep`, `weekly-report`, `backup`. Decide re-enable order. stakeholder_pulse fix (`f7bb1d0`) means email-watcher is safe to try again first.
+7. **12:00 master-cron mystery** — `launchctl print gui/$UID/com.coco.master-cron` one-shot close-out.
+8. **~/.coco housekeeping** — 114 untracked (plan drafts, one-shot migration scripts, runtime state). Promote load-bearing to coco-dotfiles, archive/delete stale plans, extend .gitignore for runtime.
+
+**P4 — obsolete (prune from next handoff):**
+- ~~MLX warm-pool + `mlx_vlm → mlx_lm` swap~~ — warm server retired in `0f342e9`
+- ~~`COCO_LOCAL_ONLY=1` fallback trap~~ — Anthropic/CLI paths ripped
+- ~~SEC-1/3/5/7 wiki security~~ — already fixed in earlier commits; this session confirmed
+- ~~Brain migration recurrence risk~~ — V3-V6 baked into SCHEMA_VERSION=6
+- ~~ArticleWriter dedup silent drops~~ — force-plumbing in §16 `eff2b97`
+
+### 10.5 Commits this session (evening pipeline)
+
+| Repo | SHA | Message |
+|---|---|---|
+| `~/projects/coco-dotfiles` | `33fd758` | security(wiki): SEC-2 — parametrize q_projects to remove f-string SQL concat |
+| `~/.claude/skills/brain/` (on-disk) | n/a | V3-V6 migrations + SCHEMA_VERSION=6 (not git-tracked) |
+| `~/projects/coco-platform` | pending | Section 10 append (this doc) |
+
+### 10.6 Resume Monday — first 10 minutes
+
+1. **Fix push:** `cd ~/projects/coco-platform && git remote set-url origin <url>` or create the `Project-Coco` repo on GitHub, then `git push origin main`.
+2. **Verify master-cron finished:** `cat ~/.coco/knowledge/last-cron-result.json | jq '.summary'` — expect 48/48 Phase 8 per §17.3 pattern.
+3. **Check corpus growth:** `sqlite3 -readonly ~/.coco/knowledge/knowledge.db "SELECT COUNT(*) FROM articles"` — should be past 13,371.
+4. **Dashboard HTTPServer crash** (§4 P1 #1) — open `http://localhost:9876`, confirm it still serves or diagnose.
+5. Pick P1 #3 (audit-board check) if short on time, P2 #4 (decision extraction PRD) if starting fresh.
