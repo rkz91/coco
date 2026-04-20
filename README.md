@@ -6,7 +6,9 @@
 
 CoCo is a local-first control plane for AI coding agents. It turns Claude Code sessions into a managed product team — with knowledge from your emails, voice memos, Jira, and Confluence feeding directly into agent context.
 
-[Quick Start](#quick-start) · [Features](#features) · [Architecture](#architecture) · [Contributing](CONTRIBUTING.md) · [License](#license)
+[Quick Start](#quick-start) · [Features](#features) · [Architecture](#architecture) · [Knowledge Engine](#knowledge-engine) · [Contributing](CONTRIBUTING.md) · [License](#license)
+
+[![Status](https://img.shields.io/badge/status-active-brightgreen)]() [![Articles](https://img.shields.io/badge/wiki--articles-13%2C371-blue)]() [![Model](https://img.shields.io/badge/LLM-gpt--5.4--nano-orange)]() [![Platform](https://img.shields.io/badge/macOS-launchd-lightgrey)]()
 
 </div>
 
@@ -18,20 +20,31 @@ AI coding agents are powerful but chaotic. You spawn them, lose track of what th
 
 - **One dashboard** for all your agents, tasks, and costs
 - **Knowledge Hub** — emails, voice memos, Jira, Confluence all searchable in one place
+- **Wiki engine** — auto-generated entity articles from every brain DB (13K+ articles today)
 - **Smart inbox** — auto-classified items, draft approvals, decision queue
 - **Real cost tracking** — per-agent, per-task token usage and spend
 - **Trigger engine** — cron jobs, file watchers, webhooks that spawn agents
 
 ## Quick Start
 
+**Development (full stack, two ports):**
 ```bash
 git clone https://github.com/rijulkalra2000/Project-Coco.git
 cd Project-Coco
-./setup.sh
+./scripts/setup.sh
 ./scripts/dev.sh
 ```
+Frontend at [http://localhost:5173](http://localhost:5173), backend API at [http://localhost:8000/api/](http://localhost:8000/api/).
 
-Open [http://localhost:5173](http://localhost:5173). That's it.
+**Production (launchd on macOS, single port):**
+```bash
+./scripts/start.sh     # bundled frontend served via FastAPI on port 3001
+```
+
+**Companion wiki (read-only entity articles):**
+```bash
+python3 ~/.coco/knowledge/wiki_server.py     # MediaWiki-style wiki on port 8888
+```
 
 ## Features
 
@@ -69,39 +82,72 @@ Open [http://localhost:5173](http://localhost:5173). That's it.
 
 ```
 ┌─────────────────────────────────────┐
-│           React 19 + Vite           │  ← Frontend (port 5173)
+│           React 19 + Vite           │  ← Frontend (:5173 dev, :3001 prod)
 │  Radix UI · Tailwind CSS 4 · Zustand│
 └──────────────┬──────────────────────┘
-               │ REST + SSE
+               │ REST + SSE (/api/*)
 ┌──────────────┴──────────────────────┐
-│         FastAPI + uvicorn           │  ← Backend (port 8000)
+│         FastAPI + uvicorn           │  ← Backend (:8000 dev, :3001 prod)
 │  SQLAlchemy Core · structlog        │
 └──────┬───────────────┬──────────────┘
        │               │
-┌──────┴──────┐ ┌──────┴──────┐
-│  hub.db     │ │ platform.db │
-│  (read-only)│ │ (read-write)│
-│  KH owned   │ │ CoCo owned  │
-└─────────────┘ └─────────────┘
+┌──────┴──────┐ ┌──────┴──────┐ ┌──────────────┐
+│  hub.db     │ │ platform.db │ │ knowledge.db │
+│  (read-only)│ │ (read-write)│ │ (wiki RO)    │
+│  KH owned   │ │ CoCo owned  │ │ KE owned     │
+└─────────────┘ └─────────────┘ └──────┬───────┘
+                                        │
+                           ┌────────────┴─────────────┐
+                           │  Knowledge Engine        │  ← ~/.coco/knowledge
+                           │  cron.py · master_cron   │    (code in coco-dotfiles)
+                           │  gpt-5.4-nano (QB GW)    │
+                           │  pykeen KG trainer       │
+                           │  wiki_server :8888       │
+                           └──────────────────────────┘
 ```
 
 - **hub.db** — Knowledge Hub's database. Opened read-only. Never written to by CoCo.
 - **platform.db** — CoCo's own database. Agents, costs, todos overlay, governance log.
+- **knowledge.db** — Wiki corpus (13K+ entity articles, FTS5-indexed, graph-linked).
 - **SSE** — Server-Sent Events for real-time updates (not WebSocket).
 - **SQLite WAL mode** — concurrent reads, single writer.
+- **Single LLM rail** — gpt-5.4-nano via QB OpenAI Gateway. No Anthropic/CLI fallback.
+
+## Knowledge Engine
+
+The wiki engine lives at `~/.coco/knowledge/` (runtime data) with source code tracked separately in [`coco-dotfiles`](https://github.com/rijulkalra2000/coco-dotfiles). Runs as a set of launchd agents that harvest brain DBs, generate entity articles via `gpt-5.4-nano-2026-03-17` through the QB OpenAI Gateway, index them in FTS5, and train a pykeen knowledge graph over cross-project connections.
+
+| Component | What it does | Schedule |
+|---|---|---|
+| `master_cron.py` | Orchestrates Phases 1-15 across 36+ projects | 01:00 + 14:00 daily |
+| `cron.py` | Per-project harvest → article gen → FTS5 → backlinks | wrapped by master-cron |
+| `article_writer.py` | Unified write path — dedup, versioning, FTS5 sync | library |
+| `pykeen_bridge.py` | KG training daemon (TransE/RotatE, Adam-checkpointed) | KeepAlive |
+| `wiki_server.py` | MediaWiki-style reader on port 8888 | manual or launchd |
+| `knowledge-dashboard.py` | Queue + job control surface on port 9876 | KeepAlive |
+
+**Article generation:** `~13K articles`, ≈$0.003 per article on gpt-5.4-nano, 20 parallel workers, deterministic confidence scoring gated by `COCO_CONFIDENCE_FLOOR` (default 0.90).
+
+**Brain-DB schema:** versioned via `~/.claude/skills/brain/scripts/brain/schema.py`. Current `SCHEMA_VERSION = 6`. Idempotent migrations auto-apply on `migrate()` for legacy brains.
 
 ## Configuration
 
 Copy `.env.example` to `.env` and customize:
 
 ```bash
-COCO_EDITION=core          # or "studio"
-PLATFORM_PORT=8000
+COCO_EDITION=core                    # or "studio"
+PLATFORM_PORT=3001                   # prod single-port; dev uses 8000 backend + 5173 frontend
 MAX_CONCURRENT_AGENTS=3
-USE_AGENT_SDK=false        # true = use Anthropic API directly
+
+# Knowledge engine (overrides — defaults sensible):
+COCO_GPT5_NANO_MODEL=gpt-5.4-nano-2026-03-17
+COCO_CONFIDENCE_FLOOR=0.90           # min deterministic score to land an article
+COCO_SCORE_DETERMINISTIC=1           # 0 reverts to LLM-self-confidence scoring
+COCO_DISABLE_GPT5_NANO=0             # 1 forces legacy local path (MLX retired — reserved)
+COCO_LOCAL_ONLY=1                    # raise on cloud failure instead of fallback
 ```
 
-See [docs/SETUP.md](docs/SETUP.md) for full configuration reference.
+QB Gateway key lives at `~/.coco/.qb-gateway-key` (chmod 600, never checked in). See [docs/SETUP.md](docs/SETUP.md) for full configuration reference.
 
 ## Development
 
