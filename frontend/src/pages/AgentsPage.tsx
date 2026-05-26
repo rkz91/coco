@@ -54,7 +54,7 @@ export default function AgentsPage() {
   const { data: orgChartRoots = [] } = useQuery<OrgNode[]>({
     queryKey: ['agents-org-chart'],
     queryFn: () => apiFetch('/agents/org-chart'),
-    refetchInterval: (query) => {
+    refetchInterval: () => {
       // Match the agents polling interval
       return agents.some((a) => a.status === 'running' || a.status === 'paused') ? 3000 : 30000;
     },
@@ -154,7 +154,7 @@ export default function AgentsPage() {
       </div>
 
       {isLoading ? (
-        <Skeleton name="agents-grid" loading animate="pulse" />
+        <Skeleton name="agents-grid" loading animate="pulse"><></></Skeleton>
       ) : isError ? (
         <ErrorState
           error={error}

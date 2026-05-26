@@ -49,13 +49,15 @@ const selectCls = inputCls;
 
 // ─── Helpers ────────────────────────────────────────────────────────
 
-function flattenTree(node: TreeNode): TreeNode[] {
+// flattenTree retained for future bulk-action surfaces over the full tree.
+function _flattenTree(node: TreeNode): TreeNode[] {
   const result: TreeNode[] = [node];
   node.children?.forEach(child => {
-    result.push(...flattenTree(child));
+    result.push(..._flattenTree(child));
   });
   return result;
 }
+void _flattenTree;
 
 function getDescendantIds(node: TreeNode): Set<string> {
   const ids = new Set<string>();
@@ -131,7 +133,7 @@ function TreeNodeRow({
 
   // Droppable
   const rowRef = useRef<HTMLDivElement>(null);
-  const { setNodeRef: setDropRef, isOver } = useDroppable({
+  const { setNodeRef: setDropRef } = useDroppable({
     id: `drop-${node.id}`,
     data: { node },
     disabled: isInvalidTarget,
@@ -827,7 +829,7 @@ function FolderPickerDialog({ open, onOpenChange, onSelect, initialPath = '~' }:
 
 // ─── Detail Panel ────────────────────────────────────────────────
 
-function DetailPanel({ node, tree, onOpenMove }: DetailPanelProps) {
+function DetailPanel({ node, onOpenMove }: DetailPanelProps) {
   const queryClient = useQueryClient();
   const [label, setLabel] = useState(node.label);
   const [nodeType, setNodeType] = useState<NodeType>(node.node_type);

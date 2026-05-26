@@ -20,7 +20,6 @@ import '@xyflow/react/dist/style.css';
 import { graphlib, layout as dagreLayout } from '@dagrejs/dagre';
 import { Loader2, LayoutGrid, Maximize2 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
-import { cn } from '../lib/utils';
 import { EntityNode, type EntityNodeData } from '../components/canvas/EntityNode';
 import { ArticleNode } from '../components/canvas/ArticleNode';
 import { ClusterNode } from '../components/canvas/ClusterNode';
@@ -65,11 +64,13 @@ interface GodNodesResponse {
 
 // ── Custom node types ────────────────────────────────────────────────────
 
+// Cast away strict NodeProps generics — xyflow's NodeTypes index signature
+// is incompatible with discriminated NodeProps<Node<Data, Type>> components.
 const nodeTypes = {
   entity: EntityNode,
   article: ArticleNode,
   cluster: ClusterNode,
-};
+} as unknown as import('@xyflow/react').NodeTypes;
 
 // ── Dagre layout helper ──────────────────────────────────────────────────
 
@@ -121,8 +122,8 @@ function CanvasInner() {
   const navigate = useNavigate();
   const { fitView } = useReactFlow();
 
-  const [nodes, setNodes, onNodesChange] = useNodesState([]);
-  const [edges, setEdges, onEdgesChange] = useEdgesState([]);
+  const [nodes, setNodes, onNodesChange] = useNodesState<Node>([]);
+  const [edges, setEdges, onEdgesChange] = useEdgesState<Edge>([]);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<ContextMenuState | null>(null);
   const [pinnedNodes, setPinnedNodes] = useState<Set<string>>(new Set());

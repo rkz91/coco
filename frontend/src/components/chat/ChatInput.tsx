@@ -38,7 +38,7 @@ function ContentPickerDialog({
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<ContentSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const doSearch = useCallback(async (q: string) => {
     if (!q.trim()) {

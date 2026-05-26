@@ -9,7 +9,7 @@ import { WikiArticleList } from '../components/knowledge/WikiArticleList';
 import { WikiArticleDetail } from '../components/knowledge/WikiArticleDetail';
 import { WikiFilterBar, type WikiFilters } from '../components/knowledge/WikiFilterBar';
 import { PeopleView } from '../components/knowledge/PeopleView';
-import { DailyBriefing } from '../components/knowledge/DailyBriefing';
+import { DailyBriefing, type BriefingResponse } from '../components/knowledge/DailyBriefing';
 import { ProgramDashboard } from '../components/knowledge/ProgramDashboard';
 import { ProgramDetail } from '../components/knowledge/ProgramDetail';
 import { ProjectDashboard } from '../components/knowledge/ProjectDashboard';
@@ -36,19 +36,7 @@ const PROGRAM_SLUG_MAP: Record<string, string> = {
   'optimize': 'optimize',
 };
 
-interface BriefingSection {
-  title: string;
-  icon: string;
-  items: { label: string; value: string; detail?: string; severity?: string }[];
-}
-
-interface BriefingResponse {
-  generated_at: string;
-  sections: BriefingSection[];
-  highlights: string[];
-  program_health?: { id: string; name: string; health: string; score: number; issues: string[]; article_count: number; pending_decisions: number; stale_articles: number }[];
-  from_cache?: boolean;
-}
+// BriefingResponse/BriefingSection now imported from DailyBriefing (single source of truth)
 
 export default function KnowledgePage() {
   const [searchParams, setSearchParams] = useSearchParams();

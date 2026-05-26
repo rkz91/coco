@@ -18,7 +18,7 @@ import {
   requestPermission,
 } from '../lib/desktop-notifications';
 
-type SaveStatus = 'idle' | 'saving' | 'saved';
+type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
 const tabTriggerCls = cn(
   'px-3 py-2 text-sm font-medium text-muted-foreground transition-colors',

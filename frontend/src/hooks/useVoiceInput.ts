@@ -73,8 +73,8 @@ export function useVoiceInput() {
   const [provider, setProvider] = useState<SttProvider>('none');
   const recognitionRef = useRef<any>(null);
   const deepgramRef = useRef<DeepgramClient | null>(null);
-  const silenceTimerRef = useRef<ReturnType<typeof setTimeout>>();
-  const transcriptionTimeoutRef = useRef<ReturnType<typeof setTimeout>>();
+  const silenceTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const transcriptionTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const onResultRef = useRef<((text: string) => void) | null>(null);
   const retryCountRef = useRef(0);
   const lastCommandArgsRef = useRef<{ onFinalResult: ((text: string) => void) } | null>(null);
@@ -209,6 +209,8 @@ export function useVoiceInput() {
       .catch((err: Error) => {
         clearTranscriptionTimeout();
         clearTimeout(silenceTimerRef.current);
+        // Preserve message for downstream fallback diagnostics if needed
+        void (err.message || 'Failed to start Deepgram STT');
 
         // Permission denied is terminal — both Deepgram and Web Speech rely on
         // the same underlying microphone permission, so falling back would

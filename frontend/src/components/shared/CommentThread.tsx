@@ -20,14 +20,6 @@ interface PeopleMap {
   [key: string]: { name?: string; email?: string };
 }
 
-function parseMentions(raw: string): string[] {
-  try {
-    return JSON.parse(raw);
-  } catch {
-    return [];
-  }
-}
-
 /** Highlight @mentions in comment body */
 function renderBody(body: string) {
   const parts = body.split(/(@[\w\s-]+?)(?=\s@|\s[^@]|$)/g);

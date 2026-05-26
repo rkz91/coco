@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { Skeleton } from 'boneyard-js/react';
-import { Plus, FolderKanban, Users, Package, Folder, ChevronRight, Upload } from 'lucide-react';
+import { FolderKanban, Users, Package, Folder, ChevronRight, Upload } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
 import { useScope, type TreeNode } from '../context/ScopeContext';
@@ -142,7 +142,7 @@ export default function ProjectsPage() {
     queryFn: () => apiFetch<Project[]>('/projects'),
   });
 
-  if (treeLoading || projectsLoading) return <Skeleton name="projects-grid" loading animate="pulse" fallback={<ProjectsSkeleton />} />;
+  if (treeLoading || projectsLoading) return <Skeleton name="projects-grid" loading animate="pulse" fallback={<ProjectsSkeleton />}><></></Skeleton>;
   if (isError) {
     return (
       <ErrorState

@@ -32,7 +32,7 @@ const EVENT_TYPES = [
 const TYPE_MAP = new Map(EVENT_TYPES.map((t) => [t.value, t]));
 
 function getEventType(type: string) {
-  return TYPE_MAP.get(type) ?? { value: type, label: type, icon: Calendar, color: 'text-muted-foreground', bg: 'bg-muted/20' };
+  return TYPE_MAP.get(type as never) ?? { value: type, label: type, icon: Calendar, color: 'text-muted-foreground', bg: 'bg-muted/20' };
 }
 
 // ---------------------------------------------------------------------------

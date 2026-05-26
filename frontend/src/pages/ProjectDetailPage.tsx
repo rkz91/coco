@@ -3,13 +3,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useScope } from '../context/ScopeContext';
 import { useEffect, useState, useCallback } from 'react';
 import {
-  FolderKanban, Search, Radio, CheckSquare, Target, DollarSign, Users, Settings,
+  FolderKanban, Search, Radio, CheckSquare, Target, Users, Settings,
   Mail, Mic, Ticket, FileText, Plus, ChevronRight, Check, ChevronDown, X,
   GitBranch, Play, SkipForward, ChevronUp, Pencil, Download, Save,
   FolderOpen, Folder, FolderSearch, LayoutGrid, GitFork,
 } from 'lucide-react';
 import * as Dialog from '@radix-ui/react-dialog';
-import { cn, timeAgo, formatCost } from '../lib/utils';
+import { cn, timeAgo } from '../lib/utils';
 import { apiFetch, apiPost, apiPatch } from '../lib/api';
 
 // Existing component imports
@@ -19,7 +19,6 @@ import type { ContentItem } from '../components/knowledge/ContentList';
 import { AgentCard, ROLE_META, type Agent } from '../components/agents/AgentCard';
 import { OrgChart, type OrgNode } from '../components/agents/OrgChart';
 import { InlineEditor } from '../components/shared/InlineEditor';
-import { CreateAgentDialog } from '../components/agents/CreateAgentDialog';
 import { AgentDetail } from '../components/agents/AgentDetail';
 import { RecruitAgentDialog } from '../components/agents/RecruitAgentDialog';
 import { SharedTaskBoard } from '../components/agents/SharedTaskBoard';
@@ -29,7 +28,6 @@ import type { Todo } from '../components/todos/TodoList';
 import { SpendChart } from '../components/costs/SpendChart';
 import { ModelBreakdown } from '../components/costs/ModelBreakdown';
 import { BudgetBar } from '../components/costs/BudgetBar';
-import { CostEventsTable } from '../components/costs/CostEventsTable';
 import { PersonCard, type Person } from '../components/people/PersonCard';
 import { PersonDetail } from '../components/people/PersonDetail';
 import { AddPersonDialog } from '../components/people/AddPersonDialog';
@@ -259,7 +257,7 @@ function GroupedFileList({ files, formatSize, formatDate }: {
   );
 }
 
-function FolderTab({ nodeId, projectId }: { nodeId: string | null; projectId: string }) {
+function FolderTab({ nodeId }: { nodeId: string | null; projectId: string }) {
   const queryClient = useQueryClient();
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
   const [analyzeDialogOpen, setAnalyzeDialogOpen] = useState(false);
@@ -1453,7 +1451,6 @@ function PendingHandoffs({
 
 function SharedContext({
   sections,
-  nodeId,
   onEdited,
 }: {
   sections: ContextSection[];
@@ -1917,8 +1914,8 @@ export default function ProjectDetailPage() {
   const { tree, setSelectedNodeId } = useScope();
   const qc = useQueryClient();
 
-  // Resolve: either we have a projectId (hub project) or a nodeId (tree node)
-  const isNodeRoute = !!routeNodeId && !routeProjectId;
+  // Resolve: either we have a projectId (hub project) or a nodeId (tree node).
+  // (isNodeRoute helper inlined where needed.)
 
   // For node routes, find the node in the tree to get label + hub_project_id
   const treeNode = (() => {

@@ -1,7 +1,6 @@
 import { lazy, Suspense, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { useNavigate } from 'react-router-dom';
-import { X, Clock, Shield, ExternalLink, Network, Link2, ArrowLeft, List } from 'lucide-react';
+import { X, Clock, Shield, Network, Link2, ArrowLeft, List } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import { articleTypeBadge } from './WikiFilterBar';

@@ -32,8 +32,8 @@ export function FloatingMic() {
   const [response, setResponse] = useState<string | null>(null);
   const [showBubble, setShowBubble] = useState(false);
   const [permissionDismissed, setPermissionDismissed] = useState(false);
-  const autoDismissRef = useRef<ReturnType<typeof setTimeout>>();
-  const inactivityRef = useRef<ReturnType<typeof setTimeout>>();
+  const autoDismissRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const inactivityRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const lastTranscriptRef = useRef('');
 
   // Auto-dismiss transcript bubble after 5s of inactivity (no new text)

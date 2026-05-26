@@ -43,8 +43,10 @@ interface NodeDetail extends GraphNode {
 interface GodNodesResponse { items: GraphNode[] }
 interface NodeResponse extends NodeDetail {}
 interface CommunityListResponse { items: { id: number; size: number; top_members: { id: string; label: string; degree: number }[] }[]; total: number }
-interface CommunityResponse { community_id: number; nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]; total_members: number }
-interface PathResponse { path: GraphNode[]; hops: number; message?: string }
+// CommunityResponse / PathResponse — reserved for future single-community / path-query surfaces.
+// Kept here so the GraphAPI surface remains documented in one place.
+export interface CommunityResponse { community_id: number; nodes: Record<string, unknown>[]; edges: Record<string, unknown>[]; total_members: number }
+export interface PathResponse { path: GraphNode[]; hops: number; message?: string }
 
 // ── Color palette for communities ────────────────────────────────────────
 
@@ -140,7 +142,7 @@ export default function GraphPage() {
         edges: {
           color: { color: '#404060', highlight: '#7c7cff', opacity: 0.6 },
           width: 0.8,
-          smooth: { type: 'continuous', roundness: 0.3 },
+          smooth: { enabled: true, type: 'continuous', roundness: 0.3 },
         },
         interaction: {
           hover: true,

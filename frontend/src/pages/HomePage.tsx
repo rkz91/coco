@@ -146,7 +146,7 @@ export default function HomePage() {
     }
   };
 
-  if (isLoading || !data) return <Skeleton name="home-dashboard" loading animate="pulse" fallback={<HomeFallback />} />;
+  if (isLoading || !data) return <Skeleton name="home-dashboard" loading animate="pulse" fallback={<HomeFallback />}><></></Skeleton>;
 
   if (isError) {
     return (

@@ -12,7 +12,7 @@ interface PodcastPlayerProps {
 const SPEED_OPTIONS = [0.75, 1, 1.25, 1.5];
 const BAR_COUNT = 32;
 
-export function PodcastPlayer({ audioUrl, script, duration, title }: PodcastPlayerProps) {
+export function PodcastPlayer({ audioUrl, script, duration }: PodcastPlayerProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);

@@ -1,4 +1,4 @@
-import DOMPurify from 'dompurify';
+import DOMPurify, { type Config as DOMPurifyConfig } from 'dompurify';
 import { useCallback } from 'react';
 import { parseMermaidSegments, hasMermaidBlocks } from '../../lib/mermaid';
 import { renderMarkdownToHtml } from '../../lib/markdown';
@@ -13,10 +13,10 @@ interface RichContentProps {
   /** Render non-diagram text as sanitized HTML with markdown processing */
   html?: boolean;
   /** DOMPurify config overrides for HTML mode */
-  purifyConfig?: DOMPurify.Config;
+  purifyConfig?: DOMPurifyConfig;
 }
 
-const DEFAULT_PURIFY_CONFIG: DOMPurify.Config = {
+const DEFAULT_PURIFY_CONFIG: DOMPurifyConfig = {
   ADD_ATTR: ['data-code', 'aria-label', 'type'],
   ADD_TAGS: ['svg', 'rect', 'path'],
   ADD_URI_SAFE_ATTR: [
@@ -116,7 +116,7 @@ function TextBlock({
   text: string;
   mono: boolean;
   html: boolean;
-  purifyConfig?: DOMPurify.Config;
+  purifyConfig?: DOMPurifyConfig;
 }) {
   if (!text.trim()) return null;
 

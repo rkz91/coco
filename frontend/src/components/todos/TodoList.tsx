@@ -31,6 +31,8 @@ export interface Todo {
 
 interface TodoListProps {
   todos: Todo[];
+  /** Optional edit callback. Currently consumed by ProjectDetailPage; not wired into the list UI yet. */
+  onEdit?: (todo: Todo) => void;
 }
 
 const priorityBadge: Record<string, string> = {
