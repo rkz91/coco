@@ -30,7 +30,14 @@ DATABASE_URL = os.getenv("DATABASE_URL", f"sqlite:///{PLATFORM_DB_PATH}")
 
 # Security
 COCO_AUTH_TOKEN = os.getenv("COCO_AUTH_TOKEN", "")
+
+# CORS — explicit allow-list of origins (NEVER use "*" because we send credentials).
+# Default covers local Vite dev server on both localhost and 127.0.0.1.
+# For prod/staging, override via COCO_CORS_ORIGINS env var (comma-separated, no spaces required):
+#   COCO_CORS_ORIGINS="https://coco.example.com,https://app.example.com"
+# Wildcards are intentionally not supported — list every origin explicitly.
 COCO_CORS_ORIGINS = os.getenv("COCO_CORS_ORIGINS", "http://localhost:5173,http://127.0.0.1:5173")
+
 COCO_RATE_LIMIT = os.getenv("COCO_RATE_LIMIT", "true").lower() in ("true", "1", "yes")
 COCO_RATE_LIMIT_RPM = int(os.getenv("COCO_RATE_LIMIT_RPM", "120"))
 

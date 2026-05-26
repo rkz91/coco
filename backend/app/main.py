@@ -135,8 +135,9 @@ cors_origins = [o.strip() for o in COCO_CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
-    allow_headers=["Content-Type", "Accept", "Authorization"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Optional auth middleware — only active when COCO_AUTH_TOKEN is set
