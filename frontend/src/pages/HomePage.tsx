@@ -18,12 +18,12 @@ function HomeFallback() {
     <div className="space-y-6">
       <div className="h-8 rounded-lg bg-muted/50 animate-pulse" />
       <div className="h-10 rounded-lg bg-muted/50 animate-pulse" />
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7 space-y-5">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7 space-y-5 min-w-0">
           <div className="h-56 rounded-xl bg-muted/50 animate-pulse" />
           <div className="h-64 rounded-xl bg-muted/50 animate-pulse" />
         </div>
-        <div className="lg:col-span-5 space-y-3">
+        <div className="lg:col-span-5 space-y-3 min-w-0">
           {Array.from({ length: 4 }).map((_, i) => (
             <div key={i} className="h-32 rounded-lg bg-muted/50 animate-pulse" />
           ))}
@@ -265,9 +265,9 @@ export default function HomePage() {
       </header>
 
       {/* Main 2-column layout: Left (action) | Right (status) */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+      <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6 lg:grid-cols-12">
         {/* Left column: Podcast + Briefing + Focus List */}
-        <div className="lg:col-span-7 space-y-5">
+        <div className="lg:col-span-7 space-y-5 min-w-0">
           <PodcastCard />
           <BriefingCard
             sinceLastSession={data.since_last_session}
@@ -326,7 +326,7 @@ export default function HomePage() {
         </div>
 
         {/* Right column: Projects (scrollable) */}
-        <div className="lg:col-span-5 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-auto-hide">
+        <div className="lg:col-span-5 min-w-0 lg:max-h-[calc(100vh-120px)] lg:overflow-y-auto lg:scrollbar-auto-hide">
           <ProjectHealthGrid projects={data.projects} />
         </div>
       </div>
