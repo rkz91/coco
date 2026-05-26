@@ -191,6 +191,26 @@ class ProcessManager:
                 )
                 sdk_thread.start()
                 self._readers[agent_id] = sdk_thread
+                try:
+                    name = None
+                    try:
+                        with get_db() as conn:
+                            srow = conn.exec_driver_sql(
+                                "SELECT name FROM agents WHERE id = ?", (agent_id,)
+                            ).fetchone()
+                            if srow:
+                                name = srow._mapping["name"]
+                    except Exception:
+                        pass
+                    event_bus.emit("agent.spawned", {
+                        "agent_id": agent_id,
+                        "name": name,
+                        "pid": 0,
+                        "status": "running",
+                        "role": role,
+                    })
+                except Exception as e:
+                    log.debug("agent_spawned_emit_failed", agent_id=agent_id, error=str(e))
                 return 0
 
         # --- Subprocess path (fallback) ---
@@ -222,6 +242,30 @@ class ProcessManager:
         reader = threading.Thread(target=self._read_output, args=(agent_id, proc), daemon=True)
         reader.start()
         self._readers[agent_id] = reader
+
+        # Emit lifecycle event so SSE consumers (e.g. useAgentSSE) update without
+        # waiting for the next poll. Idempotent — duplicate spawn events from
+        # the route layer simply overwrite the same agent in the client Map.
+        try:
+            name = None
+            try:
+                with get_db() as conn:
+                    row = conn.exec_driver_sql(
+                        "SELECT name FROM agents WHERE id = ?", (agent_id,)
+                    ).fetchone()
+                    if row:
+                        name = row._mapping["name"]
+            except Exception:
+                pass
+            event_bus.emit("agent.spawned", {
+                "agent_id": agent_id,
+                "name": name,
+                "pid": proc.pid,
+                "status": "running",
+                "role": role,
+            })
+        except Exception as e:
+            log.debug("agent_spawned_emit_failed", agent_id=agent_id, error=str(e))
 
         return proc.pid
 
@@ -375,6 +419,8 @@ class ProcessManager:
             timeout_seconds = AGENT_TIMEOUT_MINUTES * 60
             batch: list[str] = []
             last_commit = time.monotonic()
+            last_heartbeat_emit = time.monotonic()
+            heartbeat_emit_interval = 10.0  # seconds between agent.heartbeat events
             # Use raw DBAPI connection for the hot loop (thread-safe, avoids SA overhead)
             raw_conn = engine.raw_connection()
             raw_conn.execute("PRAGMA journal_mode=WAL")
@@ -413,6 +459,15 @@ class ProcessManager:
                             raw_conn.commit()
                             batch.clear()
                             last_commit = now
+                            if (now - last_heartbeat_emit) >= heartbeat_emit_interval:
+                                try:
+                                    event_bus.emit("agent.heartbeat", {
+                                        "agent_id": agent_id,
+                                        "status": "running",
+                                    })
+                                except Exception:
+                                    pass
+                                last_heartbeat_emit = now
 
                 if batch:
                     raw_conn.execute(
