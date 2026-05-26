@@ -93,24 +93,49 @@ def _get_knowledge_db():
 # Stats & Projects
 # ---------------------------------------------------------------------------
 
+# TTL cache for /api/knowledge/stats (data tolerates ~60s staleness, scan over
+# 57k+ articles in a 4GB DB takes ~2s cold even with indexes).
+_stats_cache: dict[str, tuple[float, dict]] = {}
+_STATS_CACHE_TTL = 60  # seconds
+
+
 @router.get("/api/knowledge/stats")
 def knowledge_stats():
     """Knowledge Engine live stats — articles, entities, coverage, generation activity."""
+    # TTL cache fast-path: stats tolerate ~60s staleness and the underlying
+    # table scans are unavoidable (AVG/SUM over confidence on 57k rows).
+    cached = _stats_cache.get("stats")
+    if cached and (time.time() - cached[0] < _STATS_CACHE_TTL):
+        return cached[1]
+
     conn = _get_knowledge_db()
     if conn is None:
         return {"available": False, "message": "Knowledge DB not available"}
 
     try:
-        total = conn.execute("SELECT COUNT(*) FROM articles").fetchone()[0]
-        perfect = conn.execute("SELECT COUNT(*) FROM articles WHERE confidence >= 1.0").fetchone()[0]
-        high = conn.execute("SELECT COUNT(*) FROM articles WHERE confidence >= 0.9 AND confidence < 1.0").fetchone()[0]
-        medium = conn.execute("SELECT COUNT(*) FROM articles WHERE confidence >= 0.8 AND confidence < 0.9").fetchone()[0]
-        avg_conf = conn.execute("SELECT COALESCE(AVG(confidence), 0) FROM articles").fetchone()[0]
+        # Single-pass aggregate over articles: replaces 6 separate full scans
+        # (COUNT total, COUNT confidence>=1.0, COUNT 0.9-1.0, COUNT 0.8-0.9,
+        # AVG confidence, COUNT DISTINCT gid) with one table scan.
+        row = conn.execute(
+            """
+            SELECT
+                COUNT(*)                                                         AS total,
+                SUM(CASE WHEN confidence >= 1.0 THEN 1 ELSE 0 END)               AS perfect,
+                SUM(CASE WHEN confidence >= 0.9 AND confidence < 1.0 THEN 1 ELSE 0 END) AS high,
+                SUM(CASE WHEN confidence >= 0.8 AND confidence < 0.9 THEN 1 ELSE 0 END) AS medium,
+                COALESCE(AVG(confidence), 0)                                     AS avg_conf,
+                COUNT(DISTINCT gid)                                              AS distinct_gids
+            FROM articles
+            """
+        ).fetchone()
+        total = row[0] or 0
+        perfect = row[1] or 0
+        high = row[2] or 0
+        medium = row[3] or 0
+        avg_conf = row[4] or 0
+        entities_with_articles = row[5] or 0
 
         total_entities = conn.execute("SELECT COUNT(*) FROM global_entities").fetchone()[0]
-        entities_with_articles = conn.execute(
-            "SELECT COUNT(DISTINCT gid) FROM articles"
-        ).fetchone()[0]
         coverage_pct = round(entities_with_articles / total_entities * 100, 1) if total_entities > 0 else 0
 
         total_projects = conn.execute("SELECT COUNT(*) FROM project_registry").fetchone()[0]
@@ -126,7 +151,7 @@ def knowledge_stats():
         ).fetchone()[0]
 
         conn.close()
-        return {
+        result = {
             "available": True,
             "articles": {
                 "total": total,
@@ -145,6 +170,8 @@ def knowledge_stats():
             "last_generation": last_gen,
             "recent_24h_generated": recent_24h,
         }
+        _stats_cache["stats"] = (time.time(), result)
+        return result
     except Exception as e:
         log.error("knowledge_stats_error: %s", e)
         if conn:
