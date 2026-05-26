@@ -2,6 +2,8 @@ import sqlite3
 import uuid
 import structlog
 from app.config import PLATFORM_DB_PATH, HUB_DB_PATH
+from app.db.engine import engine
+from app.db.tables import metadata as sa_metadata
 
 log = structlog.get_logger()
 
@@ -761,7 +763,7 @@ def init_platform_db():
     conn.executescript(SCHEMA)
 
     # Create hub mirror tables (used by hub_sync service)
-    from app.services.hub_sync import _MIRROR_DDL
+    from app.services.hub_sync import _MIRROR_DDL  # noqa: lazy import (cycle)
     conn.executescript(_MIRROR_DDL)
 
     # Add new columns to existing tables
@@ -891,8 +893,6 @@ def init_platform_db():
     conn.close()
 
     # Ensure SA-defined tables exist (mirrors + any new tables added to tables.py)
-    from app.db.tables import metadata as sa_metadata
-    from app.db.engine import engine
     sa_metadata.create_all(engine, checkfirst=True)
 
     _seed_nodes()

@@ -1,5 +1,6 @@
 """Triggers & Webhooks -- CRUD + webhook receiver."""
 
+import asyncio
 import json
 import uuid
 from datetime import datetime, timezone
@@ -58,7 +59,7 @@ def _row_to_dict(row) -> dict:
 
 async def _execute_trigger_action(trigger: dict, context: dict | None = None) -> dict:
     """Execute the action for a trigger. Dispatches to real action handlers."""
-    from app.services.process_manager import process_manager
+    from app.services.process_manager import process_manager  # noqa: lazy import (cycle)
 
     action_type = trigger["action_type"]
     action_config = trigger["action_config"]
@@ -140,7 +141,6 @@ async def _execute_trigger_action(trigger: dict, context: dict | None = None) ->
         return {"status": "success", "result": f"Notification sent: {message}"}
 
     elif action_type == "run_command":
-        import asyncio
         command = action_config.get("command", "")
         if not command:
             return {"status": "failed", "error": "No command specified"}
@@ -163,7 +163,7 @@ async def _execute_trigger_action(trigger: dict, context: dict | None = None) ->
             return {"status": "failed", "error": str(e)}
 
     elif action_type == "self_improve_auto":
-        from app.services.self_improve_scheduler import auto_start_cycle
+        from app.services.self_improve_scheduler import auto_start_cycle  # noqa: lazy import (cycle)
         result = auto_start_cycle()
         if result["action"] == "started":
             return {"status": "success", "result": f"Started self-improve cycle {result['cycle_id']}", "cycle_id": result["cycle_id"]}
@@ -171,7 +171,7 @@ async def _execute_trigger_action(trigger: dict, context: dict | None = None) ->
             return {"status": "skipped", "result": result.get("reason", "Skipped")}
 
     elif action_type == "podcast_generate":
-        from app.services.podcast import generate_podcast as _gen_podcast
+        from app.services.podcast import generate_podcast as _gen_podcast  # noqa: lazy import (cycle)
         voice = action_config.get("voice", "andrew")
         try:
             result = await _gen_podcast(voice=voice)

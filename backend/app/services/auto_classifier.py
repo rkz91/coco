@@ -242,7 +242,7 @@ def _llm_classify(
     title: str, body: str | None, source: str | None, sender: str | None
 ) -> dict | None:
     try:
-        from app.services.agent_sdk_client import agent_sdk, record_sdk_cost
+        from app.services.agent_sdk_client import agent_sdk, record_sdk_cost  # noqa: lazy import (optional dep)
     except ImportError:
         return None
 

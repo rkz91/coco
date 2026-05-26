@@ -111,8 +111,8 @@ def _extract_approve_draft(text_str: str) -> str | None:
 
 
 async def _handle_create_todo(title: str) -> CommandResponse:
-    from app.routers.todos import create_todo
-    from app.models.todos import CreateTodoBody
+    from app.routers.todos import create_todo  # noqa: lazy import (cycle)
+    from app.models.todos import CreateTodoBody  # noqa: lazy import (cycle)
 
     body = CreateTodoBody(title=title)
     result = create_todo(body)
@@ -130,7 +130,7 @@ async def _handle_create_todo(title: str) -> CommandResponse:
 
 
 async def _handle_approve_draft(draft_id: str) -> CommandResponse:
-    from app.routers.drafts import approve_draft
+    from app.routers.drafts import approve_draft  # noqa: lazy import (cycle)
 
     try:
         result = approve_draft(draft_id)
@@ -702,7 +702,7 @@ async def _claude_fallback(text_str: str) -> CommandResponse:
     history_ctx = _get_history_context()
 
     if USE_AGENT_SDK:
-        from app.services.agent_sdk_client import agent_sdk
+        from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
         if agent_sdk.is_available():
             try:
                 prompt = ""
@@ -718,7 +718,7 @@ async def _claude_fallback(text_str: str) -> CommandResponse:
                 if len(reply) > 300:
                     reply = reply[:297] + "..."
 
-                from app.services.agent_sdk_client import record_sdk_cost
+                from app.services.agent_sdk_client import record_sdk_cost  # noqa: lazy import (optional dep)
                 record_sdk_cost(
                     model=result["model"], input_tokens=result["input_tokens"],
                     output_tokens=result["output_tokens"], source="chat",

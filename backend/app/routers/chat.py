@@ -198,7 +198,7 @@ async def _check_claude_available() -> bool:
 
 
 async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str, session_id: str | None = None):
-    from app.services.agent_sdk_client import agent_sdk
+    from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
 
     full_response = ""
     input_tokens = 0
@@ -247,7 +247,7 @@ async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str
                     _update_session_after_message(session_id)
 
     if input_tokens or output_tokens:
-        from app.services.agent_sdk_client import record_sdk_cost
+        from app.services.agent_sdk_client import record_sdk_cost  # noqa: lazy import (optional dep)
         record_sdk_cost(
             model=response_model, input_tokens=input_tokens,
             output_tokens=output_tokens, source="chat",
@@ -258,7 +258,7 @@ async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str
 
 async def chat_event_generator(message: str, model: str, system_prompt: str, session_id: str | None = None):
     if USE_AGENT_SDK:
-        from app.services.agent_sdk_client import agent_sdk
+        from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
         if agent_sdk.is_available():
             async for evt in _sdk_chat_event_generator(message, model, system_prompt, session_id):
                 yield evt
@@ -438,7 +438,7 @@ async def chat(req: ChatRequest):
 
     sdk_available = False
     if USE_AGENT_SDK:
-        from app.services.agent_sdk_client import agent_sdk
+        from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
         sdk_available = agent_sdk.is_available()
     if not sdk_available and not await _check_claude_available():
         raise HTTPException(status_code=503, detail="claude CLI is not installed or not on PATH (set USE_AGENT_SDK=true to use API instead)")

@@ -1,4 +1,5 @@
 import asyncio
+import json
 import subprocess
 import os
 import signal
@@ -179,7 +180,7 @@ class ProcessManager:
 
         # --- SDK path ---
         if USE_AGENT_SDK:
-            from app.services.agent_sdk_client import agent_sdk
+            from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
             if agent_sdk.is_available():
                 self._agent_meta[agent_id] = {"node_id": node_id, "role": role or "custom"}
                 sdk_thread = threading.Thread(
@@ -236,7 +237,7 @@ class ProcessManager:
     async def _run_sdk_agent(self, agent_id: str, task: str, model: str,
                              node_id: str | None, role: str | None):
         """Async SDK agent execution with output recording and cost tracking."""
-        from app.services.agent_sdk_client import agent_sdk
+        from app.services.agent_sdk_client import agent_sdk  # noqa: lazy import (optional dep)
 
         status = "completed"
         exit_code = 0
@@ -264,7 +265,7 @@ class ProcessManager:
                     (agent_id,),
                 )
 
-            from app.services.agent_sdk_client import record_sdk_cost
+            from app.services.agent_sdk_client import record_sdk_cost  # noqa: lazy import (optional dep)
             record_sdk_cost(
                 model=response_model,
                 input_tokens=input_tokens,
@@ -331,9 +332,8 @@ class ProcessManager:
         want the actual assistant text, not system/hook/tool metadata.
         Returns the text fragment or None if the line should be skipped.
         """
-        import json as _json
         try:
-            obj = _json.loads(raw_line)
+            obj = json.loads(raw_line)
         except (ValueError, TypeError):
             # Not JSON — could be plain text from --verbose; keep it
             return raw_line if raw_line.strip() else None
@@ -504,12 +504,11 @@ class ProcessManager:
             if not row:
                 return
 
-        from app.services.self_improve import self_improve_service
+        from app.services.self_improve import self_improve_service  # noqa: lazy import (cycle)
         self_improve_service.on_agent_completed(agent_id, agent_status)
 
     def _check_analysis_job_completion(self, agent_id: str, agent_status: str):
         """Check if this agent's completion should update an analysis job."""
-        import json
 
         with get_db() as conn:
             jobs = conn.exec_driver_sql(

@@ -375,7 +375,7 @@ def reject_suggestion(content_id: str):
 
 def _run_classifier_impl(limit: int = 50):
     try:
-        from app.services.auto_classifier import process_unsorted
+        from app.services.auto_classifier import process_unsorted  # noqa: lazy import (cycle)
 
         stats = process_unsorted(limit=limit)
         return {"status": "ok", **stats}
@@ -439,7 +439,7 @@ def extract_actions(content_id: str):
 
         content_text = f"{row.title or ''}\n{row.body or ''}"
 
-        from app.services.collaboration_context import create_platform_todos_from_text
+        from app.services.collaboration_context import create_platform_todos_from_text  # noqa: lazy import (cycle)
 
         created = create_platform_todos_from_text(
             content_text,

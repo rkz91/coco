@@ -2,7 +2,7 @@ import asyncio
 import json
 import random
 import subprocess
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import structlog
@@ -349,7 +349,6 @@ def get_home():
 
         # Self-improve stats
         try:
-            from datetime import timedelta
             week_ago = (datetime.now(timezone.utc) - timedelta(days=7)).isoformat()
 
             cycles_week_row = conn.execute(

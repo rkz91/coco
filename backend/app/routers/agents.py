@@ -566,7 +566,7 @@ def resume_from_checkpoint(agent_id: str, body: ResumeFromCheckpointBody | None 
         )
 
     # Spawn the agent with the resume task
-    from app.services.process_manager import process_manager
+    from app.services.process_manager import process_manager  # noqa: lazy import (cycle)
     node_id = agent.get("node_id")
     role = agent.get("role", "custom")
     model = agent.get("model", "sonnet")

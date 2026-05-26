@@ -1,5 +1,6 @@
 import json
 import logging
+import secrets
 import sqlite3
 from datetime import datetime, timezone
 from typing import Any
@@ -204,7 +205,6 @@ def _read_queue() -> dict:
 
 def _next_queue_id() -> str:
     """Generate a short queue id."""
-    import secrets
     return f"q-{secrets.token_hex(4)}"
 
 

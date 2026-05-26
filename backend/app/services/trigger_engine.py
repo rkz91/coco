@@ -8,6 +8,7 @@ Both types log every fire to the trigger_log table.
 import asyncio
 import json
 import os
+import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -119,7 +120,7 @@ class TriggerEngine:
 
     async def _fire(self, trigger: dict, context: dict | None = None):
         """Execute trigger action and log result."""
-        from app.routers.triggers import _execute_trigger_action, _log_trigger_fire
+        from app.routers.triggers import _execute_trigger_action, _log_trigger_fire  # noqa: lazy import (cycle)
 
         try:
             result = await _execute_trigger_action(trigger, context=context)
@@ -146,8 +147,7 @@ class TriggerEngine:
     def _ensure_self_improve_trigger(self):
         """Register the default self-improve auto trigger if it doesn't exist."""
         try:
-            from app.services.self_improve_scheduler import get_self_improve_preferences
-            import uuid
+            from app.services.self_improve_scheduler import get_self_improve_preferences  # noqa: lazy import (cycle)
 
             prefs = get_self_improve_preferences()
 
