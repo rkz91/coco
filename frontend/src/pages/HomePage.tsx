@@ -10,6 +10,7 @@ import { ProjectHealthGrid } from '../components/home/ProjectHealthGrid';
 import { FocusList } from '../components/home/FocusList';
 import { JarvisOverlay } from '../components/home/JarvisOverlay';
 import { KnowledgeEngineCard } from '../components/home/KnowledgeEngineCard';
+import OnboardingWizard, { isOnboardingComplete } from '../components/onboarding/OnboardingWizard';
 import type { HomeData, Todo } from '../types/home';
 import { Skeleton } from 'boneyard-js/react';
 
@@ -82,7 +83,15 @@ export default function HomePage() {
   const queryClient = useQueryClient();
   const [syncBanner, setSyncBanner] = useState<string | null>(null);
   const [jarvisOpen, setJarvisOpen] = useState(false);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
+
+  // Show onboarding wizard on first load if not complete.
+  useEffect(() => {
+    if (!isOnboardingComplete()) {
+      setOnboardingOpen(true);
+    }
+  }, []);
 
   // Auto-open Jarvis overlay when ?jarvis=true is in the URL
   useEffect(() => {
@@ -333,6 +342,9 @@ export default function HomePage() {
 
       {/* Jarvis cinematic overlay */}
       <JarvisOverlay isOpen={jarvisOpen} onClose={() => setJarvisOpen(false)} />
+
+      {/* First-run onboarding */}
+      <OnboardingWizard open={onboardingOpen} onClose={() => setOnboardingOpen(false)} />
     </div>
     </Skeleton>
   );
