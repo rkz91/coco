@@ -241,6 +241,7 @@ def list_knowledge_articles(
     try:
         # FTS search path
         if q:
+            _fts_start = time.perf_counter()
             try:
                 safe_q = _sanitize_fts5(q)
                 count_row = conn.execute(
@@ -264,8 +265,17 @@ def list_knowledge_articles(
                 conn.close()
                 return {"items": [dict(r) for r in rows], "total": total}
             except Exception as fts_err:
-                import logging
-                logging.getLogger(__name__).warning("FTS5 search failed, falling back to LIKE: %s", fts_err)
+                _fts_ms = round((time.perf_counter() - _fts_start) * 1000, 2)
+                log.warning(
+                    "fts5_fallback",
+                    extra={
+                        "query": q,
+                        "reason": fts_err.__class__.__name__,
+                        "duration_ms": _fts_ms,
+                        "endpoint": "list_knowledge_articles",
+                        "error": str(fts_err)[:200],
+                    },
+                )
 
         # Standard query path
         conditions = ["a.confidence >= ?"]
@@ -1272,6 +1282,7 @@ def knowledge_qa(req: QARequest):
 
         # Fallback to FTS5 if semantic search unavailable
         if not search_results:
+            _fts_start = time.perf_counter()
             try:
                 safe_question = _sanitize_fts5(req.question)
                 rows = conn.execute(
@@ -1280,7 +1291,18 @@ def knowledge_qa(req: QARequest):
                     (safe_question, req.max_sources),
                 ).fetchall()
                 search_results = [dict(r) for r in rows]
-            except Exception:
+            except Exception as fts_err:
+                _fts_ms = round((time.perf_counter() - _fts_start) * 1000, 2)
+                log.warning(
+                    "fts5_fallback",
+                    extra={
+                        "query": req.question,
+                        "reason": fts_err.__class__.__name__,
+                        "duration_ms": _fts_ms,
+                        "endpoint": "qa",
+                        "error": str(fts_err)[:200],
+                    },
+                )
                 safe_question_like = _sanitize_like_input(req.question)
                 rows = conn.execute(
                     "SELECT gid, title, summary FROM articles WHERE title LIKE ? ESCAPE '\\' LIMIT ?",

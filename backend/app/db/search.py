@@ -4,11 +4,16 @@ SQLite: uses FTS5 on hub_content_fts virtual table (falls back to LIKE).
 PostgreSQL: tsvector (future — falls back to LIKE for now).
 """
 
+import time
+
+import structlog
 from sqlalchemy import func, select, text
 
 from app.db.compat import _IS_SQLITE
 from app.db.engine import engine
 from app.db.tables import hub_content
+
+log = structlog.get_logger()
 
 
 def search_content(
@@ -30,7 +35,20 @@ def search_content(
             result = _tsvector_search(conn, query, limit, offset, source_filter)
             if result is not None:
                 return result
-        return _like_search(conn, query, limit, offset, source_filter)
+
+        # Reached LIKE fallback path — log for observability (slow path / missing FTS index)
+        like_start = time.perf_counter()
+        result = _like_search(conn, query, limit, offset, source_filter)
+        like_ms = round((time.perf_counter() - like_start) * 1000, 2)
+        log.warning(
+            "fts5_fallback",
+            query=query,
+            reason="fts5_unavailable_or_failed",
+            duration_ms=like_ms,
+            backend="sqlite" if _IS_SQLITE else "postgres",
+            source_filter=source_filter,
+        )
+        return result
 
 
 def _fts5_search(
@@ -41,10 +59,19 @@ def _fts5_search(
     source_filter: str | None,
 ) -> dict | None:
     """Try FTS5 search (SQLite only). Returns None if the virtual table doesn't exist."""
+    start = time.perf_counter()
     try:
         # Verify FTS5 table exists
         conn.execute(text("SELECT 1 FROM hub_content_fts LIMIT 1"))
-    except Exception:
+    except Exception as e:
+        ms = round((time.perf_counter() - start) * 1000, 2)
+        log.warning(
+            "fts5_fallback",
+            query=query,
+            reason=f"missing_table:{e.__class__.__name__}",
+            duration_ms=ms,
+            stage="probe",
+        )
         return None
 
     try:
@@ -79,8 +106,16 @@ def _fts5_search(
             "items": [dict(r) for r in rows],
             "total": total,
         }
-    except Exception:
+    except Exception as e:
         # FTS5 query syntax error (e.g. special chars) — fall back
+        ms = round((time.perf_counter() - start) * 1000, 2)
+        log.warning(
+            "fts5_fallback",
+            query=query,
+            reason=e.__class__.__name__,
+            duration_ms=ms,
+            stage="query",
+        )
         return None
 
 
