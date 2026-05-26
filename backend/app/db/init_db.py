@@ -1,3 +1,20 @@
+"""Platform DB initialisation.
+
+The authoritative DDL for platform.db lives in `app.db.models`.  This module
+runs `metadata.create_all(engine)` to materialise the schema and then handles:
+
+  * Backward-compatibility migrations (renames, added columns) that
+    `create_all` cannot perform on an existing database.
+  * Creation of the SQL VIEW `todo_identifiers` (SA Core does not model
+    views as first-class table objects).
+  * Seeding of agent roles, workflow templates, and the root node.
+
+The raw `SCHEMA` and `_RUNTIME_INDEXES` strings are retained below as a
+human-readable record of the schema and as a runtime fallback for tests that
+patch DDL behaviour.  They are NOT executed during normal init — the SA Core
+metadata is the source of truth.
+"""
+
 import sqlite3
 import uuid
 import structlog
@@ -7,6 +24,15 @@ from app.db.tables import metadata as sa_metadata
 
 log = structlog.get_logger()
 
+# Backward-compat view that older code still references.
+_TODO_IDENTIFIERS_VIEW = """
+CREATE VIEW IF NOT EXISTS todo_identifiers AS
+    SELECT entity_id AS hub_todo_id, node_id, sequence_num, display_id
+    FROM entity_identifiers WHERE entity_type = 'todo';
+"""
+
+# Historical raw DDL — kept for documentation / emergency rollback only.
+# DO NOT execute against platform.db; use `models.metadata.create_all()`.
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS nodes (
     id TEXT PRIMARY KEY,
@@ -760,11 +786,20 @@ def init_platform_db():
     except Exception as e:
         log.warning("content_classifications_pre_migration_failed", error=str(e))
 
-    conn.executescript(SCHEMA)
+    # Create all platform + hub-mirror tables via SA Core metadata.
+    # This is the canonical DDL path (portable to PostgreSQL via Alembic).
+    # Done before any further ALTER TABLE migrations so the schema is fresh.
+    conn.commit()
+    from app.db.models import metadata as _platform_metadata
+    from app.db.engine import engine as _engine
+    _platform_metadata.create_all(_engine, checkfirst=True)
 
     # Create hub mirror tables (used by hub_sync service)
     from app.services.hub_sync import _MIRROR_DDL  # noqa: lazy import (cycle)
     conn.executescript(_MIRROR_DDL)
+
+    # Recreate the back-compat VIEW (SA Core does not model views directly).
+    conn.executescript(_TODO_IDENTIFIERS_VIEW)
 
     # Add new columns to existing tables
     existing_tables = {r[0] for r in conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()}
@@ -892,7 +927,10 @@ def init_platform_db():
 
     conn.close()
 
-    # Ensure SA-defined tables exist (mirrors + any new tables added to tables.py)
+    # Ensure SA-defined tables exist (mirrors + any new tables added to tables.py).
+    # These are mostly a subset of models.py but kept idempotent for safety.
+    from app.db.tables import metadata as sa_metadata
+    from app.db.engine import engine
     sa_metadata.create_all(engine, checkfirst=True)
 
     _seed_nodes()
