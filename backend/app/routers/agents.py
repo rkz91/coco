@@ -8,7 +8,9 @@ from app.services.process_manager import process_manager
 from app.services.collaboration_context import build_collaboration_prompt, build_coco_context, build_yolo_constraints
 from app.services.event_bus import event_bus
 from app.models.agents import (
+    CompleteAgentTaskBody,
     CreateAgentBody,
+    CreateAgentTaskBody,
     CreateRoleBody,
     PatchAgentBody,
     RecruitAgentBody,
@@ -689,3 +691,171 @@ def delete_subagent(agent_id: str, subagent_id: str):
         "child_id": subagent_id,
     })
     return result
+
+
+# ---------------------------------------------------------------------------
+# Inter-agent delegation (GAP M2)
+# ---------------------------------------------------------------------------
+
+_AGENT_TASK_COLS = (
+    "id, from_agent_id, to_agent_id, prompt, status, "
+    "created_at, claimed_at, completed_at, result"
+)
+
+
+def _row_to_task(row) -> dict:
+    return dict(row._mapping)
+
+
+@router.get("/api/agents/{agent_id}/tasks")
+def list_agent_tasks(agent_id: str, status: str | None = None, limit: int = 50):
+    """List tasks assigned to an agent (any status, newest first).
+
+    Optional `status` filter restricts to one of pending|claimed|done|failed.
+    """
+    with get_db() as conn:
+        agent_row = conn.exec_driver_sql(
+            "SELECT id FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        if not agent_row:
+            raise HTTPException(404, "Agent not found")
+
+        where = "to_agent_id = ?"
+        params: list = [agent_id]
+        if status:
+            where += " AND status = ?"
+            params.append(status)
+        params.append(limit)
+
+        rows = conn.exec_driver_sql(
+            f"SELECT {_AGENT_TASK_COLS} FROM agent_tasks "
+            f"WHERE {where} ORDER BY created_at DESC LIMIT ?",
+            tuple(params),
+        ).fetchall()
+        return [_row_to_task(r) for r in rows]
+
+
+@router.post("/api/agents/{to_id}/tasks", status_code=201)
+def create_agent_task(to_id: str, body: CreateAgentTaskBody):
+    """Agent A creates a task for Agent B (the agent at path param)."""
+    if not body.prompt or not body.prompt.strip():
+        raise HTTPException(400, "prompt must be non-empty")
+
+    task_id = str(uuid.uuid4())
+    with get_db() as conn:
+        target = conn.exec_driver_sql(
+            "SELECT id FROM agents WHERE id = ?", (to_id,)
+        ).fetchone()
+        if not target:
+            raise HTTPException(404, "Target agent not found")
+
+        if body.from_agent_id:
+            src = conn.exec_driver_sql(
+                "SELECT id FROM agents WHERE id = ?", (body.from_agent_id,)
+            ).fetchone()
+            if not src:
+                raise HTTPException(404, "from_agent_id agent not found")
+
+        conn.exec_driver_sql(
+            "INSERT INTO agent_tasks (id, from_agent_id, to_agent_id, prompt, status) "
+            "VALUES (?, ?, ?, ?, 'pending')",
+            (task_id, body.from_agent_id, to_id, body.prompt),
+        )
+        row = conn.exec_driver_sql(
+            f"SELECT {_AGENT_TASK_COLS} FROM agent_tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+        task = _row_to_task(row)
+
+    event_bus.emit("agent_task.created", {
+        "task_id": task_id,
+        "to_agent_id": to_id,
+        "from_agent_id": body.from_agent_id,
+    })
+    return task
+
+
+@router.post("/api/agents/{agent_id}/tasks/next")
+def claim_next_agent_task(agent_id: str):
+    """Atomically claim the oldest pending task for this agent.
+
+    Uses SQLite BEGIN IMMEDIATE (acquired by get_db's outer transaction) plus
+    UPDATE ... WHERE status='pending' RETURNING ... to guarantee only one
+    caller wins, even under concurrent pollers. Returns 204 when nothing is
+    available so the client can distinguish empty from error.
+    """
+    with get_db() as conn:
+        agent_row = conn.exec_driver_sql(
+            "SELECT id FROM agents WHERE id = ?", (agent_id,)
+        ).fetchone()
+        if not agent_row:
+            raise HTTPException(404, "Agent not found")
+
+        # BEGIN IMMEDIATE: take a write lock up front so two concurrent
+        # claimers serialise here instead of both reading a stale 'pending'.
+        # SA's transaction is DEFERRED by default; promote it explicitly.
+        try:
+            conn.exec_driver_sql("BEGIN IMMEDIATE")
+        except Exception:
+            # We're already inside an open transaction managed by get_db;
+            # the inner BEGIN will fail harmlessly. The outer txn still
+            # serialises writes via SQLite's single-writer model.
+            pass
+
+        # RETURNING is available on SQLite >= 3.35 (Python 3.13 ships with it).
+        cur = conn.exec_driver_sql(
+            "UPDATE agent_tasks "
+            "SET status='claimed', claimed_at=datetime('now') "
+            "WHERE id = ("
+            "  SELECT id FROM agent_tasks "
+            "  WHERE to_agent_id = ? AND status = 'pending' "
+            "  ORDER BY created_at ASC LIMIT 1"
+            ") "
+            f"RETURNING {_AGENT_TASK_COLS}",
+            (agent_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            from fastapi import Response
+            return Response(status_code=204)
+        task = _row_to_task(row)
+
+    event_bus.emit("agent_task.claimed", {
+        "task_id": task["id"],
+        "agent_id": agent_id,
+    })
+    return task
+
+
+@router.patch("/api/agent_tasks/{task_id}")
+def complete_agent_task(task_id: str, body: CompleteAgentTaskBody):
+    """Mark a claimed task as done or failed and attach a result string."""
+    if body.status not in ("done", "failed"):
+        raise HTTPException(400, "status must be 'done' or 'failed'")
+
+    with get_db() as conn:
+        existing = conn.exec_driver_sql(
+            "SELECT status FROM agent_tasks WHERE id = ?", (task_id,)
+        ).fetchone()
+        if not existing:
+            raise HTTPException(404, "Task not found")
+        if existing._mapping["status"] in ("done", "failed"):
+            raise HTTPException(409, "Task is already terminal")
+
+        conn.exec_driver_sql(
+            "UPDATE agent_tasks SET status = ?, result = ?, "
+            "completed_at = datetime('now') WHERE id = ?",
+            (body.status, body.result, task_id),
+        )
+        row = conn.exec_driver_sql(
+            f"SELECT {_AGENT_TASK_COLS} FROM agent_tasks WHERE id = ?",
+            (task_id,),
+        ).fetchone()
+        task = _row_to_task(row)
+
+    event_bus.emit("agent_task.completed", {
+        "task_id": task_id,
+        "status": body.status,
+        "to_agent_id": task["to_agent_id"],
+    })
+    return task
