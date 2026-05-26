@@ -1106,7 +1106,53 @@ function ProjectSettingsTab({ project, projectId }: { project: Record<string, un
           <div>
             <label className="text-xs text-muted-foreground block mb-1">Name</label>
             <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground">
-              {(project.name as string) ?? 'Unnamed'}
+              <InlineEditor
+                value={(project.name as string) ?? ''}
+                placeholder="Unnamed"
+                onSave={async (name) => {
+                  const prev = queryClient.getQueryData(['project', projectId]);
+                  queryClient.setQueryData(['project', projectId], (old: Record<string, unknown> | undefined) =>
+                    old ? { ...old, name } : old,
+                  );
+                  try {
+                    await apiPatch(`/projects/${projectId}`, { name });
+                  } catch (e) {
+                    queryClient.setQueryData(['project', projectId], prev);
+                    throw e;
+                  } finally {
+                    void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+                    void queryClient.invalidateQueries({ queryKey: ['projects'] });
+                    void queryClient.invalidateQueries({ queryKey: ['tree'] });
+                  }
+                }}
+                as="span"
+                className="w-full"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-xs text-muted-foreground block mb-1">Description</label>
+            <div className="bg-card border border-border rounded-lg px-3 py-2 text-sm text-foreground min-h-[36px]">
+              <InlineEditor
+                value={(project.description as string) ?? ''}
+                placeholder="Add a description..."
+                onSave={async (description) => {
+                  const prev = queryClient.getQueryData(['project', projectId]);
+                  queryClient.setQueryData(['project', projectId], (old: Record<string, unknown> | undefined) =>
+                    old ? { ...old, description } : old,
+                  );
+                  try {
+                    await apiPatch(`/projects/${projectId}`, { description });
+                  } catch (e) {
+                    queryClient.setQueryData(['project', projectId], prev);
+                    throw e;
+                  } finally {
+                    void queryClient.invalidateQueries({ queryKey: ['project', projectId] });
+                  }
+                }}
+                as="span"
+                className="w-full"
+              />
             </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -2009,17 +2055,55 @@ export default function ProjectDetailPage() {
         <InlineEditor
           value={effectiveProject.name}
           onSave={async (name) => {
-            if (resolvedNodeId) {
-              await apiPatch(`/tree/${resolvedNodeId}`, { name });
-            } else if (projectId) {
-              await apiPatch(`/projects/${projectId}`, { name });
+            // Optimistic + revert across project/projects/tree caches
+            const projectKey = ['project', projectId];
+            const prevProject = qc.getQueryData(projectKey);
+            qc.setQueryData(projectKey, (old: Record<string, unknown> | undefined) =>
+              old ? { ...old, name } : old,
+            );
+            try {
+              if (resolvedNodeId) {
+                await apiPatch(`/tree/${resolvedNodeId}`, { label: name });
+              } else if (projectId) {
+                await apiPatch(`/projects/${projectId}`, { name });
+              }
+            } catch (e) {
+              qc.setQueryData(projectKey, prevProject);
+              throw e;
+            } finally {
+              void qc.invalidateQueries({ queryKey: ['project', projectId] });
+              void qc.invalidateQueries({ queryKey: ['projects'] });
+              void qc.invalidateQueries({ queryKey: ['tree'] });
             }
-            void qc.invalidateQueries({ queryKey: ['project', projectId] });
-            void qc.invalidateQueries({ queryKey: ['tree'] });
           }}
           as="h2"
           className="text-lg font-semibold text-foreground"
         />
+        {projectId && (
+          <div className="mt-0.5">
+            <InlineEditor
+              value={(effectiveProject.description as string) ?? ''}
+              placeholder="Add a description..."
+              onSave={async (description) => {
+                const projectKey = ['project', projectId];
+                const prevProject = qc.getQueryData(projectKey);
+                qc.setQueryData(projectKey, (old: Record<string, unknown> | undefined) =>
+                  old ? { ...old, description } : old,
+                );
+                try {
+                  await apiPatch(`/projects/${projectId}`, { description });
+                } catch (e) {
+                  qc.setQueryData(projectKey, prevProject);
+                  throw e;
+                } finally {
+                  void qc.invalidateQueries({ queryKey: ['project', projectId] });
+                }
+              }}
+              as="span"
+              className="text-xs text-muted-foreground"
+            />
+          </div>
+        )}
         <p className="text-xs text-muted-foreground mt-0.5">
           {effectiveProject.total ?? 0} items total
         </p>
