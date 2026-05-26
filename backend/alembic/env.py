@@ -49,7 +49,12 @@ def run_migrations_online() -> None:
     )
 
     with connectable.connect() as connection:
-        # Enable foreign keys for SQLite
+        # Enable foreign keys for SQLite. NOTE: executing any statement here
+        # autobegins a SQLAlchemy transaction, which causes Alembic to treat
+        # the connection as "in an external transaction" and skip its own
+        # transaction management. We therefore commit explicitly after
+        # run_migrations() so the version_num update and migration DML are
+        # actually persisted — otherwise connection.close() would roll back.
         connection.exec_driver_sql("PRAGMA foreign_keys = ON")
 
         context.configure(
@@ -60,6 +65,10 @@ def run_migrations_online() -> None:
 
         with context.begin_transaction():
             context.run_migrations()
+
+        # Persist all changes (Alembic detected an external transaction
+        # because of the PRAGMA above and won't commit on its own).
+        connection.commit()
 
 
 if context.is_offline_mode():

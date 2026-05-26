@@ -385,7 +385,7 @@ CREATE TABLE IF NOT EXISTS triggers (
     trigger_type TEXT NOT NULL CHECK(trigger_type IN ('cron', 'webhook', 'file_watch')),
     enabled INTEGER NOT NULL DEFAULT 1,
     config TEXT NOT NULL DEFAULT '{}',
-    action_type TEXT NOT NULL CHECK(action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify', 'podcast_generate')),
+    action_type TEXT NOT NULL CHECK(action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify', 'podcast_generate', 'self_improve_auto')),
     action_config TEXT NOT NULL DEFAULT '{}',
     node_id TEXT,
     last_fired_at TEXT,
