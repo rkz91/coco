@@ -536,14 +536,17 @@ def _write_snapshot(data: dict) -> None:
 SOURCE_DISPLAY = {"jira": "Jira", "confluence": "Confluence", "email": "Email", "voice": "Voice"}
 
 
-def _display_source(name: str) -> str:
+def _display_source(name: str | None) -> str:
+    if not name:
+        return "Unknown"
     return SOURCE_DISPLAY.get(name, name.title())
 
 
-def _build_briefing(current: dict) -> dict:
+def _build_briefing(current: dict | None) -> dict:
     """Generate a structured, Jarvis-style briefing with typed scenes."""
     scenes: list[dict] = []
-    prev = _read_snapshot()
+    current = current or {}
+    prev = _read_snapshot() or {}
 
     hour = datetime.now().hour
     greetings = {
@@ -567,7 +570,7 @@ def _build_briefing(current: dict) -> dict:
     greeting_text = random.choice(greetings[period])
     scenes.append({"type": "greeting", "text": greeting_text})
 
-    since = current.get("since_last_session", {})
+    since = current.get("since_last_session") or {}
     hours_ago = since.get("hours_ago")
     if hours_ago is not None:
         if hours_ago < 0.5:
@@ -595,8 +598,8 @@ def _build_briefing(current: dict) -> dict:
 
         newly_stale = [h for h in stale if h.get("source", "") not in prev_stale_sources]
         if newly_stale:
-            names = " and ".join(_display_source(h["source"]) for h in newly_stale)
-            hrs = newly_stale[0].get("stale_hours")
+            names = " and ".join(_display_source(h.get("source")) for h in newly_stale)
+            hrs = newly_stale[0].get("stale_hours") or 0
             scenes.append({
                 "type": "alert",
                 "text": f"{names} {'has' if len(newly_stale) == 1 else 'have'} gone stale — last sync {hrs / 24:.0f} days ago." if hrs and hrs > 48
@@ -633,8 +636,8 @@ def _build_briefing(current: dict) -> dict:
 
     else:
         if stale:
-            names = " and ".join(_display_source(h["source"]) for h in stale)
-            hrs = stale[0].get("stale_hours")
+            names = " and ".join(_display_source(h.get("source")) for h in stale)
+            hrs = stale[0].get("stale_hours") or 0
             scenes.append({
                 "type": "alert",
                 "text": f"{names} {'has' if len(stale) == 1 else 'have'} gone dark — last sync was {hrs / 24:.0f} days ago." if hrs and hrs > 48
@@ -670,7 +673,7 @@ def _build_briefing(current: dict) -> dict:
             if top_open > prev_top_count or top_id not in prev_projects:
                 scenes.append({
                     "type": "spotlight",
-                    "text": f"{top.get('name', 'A project')} is picking up — now at {top_open} open items.",
+                    "text": f"{top.get('name') or 'A project'} is picking up — now at {top_open} open items.",
                     "project": top_id,
                     "value": top_open,
                 })
@@ -692,7 +695,7 @@ def _build_briefing(current: dict) -> dict:
         },
         "projects": [
             {"id": p.get("id"), "name": p.get("name"), "todo_open": p.get("todo_open", 0)}
-            for p in projects
+            for p in projects if p
         ],
         "timestamp": datetime.now(timezone.utc).isoformat(),
     })
