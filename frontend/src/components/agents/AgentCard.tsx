@@ -1,7 +1,7 @@
 import React from 'react';
-import { Briefcase, ClipboardList, Code2, UserSearch, Bot, Crown, Cpu, ShieldCheck, Megaphone, BarChart3, PenTool, ListTodo } from 'lucide-react';
+import { Briefcase, ClipboardList, Code2, UserSearch, Bot, Crown, Cpu, ShieldCheck, Megaphone, BarChart3, PenTool, ListTodo, DollarSign, Clock } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { cn, timeAgo } from '../../lib/utils';
+import { cn, timeAgo, formatCost } from '../../lib/utils';
 import { InlineEditor } from '../shared/InlineEditor';
 import { apiFetch, apiPatch } from '../../lib/api';
 
@@ -24,6 +24,7 @@ export interface Agent {
   config: string;
   role: string | null;
   reports_to: string | null;
+  lifetime_cost_usd?: number;
   recent_output?: { stream: string; chunk: string; timestamp: string }[];
 }
 
@@ -86,6 +87,11 @@ export const AgentCard = React.memo(function AgentCard({ agent, onClick, onSpawn
   const uptime = agent.started_at && !agent.stopped_at
     ? timeAgo(agent.started_at).replace(' ago', '')
     : null;
+
+  // "Last run" — heartbeat if active, else last stop time, else start time
+  const lastRunRaw = agent.last_heartbeat ?? agent.stopped_at ?? agent.started_at;
+  const lastRun = lastRunRaw ? timeAgo(lastRunRaw) : null;
+  const lifetimeCost = agent.lifetime_cost_usd ?? 0;
 
   // Fetch task queue count for badge
   const { data: taskQueue = [] } = useQuery<{ id: string }[]>({
@@ -178,7 +184,7 @@ export const AgentCard = React.memo(function AgentCard({ agent, onClick, onSpawn
         />
       </div>
 
-      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-3">
+      <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
         <span className="capitalize">{agent.status}</span>
         {agent.pid && <span>PID {agent.pid}</span>}
         {uptime && <span>{uptime}</span>}
@@ -186,6 +192,19 @@ export const AgentCard = React.memo(function AgentCard({ agent, onClick, onSpawn
           <span className="flex items-center gap-1 ml-auto px-2 py-0.5 rounded-full bg-accent/20 text-accent text-[10px] font-medium">
             <ListTodo size={10} />
             {taskCount} task{taskCount !== 1 ? 's' : ''}
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center gap-3 text-[11px] text-muted-foreground mb-3 tabular-nums">
+        <span className="flex items-center gap-1" title="Lifetime cost">
+          <DollarSign size={11} />
+          {formatCost(lifetimeCost)}
+        </span>
+        {lastRun && (
+          <span className="flex items-center gap-1" title={`Last activity: ${lastRunRaw}`}>
+            <Clock size={11} />
+            {lastRun}
           </span>
         )}
       </div>

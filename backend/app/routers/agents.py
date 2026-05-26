@@ -64,7 +64,22 @@ def list_agents(
             f"SELECT {_AGENT_COLS} FROM agents{where} ORDER BY created_at DESC",
             tuple(params),
         ).fetchall()
-        return [_agent_row_to_dict(r) for r in rows]
+        agents_out = [_agent_row_to_dict(r) for r in rows]
+
+        # Attach lifetime cost per agent from cost_ledger
+        if agents_out:
+            ids = [a["id"] for a in agents_out]
+            placeholders = ",".join(["?"] * len(ids))
+            cost_rows = conn.exec_driver_sql(
+                f"SELECT agent_id, COALESCE(SUM(cost_usd), 0.0) AS total "
+                f"FROM cost_ledger WHERE agent_id IN ({placeholders}) GROUP BY agent_id",
+                tuple(ids),
+            ).fetchall()
+            cost_by_agent = {r._mapping["agent_id"]: float(r._mapping["total"] or 0.0) for r in cost_rows}
+            for a in agents_out:
+                a["lifetime_cost_usd"] = cost_by_agent.get(a["id"], 0.0)
+
+        return agents_out
 
 
 @router.get("/api/agents/org-chart")
