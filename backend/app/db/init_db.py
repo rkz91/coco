@@ -76,9 +76,11 @@ CREATE TABLE IF NOT EXISTS agents (
     exit_code INTEGER,
     config TEXT DEFAULT '{}',
     reports_to TEXT,
+    human_id TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
+CREATE UNIQUE INDEX IF NOT EXISTS uq_agents_human_id ON agents(human_id) WHERE human_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS agent_roles (
     slug TEXT PRIMARY KEY,
@@ -355,11 +357,13 @@ CREATE TABLE IF NOT EXISTS todo_overrides (
     source_type TEXT,
     source_content_id TEXT,
     is_platform_native INTEGER DEFAULT 0,
+    human_id TEXT,
     created_at TEXT DEFAULT (datetime('now')),
     updated_at TEXT DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_todo_overrides_hub ON todo_overrides(hub_todo_id);
 CREATE INDEX IF NOT EXISTS idx_todo_overrides_status ON todo_overrides(status);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_todo_overrides_human_id ON todo_overrides(human_id) WHERE human_id IS NOT NULL;
 
 CREATE TABLE IF NOT EXISTS analysis_jobs (
     id TEXT PRIMARY KEY,

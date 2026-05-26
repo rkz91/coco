@@ -71,6 +71,7 @@ agents = Table(
     Column("exit_code", Integer),
     Column("config", Text, server_default="{}"),
     Column("reports_to", Text),
+    Column("human_id", Text, unique=True),
     Column("created_at", Text, nullable=False),
     Column("updated_at", Text, nullable=False),
 )
@@ -425,6 +426,7 @@ todo_overrides = Table(
     Column("source_type", Text),
     Column("source_content_id", Text),
     Column("is_platform_native", Integer, server_default="0"),
+    Column("human_id", Text, unique=True),
     Column("created_at", Text),
     Column("updated_at", Text),
 )
