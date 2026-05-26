@@ -9,6 +9,7 @@ import { AgentDetail } from '../components/agents/AgentDetail';
 import { OrgChart, type OrgNode } from '../components/agents/OrgChart';
 import { SharedTaskBoard } from '../components/agents/SharedTaskBoard';
 import { useToast } from '../components/shared/Toast';
+import { ErrorState } from '../components/shared/ErrorState';
 
 type ViewMode = 'cards' | 'org-chart';
 
@@ -41,7 +42,7 @@ export default function AgentsPage() {
     try { localStorage.setItem(VIEW_STORAGE_KEY, mode); } catch { /* ignore */ }
   };
 
-  const { data: agents = [], isLoading } = useQuery<Agent[]>({
+  const { data: agents = [], isLoading, isError, error, refetch } = useQuery<Agent[]>({
     queryKey: ['agents'],
     queryFn: () => apiFetch('/agents'),
     refetchInterval: (query) => {
@@ -154,6 +155,12 @@ export default function AgentsPage() {
 
       {isLoading ? (
         <Skeleton name="agents-grid" loading animate="pulse" />
+      ) : isError ? (
+        <ErrorState
+          error={error}
+          title="Couldn't load agents"
+          onRetry={() => void refetch()}
+        />
       ) : (
         <Skeleton name="agents-grid" loading={false}>
           {agents.length === 0 ? (
