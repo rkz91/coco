@@ -19,6 +19,7 @@ import { AttentionBadge } from '../components/knowledge/AttentionBadge';
 import { UnifiedSearch } from '../components/knowledge/UnifiedSearch';
 import { KnowledgeStats } from '../components/knowledge/KnowledgeStats';
 import type { WikiArticle } from '../components/knowledge/WikiArticleList';
+import { ErrorState } from '../components/shared/ErrorState';
 
 const TABS: { id: KnowledgeTab; label: string; icon: React.ReactNode }[] = [
   { id: 'briefing', label: 'Briefing', icon: <Sunrise className="h-4 w-4" /> },
@@ -176,12 +177,22 @@ export default function KnowledgePage() {
       {/* Tab content */}
       {activeTab === 'briefing' && (
         <div id="tabpanel-briefing" role="tabpanel" aria-labelledby="tab-briefing" className="flex-1 overflow-auto">
-          <DailyBriefing
-            briefingData={briefingQuery.data ?? null}
-            isLoading={briefingQuery.isLoading}
-            onRefresh={() => briefingQuery.refetch()}
-            onNavigateProgram={handleNavigateProgram}
-          />
+          {briefingQuery.isError ? (
+            <div className="p-6">
+              <ErrorState
+                error={briefingQuery.error}
+                title="Couldn't load briefing"
+                onRetry={() => void briefingQuery.refetch()}
+              />
+            </div>
+          ) : (
+            <DailyBriefing
+              briefingData={briefingQuery.data ?? null}
+              isLoading={briefingQuery.isLoading}
+              onRefresh={() => briefingQuery.refetch()}
+              onNavigateProgram={handleNavigateProgram}
+            />
+          )}
           <div className="px-4 pb-4">
             <KnowledgeStats />
           </div>
