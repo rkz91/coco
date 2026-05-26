@@ -27,6 +27,7 @@ export interface Todo {
   blocked_by_count?: number;
   blocking_count?: number;
   display_id?: string;
+  human_id?: string | null;
 }
 
 interface TodoListProps {
@@ -125,10 +126,13 @@ export function TodoList({ todos, onSelect, selectedId }: TodoListProps) {
                     {STATE_LABELS[todo.status] ?? todo.status}
                   </span>
 
-                  {/* Display ID badge */}
-                  {todo.display_id && (
-                    <span className="shrink-0 font-mono text-[11px] text-muted-foreground bg-muted/50 border border-border rounded px-1.5 py-0.5 tracking-wide">
-                      {todo.display_id}
+                  {/* Human ID badge — primary identifier, falls back to legacy display_id */}
+                  {(todo.human_id || todo.display_id) && (
+                    <span
+                      className="shrink-0 font-mono text-[11px] text-muted-foreground bg-muted/50 border border-border rounded px-1.5 py-0.5 tracking-wide"
+                      title={todo.id}
+                    >
+                      {todo.human_id || todo.display_id}
                     </span>
                   )}
 

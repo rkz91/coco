@@ -7,6 +7,8 @@ import { apiFetch, apiPatch } from '../../lib/api';
 
 export interface Agent {
   id: string;
+  human_id?: string | null;
+  display_id?: string | null;
   name: string;
   model: string;
   status: string;
@@ -110,6 +112,14 @@ export const AgentCard = React.memo(function AgentCard({ agent, onClick, onSpawn
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-2">
           <StatusDot status={agent.status} />
+          {(agent.human_id || agent.display_id) && (
+            <span
+              className="inline-flex items-center rounded bg-accent/30 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-muted-foreground"
+              title={agent.id}
+            >
+              {agent.human_id || agent.display_id}
+            </span>
+          )}
           {agent.role && ROLE_META[agent.role] && (
             <span className={cn('inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded', ROLE_META[agent.role].color)}>
               {(() => { const Icon = ROLE_META[agent.role!].icon; return <Icon size={10} />; })()}

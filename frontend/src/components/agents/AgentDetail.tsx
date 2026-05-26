@@ -261,6 +261,19 @@ export function AgentDetail({ agentId, onClose, onAction }: AgentDetailProps) {
         <>
           {/* Properties */}
           <div className="space-y-0">
+            {(agent.human_id || agent.display_id) && (
+              <div className="mb-3">
+                <span className="block text-xs text-muted-foreground mb-0.5">ID</span>
+                <span className="flex items-center gap-2 text-sm text-foreground">
+                  <span className="font-mono font-semibold">
+                    {agent.human_id || agent.display_id}
+                  </span>
+                  <span className="font-mono text-[10px] text-muted-foreground/70" title={agent.id}>
+                    {agent.id.slice(0, 8)}
+                  </span>
+                </span>
+              </div>
+            )}
             <PropertyField
               label="Name"
               value={agent.name}
