@@ -211,7 +211,7 @@ async def list_triggers(
     node_id: Optional[str] = Query(None),
     enabled: Optional[int] = Query(None),
 ):
-    """List all triggers, optionally filtered by node_id and/or enabled."""
+    """List all triggers (with last_log attached), optionally filtered."""
     clauses = []
     params = []
     if node_id is not None:
@@ -227,7 +227,30 @@ async def list_triggers(
             f"SELECT * FROM triggers{where} ORDER BY created_at DESC",
             tuple(params),
         ).fetchall()
-    return [_row_to_dict(r) for r in rows]
+        items = [_row_to_dict(r) for r in rows]
+
+        # Attach the most recent log entry per trigger so the UI can render
+        # last-fire status without an N+1 round trip.
+        if items:
+            ids = [t["id"] for t in items]
+            placeholders = ",".join("?" * len(ids))
+            log_rows = conn.exec_driver_sql(
+                f"""
+                SELECT l.* FROM trigger_log l
+                INNER JOIN (
+                    SELECT trigger_id, MAX(fired_at) AS max_at
+                    FROM trigger_log
+                    WHERE trigger_id IN ({placeholders})
+                    GROUP BY trigger_id
+                ) latest
+                ON l.trigger_id = latest.trigger_id AND l.fired_at = latest.max_at
+                """,
+                tuple(ids),
+            ).fetchall()
+            by_id = {row._mapping["trigger_id"]: dict(row._mapping) for row in log_rows}
+            for t in items:
+                t["last_log"] = by_id.get(t["id"])
+    return items
 
 
 @router.get("/{trigger_id}")
@@ -382,8 +405,17 @@ async def get_trigger_logs(
 # -- Webhook receiver --
 
 @webhook_router.post("/{trigger_id}")
-async def receive_webhook(trigger_id: str, request: Request):
-    """Webhook receiver -- validates trigger exists with type='webhook', fires action, logs result."""
+async def receive_webhook(
+    trigger_id: str,
+    request: Request,
+    token: Optional[str] = Query(None),
+):
+    """Webhook receiver -- validates trigger, fires action, logs result.
+
+    If the trigger's config has a 'token' set, the caller must pass it as
+    either a `?token=` query param or `X-Webhook-Token` header. Triggers
+    without a token configured are open (anyone with the URL can fire).
+    """
     with get_db() as conn:
         row = conn.execute(
             select(triggers).where(triggers.c.id == trigger_id)
@@ -397,6 +429,12 @@ async def receive_webhook(trigger_id: str, request: Request):
 
     if not trigger["enabled"]:
         raise HTTPException(status_code=409, detail="Trigger is disabled")
+
+    expected_token = (trigger.get("config") or {}).get("token")
+    if expected_token:
+        provided = token or request.headers.get("x-webhook-token") or request.headers.get("X-Webhook-Token")
+        if provided != expected_token:
+            raise HTTPException(status_code=401, detail="Invalid or missing webhook token")
 
     context = None
     try:
