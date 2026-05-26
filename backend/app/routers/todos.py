@@ -338,8 +338,8 @@ def merge_todos(body: MergeTodosBody):
                 upsert(
                     todo_overrides,
                     values={"hub_todo_id": rid, "status": "archived", "updated_at": now()},
-                    conflict_cols=["hub_todo_id"],
-                    update_cols=["status", "updated_at"],
+                    conflict_columns=["hub_todo_id"],
+                    update_columns=["status", "updated_at"],
                 )
             )
             archived_count += 1
@@ -530,8 +530,35 @@ def transition_todo(todo_id: str, body: TransitionBody):
                 f"that are not yet done."
             )
 
-    # Upsert status
+    # Upsert status.
+    #
+    # Atomic-transition note (409 Conflict semantics):
+    #   On PostgreSQL we re-read the overlay row inside the same transaction
+    #   with ``SELECT ... FOR UPDATE`` so two concurrent transitions from the
+    #   same source state cannot both succeed.  If the row's status has
+    #   already moved away from ``current_state`` since the pre-flight check,
+    #   we raise 409.
+    #
+    #   SQLite does not implement row-level locks, so ``with_for_update()``
+    #   is a no-op there.  Atomic transitions on SQLite rely on the surrounding
+    #   transaction (BEGIN ... COMMIT) and the single-writer model — adequate
+    #   for the current single-node deployment but NOT a true row lock.
     with get_db() as conn:
+        locked = conn.execute(
+            select(todo_overrides.c.hub_todo_id, todo_overrides.c.status)
+            .where(todo_overrides.c.hub_todo_id == todo_id)
+            .with_for_update()
+        ).fetchone()
+
+        if locked is not None:
+            locked_status = locked._mapping.get("status") or "open"
+            if locked_status != current_state and locked_status != to_state:
+                raise HTTPException(
+                    409,
+                    f"Concurrent modification: todo is now in state "
+                    f"'{locked_status}', expected '{current_state}'.",
+                )
+
         conn.execute(
             upsert(
                 todo_overrides,
@@ -541,8 +568,8 @@ def transition_todo(todo_id: str, body: TransitionBody):
                     "is_platform_native": 1 if is_native else 0,
                     "updated_at": now(),
                 },
-                conflict_cols=["hub_todo_id"],
-                update_cols=["status", "updated_at"],
+                conflict_columns=["hub_todo_id"],
+                update_columns=["status", "updated_at"],
             )
         )
 
@@ -749,8 +776,8 @@ def dedup_todos():
                     upsert(
                         todo_overrides,
                         values={"hub_todo_id": tid, "status": "archived", "updated_at": now()},
-                        conflict_cols=["hub_todo_id"],
-                        update_cols=["status", "updated_at"],
+                        conflict_columns=["hub_todo_id"],
+                        update_columns=["status", "updated_at"],
                     )
                 )
                 removed += 1
