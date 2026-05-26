@@ -5,6 +5,7 @@ import { Breadcrumbs } from '../shared/Breadcrumbs';
 import { NotificationDropdown } from '../shared/NotificationDropdown';
 import { FloatingMic } from '../shared/FloatingMic';
 import { useSSEStatus } from '../shared/NotificationProvider';
+import { ShortcutsTour } from '../discovery/ShortcutsTour';
 
 function ConnectionBanner() {
   const status = useSSEStatus();
@@ -68,6 +69,9 @@ export function AppShell() {
 
       {/* Floating mic for voice commands */}
       <FloatingMic />
+
+      {/* First-run keyboard shortcuts tour (also opens on `?`) */}
+      <ShortcutsTour />
     </div>
   );
 }

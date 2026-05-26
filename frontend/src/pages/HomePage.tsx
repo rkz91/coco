@@ -11,6 +11,8 @@ import { FocusList } from '../components/home/FocusList';
 import { JarvisOverlay } from '../components/home/JarvisOverlay';
 import { KnowledgeEngineCard } from '../components/home/KnowledgeEngineCard';
 import OnboardingWizard, { isOnboardingComplete } from '../components/onboarding/OnboardingWizard';
+import { DidYouKnow } from '../components/discovery/DidYouKnow';
+import { FeatureTooltip } from '../components/discovery/FeatureTooltip';
 import type { HomeData, Todo } from '../types/home';
 import { Skeleton } from 'boneyard-js/react';
 
@@ -233,14 +235,21 @@ export default function HomePage() {
             <span className="text-xs text-muted-foreground">{data.date}</span>
           </div>
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => setJarvisOpen(true)}
-              className="inline-flex items-center gap-1 text-[11px] border border-border rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/20 cursor-pointer transition-colors"
-              title="Activate Jarvis"
+            <FeatureTooltip
+              id="home-jarvis-button"
+              title="Try Jarvis voice mode"
+              description="Press ⌘J or click here to dictate decisions, ask questions, and drive CoCo hands-free."
+              placement="bottom"
             >
-              <Sparkles size={10} />
-              Jarvis
-            </button>
+              <button
+                onClick={() => setJarvisOpen(true)}
+                className="inline-flex items-center gap-1 text-[11px] border border-border rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/20 cursor-pointer transition-colors"
+                title="Activate Jarvis"
+              >
+                <Sparkles size={10} />
+                Jarvis
+              </button>
+            </FeatureTooltip>
             <button
               onClick={openCommandPalette}
               className="inline-flex items-center gap-1 text-[11px] border border-border rounded-md px-2.5 py-1 text-muted-foreground hover:text-foreground hover:border-foreground/20 cursor-pointer transition-colors"
@@ -277,6 +286,7 @@ export default function HomePage() {
       <div className="grid grid-cols-1 gap-3 sm:gap-4 lg:gap-6 lg:grid-cols-12">
         {/* Left column: Podcast + Briefing + Focus List */}
         <div className="lg:col-span-7 space-y-5 min-w-0">
+          <DidYouKnow />
           <PodcastCard />
           <BriefingCard
             sinceLastSession={data.since_last_session}
