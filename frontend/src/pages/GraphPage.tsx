@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
+import { EmptyState } from '../components/shared/EmptyState';
+import { ErrorState } from '../components/shared/ErrorState';
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -84,7 +86,7 @@ export default function GraphPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
 
   // ── Fetch initial god nodes ──────────────────────────────────────────
-  const { data: godNodes, isLoading: godLoading } = useQuery({
+  const { data: godNodes, isLoading: godLoading, isError: godError, error: godErr, refetch: godRefetch } = useQuery({
     queryKey: ['graph-god-nodes'],
     queryFn: () => apiFetch<GodNodesResponse>('/graph/god-nodes?top_n=60'),
   });
@@ -269,6 +271,24 @@ export default function GraphPage() {
         {godLoading && (
           <div className="absolute inset-0 flex items-center justify-center z-10">
             <Loader2 className="h-8 w-8 animate-spin text-accent" />
+          </div>
+        )}
+        {godError && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 p-8">
+            <ErrorState
+              error={godErr}
+              title="Couldn't load graph"
+              onRetry={() => void godRefetch()}
+            />
+          </div>
+        )}
+        {!godLoading && !godError && godNodes && godNodes.items.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center z-10 p-8">
+            <EmptyState
+              icon={<Waypoints className="h-10 w-10" />}
+              title="Knowledge graph is empty"
+              description="Ingest content to build relationships between people, projects, and systems."
+            />
           </div>
         )}
         <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
