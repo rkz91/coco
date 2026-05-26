@@ -4,6 +4,7 @@ import { Loader2, Scale, ChevronDown } from 'lucide-react';
 import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import type { BrainDecision } from '../../types/brain';
+import { ErrorState } from '../shared/ErrorState';
 
 interface BrainDecisionListProps {
   search?: string;
@@ -60,7 +61,7 @@ export function BrainDecisionList({ search }: BrainDecisionListProps) {
   params.set('limit', String(LIMIT));
   params.set('offset', String(offset));
 
-  const { data, isLoading } = useQuery<DecisionsResponse>({
+  const { data, isLoading, isError, error, refetch } = useQuery<DecisionsResponse>({
     queryKey: ['brain-decisions', search, offset],
     queryFn: () => apiFetch<DecisionsResponse>(`/brain/decisions?${params.toString()}`),
   });
@@ -118,6 +119,14 @@ export function BrainDecisionList({ search }: BrainDecisionListProps) {
           <div className="flex items-center justify-center py-20 text-muted-foreground text-sm gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading decisions...
+          </div>
+        ) : isError ? (
+          <div className="p-6">
+            <ErrorState
+              error={error}
+              title="Couldn't load decisions"
+              onRetry={() => void refetch()}
+            />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-sm gap-3">

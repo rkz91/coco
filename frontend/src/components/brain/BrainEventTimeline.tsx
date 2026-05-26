@@ -4,6 +4,7 @@ import { Loader2, Calendar, Flag, Rocket, Users, Mail, Phone } from 'lucide-reac
 import { apiFetch } from '../../lib/api';
 import { cn } from '../../lib/utils';
 import type { BrainEvent } from '../../types/brain';
+import { ErrorState } from '../shared/ErrorState';
 
 interface BrainEventTimelineProps {
   search?: string;
@@ -90,7 +91,7 @@ export function BrainEventTimeline({ search }: BrainEventTimelineProps) {
   params.set('limit', String(LIMIT));
   params.set('offset', String(offset));
 
-  const { data, isLoading } = useQuery<EventsResponse>({
+  const { data, isLoading, isError, error, refetch } = useQuery<EventsResponse>({
     queryKey: ['brain-events', typeFilter, offset, search],
     queryFn: () => apiFetch<EventsResponse>(`/brain/events?${params.toString()}`),
   });
@@ -141,6 +142,14 @@ export function BrainEventTimeline({ search }: BrainEventTimelineProps) {
           <div className="flex items-center justify-center py-20 text-muted-foreground text-sm gap-2">
             <Loader2 className="h-4 w-4 animate-spin" />
             Loading events...
+          </div>
+        ) : isError ? (
+          <div className="p-6">
+            <ErrorState
+              error={error}
+              title="Couldn't load events"
+              onRetry={() => void refetch()}
+            />
           </div>
         ) : items.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground text-sm gap-3">
