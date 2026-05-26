@@ -23,11 +23,15 @@ webhook_router = APIRouter(prefix="/api/webhooks", tags=["Webhooks"])
 
 # -- Pydantic models --
 
+_TRIGGER_TYPE_RE = r"^(cron|webhook|file_watch)$"
+_ACTION_TYPE_RE = r"^(spawn_agent|run_command|create_todo|notify|self_improve_auto|podcast_generate)$"
+
+
 class TriggerCreate(BaseModel):
     name: str
-    trigger_type: str = Field(..., pattern=r"^(cron|webhook|file_watch)$")
+    trigger_type: str = Field(..., pattern=_TRIGGER_TYPE_RE)
     config: dict = {}
-    action_type: str = Field(..., pattern=r"^(spawn_agent|run_command|create_todo|notify)$")
+    action_type: str = Field(..., pattern=_ACTION_TYPE_RE)
     action_config: dict = {}
     node_id: Optional[str] = None
     enabled: bool = True
@@ -35,9 +39,9 @@ class TriggerCreate(BaseModel):
 
 class TriggerUpdate(BaseModel):
     name: Optional[str] = None
-    trigger_type: Optional[str] = Field(None, pattern=r"^(cron|webhook|file_watch)$")
+    trigger_type: Optional[str] = Field(None, pattern=_TRIGGER_TYPE_RE)
     config: Optional[dict] = None
-    action_type: Optional[str] = Field(None, pattern=r"^(spawn_agent|run_command|create_todo|notify)$")
+    action_type: Optional[str] = Field(None, pattern=_ACTION_TYPE_RE)
     action_config: Optional[dict] = None
     node_id: Optional[str] = None
     enabled: Optional[bool] = None
