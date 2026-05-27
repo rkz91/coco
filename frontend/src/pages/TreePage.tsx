@@ -19,6 +19,7 @@ import { apiFetch, apiPost, apiPatch, apiDelete } from '../lib/api';
 import type { TreeNode } from '../context/ScopeContext';
 import { AnalyzeFolderDialog } from '../components/tree/AnalyzeFolderDialog';
 import { AnalysisResults } from '../components/tree/AnalysisResults';
+import { ErrorState } from '../components/shared/ErrorState';
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -1150,11 +1151,11 @@ export default function TreePage() {
   );
 
   // Queries
-  const { data: tree = null, isLoading } = useQuery<TreeNode | null>({
+  const { data: tree = null, isLoading, isError: treeIsError, error: treeError, refetch: refetchTree } = useQuery<TreeNode | null>({
     queryKey: ['tree'],
     queryFn: async () => {
       const res = await fetch('/api/tree');
-      if (!res.ok) return null;
+      if (!res.ok) throw new Error(`Failed to load tree (HTTP ${res.status})`);
       const data = await res.json();
       // API returns array of root nodes — take the first one
       if (Array.isArray(data)) return data[0] ?? null;
@@ -1430,6 +1431,12 @@ export default function TreePage() {
             <div className="h-64 bg-muted/50 rounded-xl animate-pulse" />
           </div>
         </div>
+      ) : treeIsError ? (
+        <ErrorState
+          error={treeError}
+          title="Couldn't load tree"
+          onRetry={() => void refetchTree()}
+        />
       ) : !tree ? (
         <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
           <FolderTree size={40} className="mb-3 opacity-30" />
