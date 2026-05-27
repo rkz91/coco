@@ -102,10 +102,13 @@ function GoalNode({ goal, allGoals, depth = 0, onSelect, selectedId, onRefresh }
       >
         {hasChildren ? (
           <button
+            type="button"
             onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+            aria-label={expanded ? `Collapse ${goal.title}` : `Expand ${goal.title}`}
+            aria-expanded={expanded}
             className="shrink-0 p-0.5 rounded hover:bg-accent"
           >
-            <ChevronRight size={14} className={cn('transition-transform text-muted-foreground', expanded && 'rotate-90')} />
+            <ChevronRight size={14} aria-hidden="true" className={cn('transition-transform text-muted-foreground', expanded && 'rotate-90')} />
           </button>
         ) : (
           <div className="w-5 shrink-0" />

@@ -226,10 +226,13 @@ export default function ChatPage() {
         {/* Header bar */}
         <div className="flex items-center gap-2 px-4 py-2 border-b border-border bg-card">
           <button
+            type="button"
             onClick={() => setSidebarOpen((o) => !o)}
+            aria-label={sidebarOpen ? 'Close conversation sidebar' : 'Open conversation sidebar'}
+            aria-expanded={sidebarOpen}
             className="p-1.5 rounded-lg hover:bg-accent/50 text-muted-foreground transition-colors"
           >
-            {sidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeft size={18} />}
+            {sidebarOpen ? <PanelLeftClose size={18} aria-hidden="true" /> : <PanelLeft size={18} aria-hidden="true" />}
           </button>
           <div className="w-6 h-6 rounded-full bg-accent flex items-center justify-center">
             <span className="text-[10px] font-bold text-accent-foreground">C</span>
