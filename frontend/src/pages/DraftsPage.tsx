@@ -4,6 +4,7 @@ import { FileText, Check, X, ChevronDown, ChevronRight } from 'lucide-react';
 import { apiFetch, apiPost } from '../lib/api';
 import { cn } from '../lib/utils';
 import { useToast } from '../components/shared/Toast';
+import { ErrorState } from '../components/shared/ErrorState';
 
 interface Draft {
   id: string;
@@ -135,7 +136,7 @@ export default function DraftsPage() {
   if (projectFilter) queryParams.set('project_id', projectFilter);
   queryParams.set('limit', '200');
 
-  const { data, isLoading, refetch } = useQuery<Draft[]>({
+  const { data, isLoading, isError, error, refetch } = useQuery<Draft[]>({
     queryKey: ['drafts', statusFilter, projectFilter],
     queryFn: () => apiFetch<Draft[]>(`/drafts?${queryParams.toString()}`),
     refetchInterval: 30000,
@@ -237,6 +238,12 @@ export default function DraftsPage() {
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {isLoading ? (
           <DraftsSkeleton />
+        ) : isError ? (
+          <ErrorState
+            error={error}
+            title="Couldn't load drafts"
+            onRetry={() => void refetch()}
+          />
         ) : drafts.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center">
             <FileText size={32} className="text-muted-foreground mb-3" />
