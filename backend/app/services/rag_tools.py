@@ -50,11 +50,14 @@ def _get_knowledge_engine():
         return _knowledge_engine
     if not KNOWLEDGE_DB_PATH.exists():
         return None
+    # Open in true read-only mode via SQLite URI. We must pass the URI form
+    # through to the DB-API driver via connect_args={"uri": True}; otherwise
+    # the connector parses ``file:...`` as a plain path and silently opens
+    # the DB read-write (defeating the mode=ro guarantee).
     url = f"sqlite:///file:{KNOWLEDGE_DB_PATH}?mode=ro&uri=true"
-    # SQLAlchemy needs the uri=true pass-through via the connect_args / URL form below
     _knowledge_engine = create_engine(
-        f"sqlite:///{KNOWLEDGE_DB_PATH}",
-        connect_args={"timeout": 10, "uri": False},
+        url,
+        connect_args={"timeout": 10, "uri": True},
     )
     return _knowledge_engine
 
