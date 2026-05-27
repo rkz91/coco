@@ -7,6 +7,7 @@ import { apiFetch } from '../lib/api';
 import { cn } from '../lib/utils';
 import { useScope, type TreeNode } from '../context/ScopeContext';
 import { ImportTemplateDialog } from '../components/projects/ImportTemplateDialog';
+import { ErrorState } from '../components/shared/ErrorState';
 
 interface Project {
   id: string;
@@ -136,12 +137,21 @@ export default function ProjectsPage() {
   const { tree, loading: treeLoading } = useScope();
   const [importOpen, setImportOpen] = useState(false);
 
-  const { data: projectList, isLoading: projectsLoading } = useQuery<Project[]>({
+  const { data: projectList, isLoading: projectsLoading, isError, error, refetch } = useQuery<Project[]>({
     queryKey: ['projects'],
     queryFn: () => apiFetch<Project[]>('/projects'),
   });
 
   if (treeLoading || projectsLoading) return <Skeleton name="projects-grid" loading animate="pulse" fallback={<ProjectsSkeleton />} />;
+  if (isError) {
+    return (
+      <ErrorState
+        error={error}
+        title="Couldn't load teams"
+        onRetry={() => void refetch()}
+      />
+    );
+  }
 
   // Build project lookup
   const projectMap = new Map<string, Project>();
