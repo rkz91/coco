@@ -332,8 +332,8 @@ def _apply_classification(
                         "classified_at": now(),
                         "created_at": now(),
                     },
-                    conflict_cols=["hub_content_id"],
-                    update_cols=[
+                    conflict_columns=["hub_content_id"],
+                    update_columns=[
                         "classified_project_id", "project_id", "confidence",
                         "reasoning", "auto_classified", "status", "action", "classified_at",
                     ],
@@ -362,8 +362,8 @@ def _save_suggestion(content_id: str, project_id: str, confidence: float, reason
                         "classified_at": now(),
                         "created_at": now(),
                     },
-                    conflict_cols=["hub_content_id"],
-                    update_cols=[
+                    conflict_columns=["hub_content_id"],
+                    update_columns=[
                         "classified_project_id", "suggested_project_id", "confidence",
                         "reasoning", "auto_classified", "status", "action", "classified_at",
                     ],
