@@ -40,58 +40,24 @@ from app.services.station_manager import (
 
 
 # ---------------------------------------------------------------------------
-# Test-only schema — the live platform.db renamed `stations` → `agents`,
-# so we provision a minimal stations/station_output/cost_events schema purely
-# for these tests. This mirrors REFERENCE-IMPL/migrations/2026_initial.sql.
+# Live-schema fixture — the test DB is built from app.db.tables.metadata so
+# the agents / agent_output / cost_ledger DDL stays in lockstep with the
+# production schema. The previous _STATIONS_SCHEMA constant duplicated the
+# columns and drifted when the live schema evolved (stations -> agents,
+# cost_events -> cost_ledger rename); creating from live metadata removes
+# that drift.
 # ---------------------------------------------------------------------------
 
-_STATIONS_SCHEMA = """
-CREATE TABLE IF NOT EXISTS stations (
-  id              TEXT PRIMARY KEY,
-  task_id         TEXT,
-  project_id      TEXT NOT NULL,
-  project_name_snapshot TEXT NOT NULL,
-  model           TEXT NOT NULL,
-  pid             INTEGER,
-  status          TEXT NOT NULL CHECK (status IN ('pending','running','paused','completed','failed','killed')),
-  exit_code       INTEGER,
-  started_at      TEXT,
-  stopped_at      TEXT,
-  last_heartbeat  TEXT,
-  cost_usd        REAL NOT NULL DEFAULT 0.0,
-  input_tokens    INTEGER NOT NULL DEFAULT 0,
-  output_tokens   INTEGER NOT NULL DEFAULT 0,
-  autonomy        TEXT NOT NULL CHECK (autonomy IN ('yolo','careful','manual')),
-  cwd             TEXT NOT NULL,
-  prompt_preview  TEXT,
-  idempotency_key TEXT,
-  notes           TEXT,
-  created_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  updated_at      TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
-  CHECK (length(id)=26)
-);
-CREATE TABLE IF NOT EXISTS station_output (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  station_id  TEXT NOT NULL,
-  stream      TEXT NOT NULL CHECK (stream IN ('stdout','stderr')),
-  chunk       TEXT NOT NULL,
-  emitted_at  TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-);
-CREATE TABLE IF NOT EXISTS cost_events (
-  id              TEXT PRIMARY KEY,
-  station_id      TEXT,
-  chat_id         TEXT,
-  project_id      TEXT NOT NULL,
-  project_name_snapshot TEXT NOT NULL,
-  model           TEXT NOT NULL,
-  feature         TEXT NOT NULL,
-  source          TEXT NOT NULL CHECK (source IN ('api_token','sdk_credit','qb_gateway')),
-  input_tokens    INTEGER NOT NULL DEFAULT 0,
-  output_tokens   INTEGER NOT NULL DEFAULT 0,
-  cost_usd        REAL NOT NULL,
-  recorded_at     TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
-);
-"""
+from app.db.tables import (
+    metadata as _live_metadata,
+    agents as _agents_table,
+    agent_output as _agent_output_table,
+    cost_ledger as _cost_ledger_table,
+)
+
+# Only the tables this test suite actually touches — avoids creating dozens
+# of unrelated tables and keeps fixture set-up fast.
+_TEST_TABLES = [_agents_table, _agent_output_table, _cost_ledger_table]
 
 
 # ---------------------------------------------------------------------------
@@ -204,7 +170,13 @@ def platform_dir(tmp_path: Path) -> Path:
 
 @pytest.fixture()
 def migrated_db(platform_dir: Path) -> Iterator[Engine]:
-    """File-backed SQLite with stations/station_output/cost_events schema."""
+    """File-backed SQLite, schema built from live app.db.tables metadata.
+
+    Using the real Table objects (agents / agent_output / cost_ledger) means
+    a future column rename or drop in the production schema will surface
+    here as a real test failure rather than being silently hidden by a
+    drifted hand-written DDL block.
+    """
     db_path = platform_dir / "platform.db"
     url = f"sqlite:///{db_path}"
     eng = create_engine(url, future=True)
@@ -218,11 +190,8 @@ def migrated_db(platform_dir: Path) -> Iterator[Engine]:
         cur.execute("PRAGMA foreign_keys=ON")
         cur.close()
 
-    with eng.begin() as conn:
-        for stmt in _STATIONS_SCHEMA.split(";"):
-            s = stmt.strip()
-            if s:
-                conn.execute(text(s))
+    # Create only the tables this suite actually exercises.
+    _live_metadata.create_all(eng, tables=_TEST_TABLES)
     yield eng
     eng.dispose()
 
@@ -352,9 +321,9 @@ async def test_log_stream_cost_accounting(mgr, repo, bus, cwd):
     assert snap["output_tokens"] == 1500
     # cost.recorded event was emitted
     assert len(bus.by_type("cost.recorded")) == 1
-    # cost_events row inserted
+    # cost_ledger row inserted (renamed from cost_events; station_id -> agent_id)
     with repo.engine.connect() as conn:
-        cnt = conn.execute(text("SELECT COUNT(*) FROM cost_events WHERE station_id=:s"),
+        cnt = conn.execute(text("SELECT COUNT(*) FROM cost_ledger WHERE agent_id=:s"),
                            {"s": station.id}).scalar()
     assert cnt == 1
 
@@ -431,7 +400,7 @@ async def test_race_safety_concurrent_spawn_writes(repo, bus, fake_psutil, platf
     ids = {s.id for s in stations}
     assert len(ids) == 10  # all unique
     with repo.engine.connect() as conn:
-        cnt = conn.execute(text("SELECT COUNT(*) FROM stations WHERE status='running'")).scalar()
+        cnt = conn.execute(text("SELECT COUNT(*) FROM agents WHERE status='running'")).scalar()
     assert cnt == 10
 
 

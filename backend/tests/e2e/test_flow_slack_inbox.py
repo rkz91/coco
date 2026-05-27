@@ -16,29 +16,44 @@ async def test_flow_slack_inbox_to_approve(aclient):
 
     Hops verified at the HTTP boundary:
     - [1-5] envelope drop / event (skipped — internal worker)
-    - [6-7] queue item appears via /api/decisions (or /api/inbox)
-    - [8-13] UI subscribes /api/events/activity (smoke ping)
-    - [11-13] POST /api/queue/{id}/approve with Idempotency-Key
-    - [14-15] /api/costs/* reflects new ledger
+    - [6-7] queue item appears via /api/brain/decisions
+    - [8-13] UI subscribes /api/events/stream (smoke ping)
+    - [11-13] X-Request-ID echo (idempotency / observability contract)
+    - [14-15] /api/costs/summary reflects new ledger
     """
-    # Hop 6-7: decisions endpoint should respond with empty or items list.
-    r = await aclient.get("/api/decisions?scope=all&status=open")
-    # The endpoint may not exist as exactly this name; accept any 2xx/404.
-    assert r.status_code in (200, 404, 422), f"decisions endpoint unexpected: {r.status_code}"
+    # Hop 6-7: canonical decisions list. The router lives at /api/brain/decisions
+    # (the originally-asserted /api/decisions was never implemented). Must
+    # return a 200 with an iterable payload.
+    r = await aclient.get("/api/brain/decisions")
+    assert r.status_code == 200, f"brain/decisions must return 200, got {r.status_code}"
+    body = r.json()
+    # Endpoint returns either a list directly or an object with a list field.
+    if isinstance(body, dict):
+        assert any(isinstance(v, list) for v in body.values()), (
+            "brain/decisions JSON must contain a list field"
+        )
+    else:
+        assert isinstance(body, list), "brain/decisions must return a list or wrapper"
 
-    # Hop 8: SSE channel responds (we don't consume the stream — just ping).
-    r = await aclient.get("/api/events/activity", timeout=0.5)
-    # SSE returns 200 immediately; we cut off the stream by closing client.
-    assert r.status_code in (200, 404), f"events/activity unexpected: {r.status_code}"
+    # Hop 8: SSE channel must be registered. We do NOT GET it under the
+    # ASGI test transport — sse-starlette never terminates the response
+    # naturally so httpx would hang. Asserting the route is wired is the
+    # honest contract here; live SSE delivery is covered by integration tests.
+    from app.main import app
+    routes = {getattr(r, "path", None) for r in app.routes}
+    assert "/api/events/stream" in routes, (
+        "SSE stream route /api/events/stream must be registered"
+    )
 
-    # Hop 11-13: idempotency contract — header X-Request-ID echoed.
+    # Hop 11-13: idempotency / observability contract — header X-Request-ID echoed.
     r = await aclient.get("/api/health")
     assert r.status_code == 200
     assert "X-Request-ID" in r.headers, "observability middleware must echo X-Request-ID"
-
-    # Hop 14-15: cost endpoint is reachable.
-    r = await aclient.get("/api/costs/today")
-    assert r.status_code in (200, 404, 422)
+    # Hop 14-15: canonical cost summary endpoint exists and returns JSON.
+    r = await aclient.get("/api/costs/summary")
+    assert r.status_code == 200, f"costs/summary must return 200, got {r.status_code}"
+    cost_body = r.json()
+    assert isinstance(cost_body, (dict, list)), "costs/summary must return JSON object/list"
 
 
 @pytest.mark.asyncio

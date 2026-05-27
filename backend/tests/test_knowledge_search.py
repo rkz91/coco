@@ -165,29 +165,138 @@ class TestCrossProjectSearch:
 # ---------------------------------------------------------------------------
 # GET /api/knowledge/people-graph
 # ---------------------------------------------------------------------------
+# The people_graph endpoint queries the knowledge.db directly via
+# _get_knowledge_db() (raw SQL against global_entities / project_entity_links /
+# cross_project_connections). The tests therefore seed an in-memory sqlite
+# fixture and patch _get_knowledge_db to return it.
+
+import sqlite3 as _sqlite3
+
+
+class _FakeConn:
+    """Thin sqlite3.Connection wrapper that mimics the _ROConn surface
+    used by the people_graph endpoint: ``execute(sql, params).fetchall()``
+    / ``fetchone()`` and ``close()``."""
+
+    def __init__(self, conn):
+        self._conn = conn
+
+    def execute(self, sql, params=()):
+        return self._conn.execute(sql, params)
+
+    def close(self):
+        try:
+            self._conn.close()
+        except Exception:
+            pass
+
+
+def _seed_people_db(rows):
+    """Build an in-memory sqlite with the minimal people-graph schema and
+    seed it with the provided person rows. Each row is a tuple of
+    ``(gid, canonical_name, importance_score, projects, connections)``
+    where ``projects`` is a list of project_slug strings and ``connections``
+    is the desired count of cross_project_connections rows for that gid."""
+    conn = _sqlite3.connect(":memory:", check_same_thread=False)
+    conn.execute(
+        """CREATE TABLE global_entities (
+            gid TEXT PRIMARY KEY,
+            canonical_name TEXT,
+            type TEXT,
+            importance_score REAL
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE project_entity_links (
+            gid TEXT,
+            project_slug TEXT
+        )"""
+    )
+    conn.execute(
+        """CREATE TABLE cross_project_connections (
+            source_gid TEXT,
+            target_gid TEXT
+        )"""
+    )
+    for gid, name, importance, projects, connections in rows:
+        conn.execute(
+            "INSERT INTO global_entities (gid, canonical_name, type, importance_score) VALUES (?, ?, 'person', ?)",
+            (gid, name, importance),
+        )
+        for slug in projects:
+            conn.execute(
+                "INSERT INTO project_entity_links (gid, project_slug) VALUES (?, ?)",
+                (gid, slug),
+            )
+        for i in range(connections):
+            conn.execute(
+                "INSERT INTO cross_project_connections (source_gid, target_gid) VALUES (?, ?)",
+                (gid, f"other-{gid}-{i}"),
+            )
+    conn.commit()
+    return conn
+
+
+def _people_client(fake_conn_or_none):
+    """Patch _get_knowledge_db to return ``fake_conn_or_none`` (None simulates
+    a missing knowledge.db) and yield a TestClient on a lightweight app."""
+
+    class _Ctx:
+        def __enter__(self_ctx):
+            self_ctx._patcher = patch(
+                "app.routers.knowledge_search._get_knowledge_db",
+                return_value=fake_conn_or_none,
+            )
+            self_ctx._patcher.start()
+            self_ctx._app = _make_test_app()
+            self_ctx._tc = TestClient(self_ctx._app, raise_server_exceptions=False)
+            self_ctx._tc.__enter__()
+            return self_ctx._tc
+
+        def __exit__(self_ctx, *exc):
+            self_ctx._tc.__exit__(*exc)
+            self_ctx._patcher.stop()
+
+    return _Ctx()
+
 
 class TestPeopleGraph:
     def test_returns_items(self):
-        with _client_with(_make_fake_search_module()) as c:
+        """Seeded DB with 2 valid person rows should return 2 items."""
+        # Names must satisfy _is_likely_person (2-4 capitalized words, 5-40 chars,
+        # no noise words). "Alice Anderson" / "Bob Brown" pass the heuristic.
+        seed = [
+            ("person-001", "Alice Anderson", 0.9, ["proj-a"], 5),
+            ("person-002", "Bob Brown", 0.7, ["proj-a", "proj-b"], 3),
+        ]
+        raw = _seed_people_db(seed)
+        with _people_client(_FakeConn(raw)) as c:
             resp = c.get("/api/knowledge/people-graph")
             assert resp.status_code == 200
             data = resp.json()
             assert "items" in data
-            assert data["total"] == len(FAKE_PEOPLE_GRAPH)
-            assert len(data["items"]) == len(FAKE_PEOPLE_GRAPH)
+            assert data["total"] == 2
+            assert len(data["items"]) == 2
+            names = {item["canonical_name"] for item in data["items"]}
+            assert names == {"Alice Anderson", "Bob Brown"}
 
     def test_module_unavailable(self):
-        with _client_with(None) as c:
+        """When _get_knowledge_db returns None (no knowledge.db), endpoint
+        returns an empty payload with total=0 (no error key in this branch)."""
+        with _people_client(None) as c:
             resp = c.get("/api/knowledge/people-graph")
             assert resp.status_code == 200
             data = resp.json()
             assert data["items"] == []
-            assert "error" in data
+            assert data["total"] == 0
 
     def test_exception_handled(self):
-        failing_mod = MagicMock()
-        failing_mod.get_people_graph = MagicMock(side_effect=RuntimeError("db locked"))
-        with _client_with(failing_mod) as c:
+        """If the underlying execute() raises, the endpoint surfaces an error
+        key and returns an empty payload (does not 500)."""
+        bad = MagicMock()
+        bad.execute = MagicMock(side_effect=RuntimeError("db locked"))
+        bad.close = MagicMock()
+        with _people_client(bad) as c:
             resp = c.get("/api/knowledge/people-graph")
             assert resp.status_code == 200
             data = resp.json()

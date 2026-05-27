@@ -12,7 +12,12 @@ import pytest
 
 @pytest.mark.asyncio
 async def test_flow_chat_brain_query_contract(aclient):
-    """Hop 3-5: POST /api/brain/query exposes the canonical BrainQuery shape."""
+    """Hop 3-5: POST /api/brain/query exposes the canonical BrainQuery shape.
+
+    We assert the route returns a structured response — either real results
+    (200) or a request-shape validation error (422). 4xx/5xx beyond that
+    indicate a regression, not a deferred feature.
+    """
     body = {
         "query": "what did Aaron say about 3PI yesterday",
         "project_id": "3pi-p2",
@@ -21,39 +26,89 @@ async def test_flow_chat_brain_query_contract(aclient):
         "filters": {"since": "2026-05-26T00:00:00Z", "until": "2026-05-27T23:59:59Z"},
     }
     r = await aclient.post("/api/brain/query", json=body)
-    # Endpoint should exist and either return results or a validation error.
-    # We do not require live retrieval — only that the route is wired.
-    assert r.status_code in (200, 422, 500, 404), f"unexpected brain query status: {r.status_code}"
+    assert r.status_code in (200, 422), (
+        f"brain/query must be 200 (success) or 422 (validation); got {r.status_code}"
+    )
+    if r.status_code == 200:
+        body_json = r.json()
+        # Canonical shape: results list (possibly wrapped).
+        if isinstance(body_json, dict):
+            assert "results" in body_json or "items" in body_json or any(
+                isinstance(v, list) for v in body_json.values()
+            ), "brain/query 200 payload must include a results/items list"
+        else:
+            assert isinstance(body_json, list)
 
 
 @pytest.mark.asyncio
 async def test_flow_chat_brain_chat_endpoint_registered(aclient):
-    """Hop 1-2: POST /api/chat is a registered route (no 405 / route missing).
-
-    We don't exercise the chat subprocess (it requires a real Claude
-    binary) — we just check the route exists and the OPTIONS contract.
-    """
-    # OPTIONS bypasses idempotency + handler logic and confirms the route
-    # is registered. CORS preflight gets handled by CORSMiddleware.
-    r = await aclient.options("/api/chat", headers={"Origin": "http://localhost"})
-    # FastAPI returns 405 for OPTIONS only when the path doesn't exist or
-    # has no handler. A 200/204/400 confirms the path is wired.
-    assert r.status_code != 404, "POST /api/chat must be a registered route"
-    # Also verify GET /api/chat or some listing route responds without 405.
+    """Hop 1-2: POST /api/chat is a registered route (no 405 / route missing)."""
     from app.main import app
     routes = {getattr(r, "path", None) for r in app.routes}
-    assert any(p and p.startswith("/api/chat") for p in routes), "no /api/chat route in app.routes"
+    assert "/api/chat" in routes, "POST /api/chat must be a registered route"
 
 
 @pytest.mark.asyncio
-async def test_flow_chat_observability_span_recorded(aclient):
-    """Hops are wrapped by the observability middleware — span recorded silently.
-
-    We don't read the spans file here; the test only asserts that the
-    middleware doesn't break under repeated requests (i.e. tracer init is
-    idempotent and span emission doesn't leak resources).
+async def test_flow_chat_observability_span_recorded(tmp_path, monkeypatch):
+    """E2E-TRACE C-7: spans.jsonl must contain spans whose request_id matches
+    the X-Request-ID echoed on the response. The conftest disables tracing
+    (COCO_OTEL_EXPORTER=none) so this test sets up its own file exporter
+    and a fresh app + client to assert span-to-request correlation.
     """
-    for _ in range(5):
-        r = await aclient.get("/api/health")
-        assert r.status_code == 200
-        assert "X-Request-ID" in r.headers
+    # Force a fresh file exporter into a tmp path, then re-init tracing.
+    spans_dir = tmp_path / "traces"
+    spans_dir.mkdir(parents=True, exist_ok=True)
+    spans_file = spans_dir / "spans.jsonl"
+    monkeypatch.setenv("COCO_OTEL_EXPORTER", "file")
+    monkeypatch.setenv("COCO_OTEL_FILE", str(spans_file))
+
+    # Reset the tracing module-state so init_tracing picks up our env.
+    from app.observability import tracing as tracing_mod
+    monkeypatch.setattr(tracing_mod, "_TRACING_INITIALIZED", False, raising=True)
+    monkeypatch.setattr(tracing_mod, "_TRACER", None, raising=True)
+    tracing_mod.init_tracing(None)
+
+    # Fire a handful of requests through the app — observability middleware
+    # wraps each one with an http.request span tagged with request_id.
+    from httpx import AsyncClient, ASGITransport
+    from app.main import app
+
+    rid = "req-trace-correlation-001"
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://localhost") as client:
+        for _ in range(5):
+            r = await client.get("/api/health", headers={"X-Request-ID": rid})
+            assert r.status_code == 200
+            assert r.headers.get("X-Request-ID") == rid
+
+    # Flush spans to disk.
+    try:
+        from opentelemetry import trace as _trace
+        provider = _trace.get_tracer_provider()
+        if hasattr(provider, "force_flush"):
+            provider.force_flush(5000)
+    except Exception:
+        pass
+
+    # Read spans.jsonl and confirm at least one span carries our request_id.
+    assert spans_file.exists(), f"spans file must exist at {spans_file}"
+    lines = [ln for ln in spans_file.read_text().splitlines() if ln.strip()]
+    assert lines, "spans.jsonl must contain at least one span line"
+    import json as _json
+    found_http_span = False
+    found_rid_match = False
+    for ln in lines:
+        try:
+            s = _json.loads(ln)
+        except Exception:
+            continue
+        if s.get("name") == "http.request":
+            found_http_span = True
+            attrs = s.get("attributes") or {}
+            if attrs.get("request_id") == rid:
+                found_rid_match = True
+                break
+    assert found_http_span, "spans.jsonl must contain at least one http.request span"
+    assert found_rid_match, (
+        f"no http.request span found with request_id={rid} — log/trace correlation broken"
+    )

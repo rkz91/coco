@@ -215,7 +215,16 @@ async def observability_context(request, call_next):
         "http.path": path,
         "request_id": request_id,
         "project_id": project_id or "",
-    }):
+    }) as _span:
+        # Bind trace_id contextvar so log lines correlate with spans (E2E-TRACE C-7).
+        try:
+            ctx = _span.get_span_context() if hasattr(_span, "get_span_context") else None
+            if ctx is not None:
+                trace_id_int = getattr(ctx, "trace_id", 0)
+                if trace_id_int:
+                    bind_request_context(trace_id=format(trace_id_int, "032x"))
+        except Exception:
+            pass
         record_metric("http_requests_total", labels={"method": request.method, "path": path})
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
