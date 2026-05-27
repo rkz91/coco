@@ -40,6 +40,7 @@ from app.routers import (
     graph,
     attention,
     ingest,
+    brain_query,
 )
 
 structlog.configure(
@@ -229,6 +230,7 @@ app.include_router(knowledge_search.router)
 app.include_router(graph.router)
 app.include_router(attention.router)
 app.include_router(ingest.router)
+app.include_router(brain_query.router)
 
 # Studio routers (only when COCO_EDITION=studio)
 if is_studio():
