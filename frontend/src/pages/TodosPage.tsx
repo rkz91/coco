@@ -14,6 +14,7 @@ import { BoardView } from '../components/shared/BoardView';
 import { useToast } from '../components/shared/Toast';
 import type { TodoFilterState } from '../components/todos/TodoFilters';
 import type { Todo } from '../components/todos/TodoList';
+import { ErrorState } from '../components/shared/ErrorState';
 
 type TodosResponse = Todo[];
 
@@ -54,7 +55,7 @@ export default function TodosPage() {
   if (filters.priority) queryParams.set('priority', filters.priority);
   queryParams.set('limit', '200');
 
-  const { data, isLoading } = useQuery<TodosResponse>({
+  const { data, isLoading, isError, error, refetch } = useQuery<TodosResponse>({
     queryKey: ['todos', filters],
     queryFn: async () => {
       const raw = await apiFetch<Todo[] | { items: Todo[]; total: number }>(`/todos?${queryParams.toString()}`);
@@ -169,6 +170,12 @@ export default function TodosPage() {
       <div className="flex-1 overflow-y-auto px-4 pb-4">
         {isLoading ? (
           <TodosSkeleton />
+        ) : isError ? (
+          <ErrorState
+            error={error}
+            title="Couldn't load todos"
+            onRetry={() => void refetch()}
+          />
         ) : viewMode === 'list' ? (
           <TodoList todos={todos} />
         ) : (
