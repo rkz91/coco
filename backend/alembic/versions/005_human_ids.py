@@ -51,8 +51,47 @@ def _auto_prefix(label: str | None) -> str:
     return (alpha + "XXX")[:3].upper()
 
 
+def _existing_prefixes(conn, exclude_node_id: str | None = None) -> set[str]:
+    """Return the set of prefixes already assigned to nodes (excluding one)."""
+    if exclude_node_id is None:
+        rows = conn.exec_driver_sql(
+            "SELECT prefix FROM nodes WHERE prefix IS NOT NULL AND prefix != ''"
+        ).fetchall()
+    else:
+        rows = conn.exec_driver_sql(
+            "SELECT prefix FROM nodes "
+            "WHERE prefix IS NOT NULL AND prefix != '' AND id != ?",
+            (exclude_node_id,),
+        ).fetchall()
+    return {r[0] for r in rows}
+
+
+def _disambiguate_prefix(base: str, taken: set[str]) -> str:
+    """Return a prefix derived from ``base`` that is not in ``taken``.
+
+    First tries the bare prefix, then appends digits 2-99. The combined
+    string is truncated to 5 chars so display_ids stay compact.
+    """
+    if base not in taken:
+        return base
+    # Try AUD2, AUD3, ... AUD99 — disambiguated but still readable.
+    for n in range(2, 100):
+        candidate = f"{base}{n}"[:5]
+        if candidate not in taken:
+            return candidate
+    # Pathological fallback — extremely unlikely but keep migration deterministic.
+    return base
+
+
 def _prefix_for_node(conn, node_id: str | None) -> str:
-    """Return the prefix for a node, generating one if absent."""
+    """Return the prefix for a node, generating one if absent.
+
+    Auto-generated prefixes are disambiguated against the rest of the
+    ``nodes`` table to guarantee global uniqueness — otherwise two nodes
+    whose labels share the same first three alpha characters (e.g.
+    "AuditBoard" and "AuditBoard Tax") would both produce ``AUD`` and the
+    later ``UNIQUE INDEX uq_agents_human_id`` would collide on ``AUD-1``.
+    """
     if not node_id or node_id == GLOBAL_BUCKET_NODE_ID:
         return GLOBAL_PREFIX
     row = conn.exec_driver_sql(
@@ -64,7 +103,13 @@ def _prefix_for_node(conn, node_id: str | None) -> str:
     prefix = rm["prefix"]
     if prefix:
         return prefix
-    prefix = _auto_prefix(rm["label"])
+    base = _auto_prefix(rm["label"])
+    taken = _existing_prefixes(conn, exclude_node_id=node_id)
+    # The GLOBAL_PREFIX is reserved for the synthetic bucket — never reuse it
+    # for a real node (otherwise a fresh-DB-with-global-bucket-but-no-other-nodes
+    # scenario would still collide).
+    taken.add(GLOBAL_PREFIX)
+    prefix = _disambiguate_prefix(base, taken)
     conn.exec_driver_sql(
         "UPDATE nodes SET prefix = ?, updated_at = datetime('now') WHERE id = ?",
         (prefix, node_id),
@@ -162,6 +207,13 @@ def upgrade() -> None:
         "node_id TEXT NOT NULL, sequence_num INTEGER NOT NULL, "
         "display_id TEXT NOT NULL, UNIQUE(node_id, sequence_num))"
     )
+
+    # 0b. Ensure the nodes table has the prefix column. The baseline (001)
+    #     created ``nodes`` without one, but ``_prefix_for_node`` SELECTs and
+    #     UPDATEs that column. Adding it here keeps fresh alembic-only
+    #     databases consistent with init_db.py's SA Core metadata.
+    if not _column_exists(bind, "nodes", "prefix"):
+        op.execute("ALTER TABLE nodes ADD COLUMN prefix TEXT")
 
     # 1. Ensure global bucket exists for entities without a node.
     _ensure_global_bucket(bind)
