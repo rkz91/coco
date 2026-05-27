@@ -8,6 +8,7 @@ import structlog
 import time
 
 from app.config import COCO_CORS_ORIGINS
+from app.api.error_envelope import register_exception_handlers
 from app.middleware.auth import AuthMiddleware, AUTH_TOKEN
 from app.middleware.rate_limit import RateLimitMiddleware, RATE_LIMIT_ENABLED
 from app.db.init_db import init_platform_db
@@ -129,6 +130,11 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=openapi_tags,
 )
+
+# Register canonical error-envelope handlers (INTEGRATION-CONTRACT §3).
+# Wraps RequestValidationError, HTTPException, DomainError, and 500s into the
+# {error, message, details, request_id, trace_id} shape the UI consumes.
+register_exception_handlers(app)
 
 cors_origins = [o.strip() for o in COCO_CORS_ORIGINS.split(",") if o.strip()]
 
