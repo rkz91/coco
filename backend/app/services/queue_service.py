@@ -28,6 +28,18 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable
 
+try:
+    from app.observability import span as _obs_span, record_metric as _obs_metric
+except Exception:  # pragma: no cover
+    from contextlib import contextmanager as _cm
+
+    @_cm
+    def _obs_span(_name, **_kw):
+        yield None
+
+    def _obs_metric(*_a, **_kw):
+        return None
+
 
 SCHEMA_VERSION = 2
 MAX_QUEUE_SIZE = 10_000  # safety backstop
@@ -283,7 +295,9 @@ class QueueService:
             return result
 
     def approve(self, item_id: str, *, idem_key: str | None = None) -> dict[str, Any]:
-        return self._apply_status(item_id, new_status="approved", body={}, idem_key=idem_key)
+        with _obs_span("queue.approve", item_id=item_id):
+            _obs_metric("queue_approve_total")
+            return self._apply_status(item_id, new_status="approved", body={}, idem_key=idem_key)
 
     def reject(self, item_id: str, *, reason: str | None = None,
                idem_key: str | None = None) -> dict[str, Any]:

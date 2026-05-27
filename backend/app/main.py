@@ -44,6 +44,13 @@ from app.routers import (
     brain_ops,
     auth as auth_router,
 )
+from app.observability import (
+    init_tracing,
+    configure_logging,
+    bind_request_context,
+    record_metric,
+    span,
+)
 
 structlog.configure(
     processors=[
@@ -55,6 +62,13 @@ log = structlog.get_logger()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Observability: tracing + structured-logging context. Failures here
+    # must never block startup, hence the broad except.
+    try:
+        configure_logging()
+        init_tracing(app)
+    except Exception:
+        pass
     log.info("platform_starting")
     init_platform_db()
     # Ensure podcast directory exists
@@ -186,6 +200,28 @@ async def add_security_headers(request, call_next):
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws://localhost:* http://localhost:*; media-src 'self' blob:"
     return response
+
+# Observability middleware — binds request_id + creates a root span per request.
+# Lives outside add_response_time so trace ids cover the full handler.
+@app.middleware("http")
+async def observability_context(request, call_next):
+    import uuid as _uuid
+    request_id = request.headers.get("X-Request-ID") or str(_uuid.uuid4())
+    project_id = request.headers.get("X-Project-ID") or request.query_params.get("project_id")
+    station_id = request.headers.get("X-Station-ID")
+    bind_request_context(request_id=request_id, project_id=project_id, station_id=station_id)
+    path = str(request.url.path)
+    with span("http.request", **{
+        "http.method": request.method,
+        "http.path": path,
+        "request_id": request_id,
+        "project_id": project_id or "",
+    }):
+        record_metric("http_requests_total", labels={"method": request.method, "path": path})
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
 
 # Response time middleware
 @app.middleware("http")

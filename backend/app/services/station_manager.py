@@ -29,6 +29,18 @@ from typing import Any, Callable, Protocol
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
 
+try:
+    from app.observability import span as _obs_span, record_metric as _obs_metric
+except Exception:  # pragma: no cover
+    from contextlib import contextmanager as _cm
+
+    @_cm
+    def _obs_span(_name, **_kw):
+        yield None
+
+    def _obs_metric(*_a, **_kw):
+        return None
+
 
 # ---------------------------------------------------------------------------
 # Lightweight types
@@ -336,6 +348,12 @@ class StationManager:
     # ----- core operations -----
 
     async def spawn(self, req: SpawnRequest) -> Station:
+        # Observability: critical-path span. record_metric is no-op safe.
+        with _obs_span("station.spawn", project_id=req.project_id, model=req.model):
+            _obs_metric("station_spawn_total", labels={"project_id": req.project_id, "model": req.model})
+            return await self._spawn_inner(req)
+
+    async def _spawn_inner(self, req: SpawnRequest) -> Station:
         # Sandbox check
         if not is_allowed_cwd(req.cwd, self.allowed_roots):
             raise PermissionError(f"cwd {req.cwd!r} not under allowed roots")
