@@ -164,19 +164,29 @@ register_exception_handlers(app)
 
 cors_origins = [o.strip() for o in COCO_CORS_ORIGINS.split(",") if o.strip()]
 
+# SEC-FIX L4#4: tighten CORS — explicit methods/headers; only allow credentials
+# when origins are NOT wildcards (allowed list must be concrete hosts).
+_cors_has_wildcard = any(o == "*" for o in cors_origins)
+_cors_allow_credentials = (not _cors_has_wildcard) and len(cors_origins) > 0
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=_cors_allow_credentials,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=[
+        "Accept",
+        "Accept-Language",
+        "Content-Type",
+        "Content-Language",
+        "Authorization",
+        "Idempotency-Key",
+        "X-Request-ID",
+        "X-Project-ID",
+        "X-Station-ID",
+        "Last-Event-ID",
+    ],
 )
-
-# Auth middleware — always on (handles origin check + optional bearer/PIN).
-# In open mode (no token, no PIN) it only enforces the localhost-origin check
-# for state-changing methods. See app/middleware/auth.py.
-app.add_middleware(AuthMiddleware)
-_ = AUTH_TOKEN  # imported for back-compat / observability
 
 # Rate limiting middleware — active by default, disable with COCO_RATE_LIMIT=false
 if RATE_LIMIT_ENABLED:
@@ -191,7 +201,9 @@ app.add_middleware(IdempotencyMiddleware)
 # takes precedence where it sets the header.)
 app.add_middleware(CSPMiddleware)
 
-# Security headers middleware
+# Security headers middleware. SPA-friendly CSP (script-src 'unsafe-inline')
+# applies ONLY to text/html responses; API responses keep the hardened CSP
+# from CSPMiddleware.
 @app.middleware("http")
 async def add_security_headers(request, call_next):
     response = await call_next(request)
@@ -204,8 +216,22 @@ async def add_security_headers(request, call_next):
         response.headers["X-Frame-Options"] = "DENY"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' ws://localhost:* http://localhost:*; media-src 'self' blob:"
+    ct = (response.headers.get("content-type") or "").lower()
+    if ct.startswith("text/html"):
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; "
+            "connect-src 'self' ws://localhost:* http://localhost:*; "
+            "media-src 'self' blob:; frame-ancestors 'none'"
+        )
     return response
+
+# Auth middleware — always on (handles origin check + optional bearer/PIN).
+# Registered LAST so it sits OUTERMOST (FastAPI middleware is LIFO): unauth
+# requests are rejected before they can poison the idempotency cache or burn
+# rate-limit budget.
+app.add_middleware(AuthMiddleware)
+_ = AUTH_TOKEN  # imported for back-compat / observability
 
 # Observability middleware — binds request_id + creates a root span per request.
 # Lives outside add_response_time so trace ids cover the full handler.
