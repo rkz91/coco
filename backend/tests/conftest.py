@@ -24,7 +24,12 @@ import pytest
 # Session-wide environment setup — must run BEFORE app imports
 # ---------------------------------------------------------------------------
 
-_TEST_TMP = Path(tempfile.mkdtemp(prefix="coco-tests-"))
+# Use a per-worker suffix so pytest-xdist runs don't race on the same
+# platform.db. PYTEST_XDIST_WORKER is set by xdist (e.g. "gw0", "gw1");
+# fall back to the PID when running sequentially so concurrent local runs
+# also stay isolated.
+_WORKER_ID = os.environ.get("PYTEST_XDIST_WORKER") or f"pid{os.getpid()}"
+_TEST_TMP = Path(tempfile.mkdtemp(prefix=f"coco-tests-{_WORKER_ID}-"))
 _COCO_DIR = _TEST_TMP / "coco"
 _HUB_DIR = _TEST_TMP / "hub"
 _COCO_DIR.mkdir(parents=True, exist_ok=True)

@@ -65,11 +65,21 @@ def configure_logging(level: Optional[str] = None) -> None:
     lvl = getattr(logging, lvl_name, logging.INFO)
     logging.basicConfig(level=lvl, format="%(message)s")
 
+    # JSONRenderer's `serializer=` lets us pass `default=str` so a stray
+    # Path / datetime / UUID / bytes / Decimal in a log payload never
+    # crashes the logging pipeline (default `json.dumps` raises TypeError).
     structlog.configure(
         processors=[
             structlog.processors.TimeStamper(fmt="iso"),
             _context_processor,
-            structlog.processors.JSONRenderer(),
+            structlog.processors.JSONRenderer(serializer=_safe_json_dumps),
         ],
         wrapper_class=structlog.make_filtering_bound_logger(lvl),
     )
+
+
+def _safe_json_dumps(obj: Any, **kw: Any) -> str:
+    """JSON dump with `default=str` so Path/datetime/bytes never crash logs."""
+    import json
+    kw.setdefault("default", str)
+    return json.dumps(obj, **kw)

@@ -8,6 +8,6 @@ Entry points:
 See .planning/v3/backend/DESIGN.md §Observability.
 """
 
-from app.observability.tracing import init_tracing, get_tracer, span  # noqa: F401
+from app.observability.tracing import init_tracing, get_tracer, span, shutdown_tracing  # noqa: F401
 from app.observability.metrics import record_metric, MetricsRecorder  # noqa: F401
 from app.observability.logging_config import configure_logging, bind_request_context  # noqa: F401

@@ -50,6 +50,7 @@ from app.observability import (
     bind_request_context,
     record_metric,
     span,
+    shutdown_tracing,
 )
 
 structlog.configure(
@@ -102,6 +103,12 @@ async def lifespan(app: FastAPI):
     log.info("hub_sync_stopped")
     process_manager.stop_heartbeat()
     await trigger_engine.stop()
+    # Flush + shut down OTel TracerProvider — otherwise BatchSpanProcessor
+    # workers leak across reloads and pending spans get dropped on SIGTERM.
+    try:
+        shutdown_tracing()
+    except Exception:
+        pass
     log.info("platform_stopping")
 
 openapi_tags = [

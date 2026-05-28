@@ -36,3 +36,21 @@ packages = ["app"]
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.ruff]
+# Lint settings for backend. Run with: `ruff check backend/`
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+# Enable Ruff-specific rules (RUF) + a small bug-catcher set (B). Keeps
+# the lint surface tight so CI noise stays low while still catching real
+# drift (RUF013 implicit-Optional, RUF015 head-of-iter slice, etc.).
+select = ["RUF", "B"]
+# Note: Ruff has no built-in check for `MagicMock()` without `spec=`.
+# Wave-2 catches the highest-leverage instances by code review; if the
+# pattern recurs in the future, add a custom grep-based pre-commit hook
+# or a flake8 plugin.
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["B"]  # tests use intentional patterns ruff flags as bugs

@@ -24,6 +24,7 @@ from typing import Any, Iterator
 _TRACING_INITIALIZED = False
 _LOCK = threading.Lock()
 _TRACER: Any = None  # opentelemetry.trace.Tracer | _NullTracer
+_PROVIDER: Any = None  # opentelemetry.sdk.trace.TracerProvider | None
 
 
 class _NullSpan:
@@ -117,7 +118,7 @@ def init_tracing(app=None) -> None:
     Falls back to a no-op tracer if OTel cannot be initialized or the
     chosen exporter is unreachable.
     """
-    global _TRACING_INITIALIZED, _TRACER
+    global _TRACING_INITIALIZED, _TRACER, _PROVIDER
     with _LOCK:
         if _TRACING_INITIALIZED:
             return
@@ -158,8 +159,17 @@ def init_tracing(app=None) -> None:
             provider.add_span_processor(BatchSpanProcessor(exporter))
             trace.set_tracer_provider(provider)
             _TRACER = trace.get_tracer("coco.platform")
+            _PROVIDER = provider
 
             if app is not None:
+                # Stash provider on app.state so lifespan can shut it down
+                # cleanly on SIGTERM (flushes pending spans, joins worker
+                # threads). Avoids dropped spans + leaked threads across
+                # repeated test re-init cycles.
+                try:
+                    app.state.otel_provider = provider
+                except Exception:
+                    pass
                 try:
                     from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
                     FastAPIInstrumentor.instrument_app(app, tracer_provider=provider)
@@ -167,6 +177,26 @@ def init_tracing(app=None) -> None:
                     pass
         except Exception:
             _TRACER = _NullTracer()
+
+
+def shutdown_tracing() -> None:
+    """Shut down the active TracerProvider (flush + close workers).
+
+    Safe to call multiple times and when tracing was never initialized.
+    Does NOT reset module-level state so any re-init attempts hit the
+    OTel guard ('Overriding of current TracerProvider is not allowed').
+    For tests that need a fresh provider per run, restart the process.
+    """
+    with _LOCK:
+        provider = _PROVIDER
+    if provider is None:
+        return
+    try:
+        # TracerProvider.shutdown() flushes BatchSpanProcessor queues and
+        # joins their worker threads.
+        provider.shutdown()
+    except Exception:
+        pass
 
 
 def get_tracer() -> Any:
