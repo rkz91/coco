@@ -22,20 +22,32 @@ from app.services.event_bus import event_bus
 log = structlog.get_logger()
 
 
+# Module-level cached engine to defeat per-poll engine churn (defeats SA pooling).
+# Built lazily on first request; reused for the process lifetime.
+_cached_engine: Engine | None = None
+
+
 def _build_knowledge_engine() -> Engine | None:
-    """Build a read-only SA engine for the external knowledge.db.
+    """Return the cached read-only SA engine for the external knowledge.db.
 
     Returns None if knowledge.db does not exist yet (Knowledge Engine has not
     run). Uses SQLite URI mode=ro so writes are rejected at the driver level.
+
+    The engine is cached at module scope: SA pool reuses connections across
+    polls instead of paying per-poll create+dispose overhead.
     """
+    global _cached_engine
+    if _cached_engine is not None:
+        return _cached_engine
     if not KNOWLEDGE_DB_PATH.exists():
         return None
     url = f"sqlite:///file:{KNOWLEDGE_DB_PATH}?mode=ro&uri=true"
-    return create_engine(
+    _cached_engine = create_engine(
         url,
         connect_args={"uri": True, "timeout": 10},
         pool_pre_ping=True,
     )
+    return _cached_engine
 
 
 class KnowledgeSyncService:
@@ -79,8 +91,6 @@ class KnowledgeSyncService:
                 return (row[0] if row else 0) or 0
         except Exception:
             return 0
-        finally:
-            eng.dispose()
 
     def _check_for_updates(self):
         eng = self._get_engine()
@@ -137,8 +147,8 @@ class KnowledgeSyncService:
                          new_phases=len(rows),
                          total_articles=total,
                          latest_log_id=self._last_log_id)
-        finally:
-            eng.dispose()
+        except Exception:
+            pass
 
 
 knowledge_sync = KnowledgeSyncService()
