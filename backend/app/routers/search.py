@@ -377,6 +377,10 @@ def _search_content(conn, q: str, pattern: str, q_lower: str, limit: int, out: l
     """Search hub_content via FTS5 if available, fall back to LIKE."""
     fts_used = False
     try:
+        # SQLite FTS5 probe — no PG equivalent. FTS5 is a SQLite virtual
+        # table, so it has no SA Core Table descriptor. The probe is
+        # parameterless, read-only, and dialect-gated by the except below
+        # (Postgres raises NoSuchTableError -> we fall through to LIKE).
         conn.execute(text("SELECT 1 FROM hub_content_fts LIMIT 1"))
         # FTS5 is finicky about special characters — quote the user query as a
         # single phrase to avoid syntax errors on tokens like - / : etc.
