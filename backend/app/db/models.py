@@ -619,7 +619,7 @@ triggers = Table(
         name="ck_triggers_trigger_type",
     ),
     CheckConstraint(
-        "action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify', 'podcast_generate')",
+        "action_type IN ('spawn_agent', 'run_command', 'create_todo', 'notify', 'podcast_generate', 'self_improve_auto')",
         name="ck_triggers_action_type",
     ),
 )
