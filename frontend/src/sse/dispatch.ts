@@ -102,9 +102,20 @@ export function dispatchSSEEvent(
 
     default: {
       // Exhaustiveness check — if we add a new event variant without handling
-      // it, TS errors here.
-      const _exhaustive: never = evt;
-      return _exhaustive;
+      // it, TS errors here at compile time. At runtime, a backend that drifts
+      // ahead of the frontend (e.g. ships a new event variant before this
+      // file is updated) would silently fall through. Surface it:
+      //   - In dev, throw to fail fast.
+      //   - In prod, warn so the drift shows up in the browser console /
+      //     error tracker rather than vanishing.
+      const unknownEvt = evt as { type?: string };
+      const message = `Unhandled SSE event: ${String(unknownEvt?.type)}`;
+      // eslint-disable-next-line no-console
+      console.warn(message, evt);
+      if (import.meta.env.DEV) {
+        throw new Error(message);
+      }
+      return;
     }
   }
 }

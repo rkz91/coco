@@ -98,6 +98,11 @@ export function useKeyboardTriage(
 
       const key = e.key;
 
+      // Ignore modifier-combo keypresses — these belong to global shortcuts
+      // (e.g. Cmd-K palette, Ctrl-R reload). Otherwise the inbox would
+      // race with the command palette when the user is on /inbox.
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+
       // ── Triage hotkeys (only when deck zone active & has a card) ──
       if (key === '1' || key === '2' || key === '3' || key === '4') {
         if (activeZone !== 'deck') return;

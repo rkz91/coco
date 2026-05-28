@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClientProvider } from '@tanstack/react-query';
@@ -80,14 +80,44 @@ function PageFallback() {
 
 /** v3 platform SSE bridge — wires backend events into Query + Zustand. */
 function PlatformSSEBridge() {
+  const handleRef = useRef<ReturnType<typeof connectPlatformSSE> | null>(null);
+  const [status, setStatus] = useState<
+    'connecting' | 'connected' | 'disconnected' | 'failed'
+  >('connecting');
+
   useEffect(() => {
     const handle = connectPlatformSSE({
       queryClient,
       onEvent: (evt) => dispatchSSEEvent(evt, queryClient),
+      onStatus: (s) => setStatus(s),
     });
-    return () => handle.close();
+    handleRef.current = handle;
+    return () => {
+      handle.close();
+      handleRef.current = null;
+    };
   }, []);
-  return null;
+
+  if (status !== 'failed') return null;
+
+  // After max retries the connector pegs `'failed'` forever — surface a
+  // banner so the user can recover without a hard reload.
+  return (
+    <div
+      role="status"
+      aria-live="polite"
+      className="fixed bottom-4 left-1/2 -translate-x-1/2 z-[70] flex items-center gap-3 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white shadow-lg"
+    >
+      <span>Live updates disconnected.</span>
+      <button
+        type="button"
+        onClick={() => handleRef.current?.reconnect()}
+        className="rounded bg-white/20 px-2 py-1 text-xs font-semibold uppercase tracking-wide hover:bg-white/30"
+      >
+        Reconnect
+      </button>
+    </div>
+  );
 }
 
 export default function App() {
