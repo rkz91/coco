@@ -5,8 +5,10 @@ Works with sqlalchemy.engine.Connection.
 
 from __future__ import annotations
 
-from sqlalchemy import text
+from sqlalchemy import select
 from sqlalchemy.engine import Connection
+
+from app.db.tables import nodes
 
 
 def get_subtree_node_ids(db: Connection, node_id: str) -> list[str]:
@@ -16,11 +18,15 @@ def get_subtree_node_ids(db: Connection, node_id: str) -> list[str]:
     If the node is not found, falls back to returning ``[node_id]`` so callers
     can still filter safely.
     """
-    row = db.execute(text("SELECT path FROM nodes WHERE id = :nid"), {"nid": node_id}).fetchone()
+    row = db.execute(
+        select(nodes.c.path).where(nodes.c.id == node_id)
+    ).fetchone()
     if not row:
         return [node_id]
     path = row[0]
-    rows = db.execute(text("SELECT id FROM nodes WHERE path LIKE :p"), {"p": path + "%"}).fetchall()
+    rows = db.execute(
+        select(nodes.c.id).where(nodes.c.path.like(path + "%"))
+    ).fetchall()
     return [r[0] for r in rows]
 
 
