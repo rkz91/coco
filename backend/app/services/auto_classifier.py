@@ -23,7 +23,7 @@ from app.db.tables import (
     content_classifications,
 )
 from app.db.compat import now, upsert
-from app.config import BRAIN_JSON_PATH
+from app.config import BRAIN_JSON_PATH, COCO_AUTO_CLASSIFY
 
 log = structlog.get_logger()
 
@@ -133,7 +133,20 @@ def classify_single(
       1. Deterministic Jira-key router (short-circuits if matched)
       2. Rule-based subject/keyword/sender matching
       3. LLM fallback
+
+    Gated by the COCO_AUTO_CLASSIFY env var. When disabled, returns a
+    `disabled` sentinel result (project_id=None, confidence=0) so callers
+    can still log/skip the item without crashing.
     """
+    if not COCO_AUTO_CLASSIFY:
+        log.debug("auto_classify_disabled", content_id=content_id)
+        return {
+            "project_id": None,
+            "confidence": 0.0,
+            "reasoning": "auto-classify disabled via COCO_AUTO_CLASSIFY env",
+            "method": "disabled",
+        }
+
     jira_result = _jira_key_route(title)
     if jira_result is not None:
         return jira_result
