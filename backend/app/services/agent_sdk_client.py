@@ -431,6 +431,21 @@ def record_sdk_cost(
             )
     except Exception as e:
         log.warning("record_sdk_cost_failed", error=str(e))
+        return
+
+    try:
+        from app.services.event_bus import event_bus  # noqa: lazy import (cycle)
+
+        event_bus.emit("cost.updated", {
+            "agent_id": agent_id,
+            "node_id": node_id,
+            "project_id": project_id,
+            "model": model,
+            "amount_usd": cost_usd,
+            "source": "agent_sdk",
+        })
+    except Exception as e:
+        log.warning("cost_event_emit_failed", error=str(e))
 
 
 # Singleton
