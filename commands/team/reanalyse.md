@@ -30,7 +30,7 @@ L1 agents determine:
 
 **Toolkit integration:**
 - No specific toolkit entries apply — agents use direct code analysis
-- Reference team-feedback.md for past review findings to check if they've regressed
+- Reference team:feedback.md for past review findings to check if they've regressed
 
 ### Layer 3: Regression Confirmation
 L3 verifies claimed regressions are real (not false positives).

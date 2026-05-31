@@ -52,6 +52,9 @@ jobs:
           done
           echo "All install scripts pass syntax check."
 
+      - name: Validate command cross-references
+        run: bash tests/check-command-refs.sh
+
       - name: Adapter smoke test (dry-run)
         run: |
           for adapter in claude-code cursor codex generic; do

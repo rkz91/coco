@@ -41,7 +41,7 @@ L2 agents receive file ownership boundaries (I10):
 - Agents commit atomically per feature/fix
 
 **Toolkit integration:**
-- Check team-toolkit.md for "Code Implementation" entry
+- Check team:toolkit.md for "Code Implementation" entry
 - If Superpowers pipeline recommended → agent follows brainstorm → plan → execute pattern
 - If GSD active → agent reads `.planning/` context and follows phase conventions
 

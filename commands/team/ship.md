@@ -64,7 +64,7 @@ each using the appropriate /team action's role selection.
 
 ### Post-Ship
 - If verify finds issues → `/team fix` automatically, then re-verify (max 2 rounds)
-- Update team-feedback.md with learnings
+- Update team:feedback.md with learnings
 - macOS notification: "CoCo: Ship complete — {idea}"
 - Report final summary to user
 

@@ -35,7 +35,7 @@ L1 agents focus on:
 - Atomic commits per fix: `fix({scope}): {description}`
 
 **Toolkit integration:**
-- Check team-toolkit.md for "Systematic Debugging" entry
+- Check team:toolkit.md for "Systematic Debugging" entry
 - Apply systematic-debugging methodology for complex bugs
 
 ### Layer 3: Fix Verification

@@ -32,7 +32,7 @@ L1 agents gather:
 - Run any available tests to verify behavioral requirements
 
 **Toolkit integration:**
-- Check team-toolkit.md for verification tools (e.g., GSD verify-work)
+- Check team:toolkit.md for verification tools (e.g., GSD verify-work)
 - If GSD active, cross-reference `.planning/REQUIREMENTS.md`
 
 ### Layer 3: Evidence Audit

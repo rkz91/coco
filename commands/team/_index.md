@@ -30,7 +30,7 @@
 
 Extract from `$ARGUMENTS`:
 - **First token** → action (research, think, develop, build, review, verify, document, present, communicate, test, fix, plan, reanalyse, scrape, ship, stop)
-- `build` is a synonym for `develop` — route to team-develop.md
+- `build` is a synonym for `develop` — route to team:develop.md
 - **Remaining tokens** → scope
 - **Flags:** `--domain <value>` overrides auto-detection, `--roles <comma-list>` forces specific role IDs
 
@@ -45,8 +45,8 @@ If scope is required but empty → ask user: "What should I {action}? Example: `
 
 ### --roles Validation
 
-If `--roles` flag provided, validate each role ID against team-roles.md.
-If any ID not found → report: "Unknown role(s): {list}. Check team-roles.md for valid IDs." and STOP.
+If `--roles` flag provided, validate each role ID against team:roles.md.
+If any ID not found → report: "Unknown role(s): {list}. Check team:roles.md for valid IDs." and STOP.
 
 ## Action Selection Guide
 
@@ -142,11 +142,11 @@ If `--domain` flag provided, use it to override the `domain` and `tags` fields.
 ## Step 3: Read Toolkit + Feedback
 
 Read these files (if missing, log warning and continue):
-- `~/.claude/commands/team-toolkit.md` — available tools and quality notes
-- `~/.claude/commands/team-feedback.md` — past findings and recommendations
+- `~/.claude/commands/team:toolkit.md` — available tools and quality notes
+- `~/.claude/commands/team:feedback.md` — past findings and recommendations
 
-If `team-toolkit.md` missing or empty → log: "No toolkit entries available. Agents will use default approaches."
-If `team-feedback.md` missing or empty → log: "No feedback history. Expected for first /team run."
+If `team:toolkit.md` missing or empty → log: "No toolkit entries available. Agents will use default approaches."
+If `team:feedback.md` missing or empty → log: "No feedback history. Expected for first /team run."
 
 ### Feedback File Enforcement
 
@@ -156,7 +156,7 @@ Before extracting entries, check file health:
    - Archive `applied` + `low` impact entries first (regardless of age)
    - Then `applied` + `medium` entries
    - Only archive `high` impact entries if critically over budget
-   - Write archived entries to `~/.claude/commands/team-feedback-archive.md`
+   - Write archived entries to `~/.claude/commands/team:feedback-archive.md`
 3. Then proceed with extraction
 
 ### Extraction
@@ -173,12 +173,12 @@ These extracts will be inlined into Layer 2 agent prompts (I8: agents don't read
 
 ## Step 4: Select Roles
 
-Read `~/.claude/commands/team-roles.md`.
+Read `~/.claude/commands/team:roles.md`.
 
 ### Selection Algorithm
 
 1. **Filter by domain tags:** Only roles whose domain tags overlap with the project's tags (or tagged "all")
-2. **Filter by action:** Each action command (team-develop.md, team-review.md, etc.) specifies which role categories are relevant
+2. **Filter by action:** Each action command (team:develop.md, team:review.md, etc.) specifies which role categories are relevant
 3. **Apply layer sizing:** Each action specifies L1/L2/L3/L4 agent counts
 4. **Apply --roles override:** If user specified `--roles`, force those role IDs into the selection (adding to layers, not replacing the whole selection)
 5. **Produce team roster:**
@@ -212,7 +212,7 @@ Spawn all L1 agents in parallel:
 - **Mode:** `default` (read-only + web tools)
 - **Prompt template:**
   ```
-  [Role system prompt from team-roles.md]
+  [Role system prompt from team:roles.md]
 
   MISSION: {scope}
   DOMAIN: {domain profile}
@@ -245,7 +245,7 @@ Spawn all L2 agents:
 - **Mode:** `bypassPermissions` for develop/fix/test/build actions, `default` for review/document/present/communicate/research/think/plan
 - **Prompt template:**
   ```
-  [Role system prompt from team-roles.md]
+  [Role system prompt from team:roles.md]
 
   MISSION: {scope}
   DOMAIN: {domain profile}
@@ -253,10 +253,10 @@ Spawn all L2 agents:
   CONTEXT FROM RESEARCH TEAM:
   {contents of CONTEXT-BRIEF.md}
 
-  AVAILABLE TOOLS (from team-toolkit.md):
+  AVAILABLE TOOLS (from team:toolkit.md):
   {relevant toolkit entries — max 30 lines}
 
-  PAST LEARNINGS (from team-feedback.md):
+  PAST LEARNINGS (from team:feedback.md):
   {relevant feedback entries — max 20 lines}
 
   Apply the quality notes and past learnings BEFORE producing your output.
@@ -289,7 +289,7 @@ Spawn all L3 agents in parallel:
 - **Mode:** `default` (read-only)
 - **Prompt template:**
   ```
-  [Role system prompt from team-roles.md]
+  [Role system prompt from team:roles.md]
 
   You are reviewing the output of a team of specialists.
 
@@ -327,7 +327,7 @@ Spawn 1-2 L4 agents:
 - **Mode:** `default`
 - **Prompt template:**
   ```
-  [Role system prompt from team-roles.md]
+  [Role system prompt from team:roles.md]
 
   You are the principal synthesizer for this team run.
 
@@ -343,7 +343,7 @@ Spawn 1-2 L4 agents:
   Produce:
   1. FINAL OUTPUT — The synthesized, polished deliverable
   2. FEEDBACK ENTRIES — For each significant finding from Layer 3,
-     produce a feedback entry for team-feedback.md (see entry format below)
+     produce a feedback entry for team:feedback.md (see entry format below)
   3. TOOLKIT UPDATES — If any tool/skill quality notes should be updated,
      specify the exact change
 
@@ -369,8 +369,8 @@ If L4 agent fails:
 
 ## Step 6: Post-Pipeline
 
-1. **Apply feedback:** Append L4's feedback entries to `~/.claude/commands/team-feedback.md`
-2. **Update toolkit:** If L4 recommended toolkit updates, apply them to `~/.claude/commands/team-toolkit.md`
+1. **Apply feedback:** Append L4's feedback entries to `~/.claude/commands/team:feedback.md`
+2. **Update toolkit:** If L4 recommended toolkit updates, apply them to `~/.claude/commands/team:toolkit.md`
 3. **Report:** Present final output to user with summary table
 4. **Cleanup:** TeamDelete
 
@@ -444,7 +444,7 @@ If tests fail → include failure details in REVIEW-PACKAGE.md for Layer 3 to as
 ## Context Window Management (I6)
 
 Total prompt budget per agent: ~4000 tokens (role prompt + context + instructions)
-- Role system prompt: ~500-800 tokens (from team-roles.md)
+- Role system prompt: ~500-800 tokens (from team:roles.md)
 - Context brief: ~800 tokens (compressed L1 output)
 - Toolkit excerpt: ~300 tokens (relevant entries only)
 - Feedback excerpt: ~200 tokens (relevant entries only)

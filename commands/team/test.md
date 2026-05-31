@@ -33,7 +33,7 @@ L1 agents focus on:
   5. Commit: `test({module}): add missing tests for {description}`
 
 **Toolkit integration:**
-- Check team-toolkit.md for "Test-Driven Development" entry
+- Check team:toolkit.md for "Test-Driven Development" entry
 - qa-test-architect designs the test strategy; domain engineers write module-specific tests
 
 ### Layer 3: Test Quality Review
