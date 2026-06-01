@@ -4,9 +4,9 @@
 
 <img src="assets/logo-light.svg" alt="Coco" width="160" height="220">
 
-# An entire team. Wherever your AI lives.
+# Coco is now superintelligent.
 
-### <sub>Your AI tool just got 100× more capable.</sub><br>Free. MIT. 90 seconds.
+### <sub>A board of the world's top minds — Karpathy, Hinton, +180 more — wherever your AI lives.</sub><br>Free. MIT. 90 seconds.
 
 <br>
 
@@ -55,7 +55,7 @@ git clone https://github.com/rkz91/coco.git && cd coco && bash install.sh
 
 <sub>USER-INVOKABLE</sub>
 
-<h1>93</h1>
+<h1>94</h1>
 
 <sub>things you can invoke right after install</sub>
 
@@ -64,9 +64,9 @@ git clone https://github.com/rkz91/coco.git && cd coco && bash install.sh
 <table align="center">
 <tr>
 <td align="center" width="14%"><h3>59</h3><sub>Skills</sub></td>
-<td align="center" width="14%"><h3>34</h3><sub>Commands</sub></td>
+<td align="center" width="14%"><h3>35</h3><sub>Commands</sub></td>
 <td align="center" width="14%"><h3>10</h3><sub>Agents</sub><br><sub><sub>(spawned)</sub></sub></td>
-<td align="center" width="14%"><h3>3</h3><sub>Systems</sub></td>
+<td align="center" width="14%"><h3>4</h3><sub>Systems</sub></td>
 <td align="center" width="14%"><h3>4</h3><sub>Adapters</sub></td>
 <td align="center" width="14%"><h3>15</h3><sub>Rules</sub></td>
 <td align="center" width="16%"><h3>$0</h3><sub>Forever</sub></td>
@@ -75,7 +75,7 @@ git clone https://github.com/rkz91/coco.git && cd coco && bash install.sh
 
 <div align="center">
 
-<sub>Plus opt-in bundles: <strong>+68 GSD skills</strong> · <strong>+24 GSD agents</strong> · <strong>+6 Brain skills</strong> · Team multi-agent pipelines</sub>
+<sub>Plus opt-in bundles: <strong>+68 GSD skills</strong> · <strong>+24 GSD agents</strong> · <strong>+6 Brain skills</strong> · Team multi-agent pipelines · <strong>+185 Superintelligence personas</strong> (3 teams, 75 commands)</sub>
 
 </div>
 
@@ -89,7 +89,7 @@ git clone https://github.com/rkz91/coco.git && cd coco && bash install.sh
 
 ### A team. <br>Not a single coder.
 
-`/team:ship` runs **7 stages** with role-appropriate agents at each layer. Researcher → Architect → Planner → Reviewer → Fixer → 4× Builders → Verifier. You approve once. The team handles the rest.
+`/team:ship` runs **6 build stages + 7 hard verification gates** with role-appropriate agents. Research → Architect → Plan → Review → Build — then every test/lint/coverage claim must clear an evidence gate (skip ≠ pass, independent re-run) before a PR opens. You approve once; the team can't report fake green.
 
 </td>
 <td width="33%" valign="top">
@@ -257,6 +257,20 @@ bash install.sh --systems brain
 
 ---
 
+## Superintelligence — a board of world-class minds
+
+```bash
+/SI-AI-Decide "should we switch our vector store to pgvector?"
+/SI-Eng-Pre-Mortem "our zero-downtime migration plan"
+/SI-PD-Roast "this onboarding flow"
+```
+
+> Convene a panel of **185 named experts** across three teams — **AI** (59), **Engineering** (70), **Product & Design** (56) — and get a decision, tradeoff table, pre-mortem, or roast with **per-line attribution** to a specific person. The orchestrator scores every persona by domain-match + cell-coverage + productive-conflict pairing and picks the sharpest 16–32 for your prompt.
+>
+> Each persona is synthesized from public sources with cited evidence — illustrative expert lenses, not official statements (see the bundle's [`DISCLAIMER.md`](systems/superintelligence/DISCLAIMER.md)). Opt-in: `install.sh --systems superintelligence` generates the 75 `/SI-*` commands from the shipped registries.
+
+---
+
 ## Power features
 
 <table>
@@ -309,7 +323,7 @@ bash install.sh --systems brain
 /email:thread <subject>
 ```
 
-> Daily summary, today's mail, drafted replies, threading, search, save-to-folder. Reads your real Outlook.
+> Daily summary, today's mail, drafted replies, threading, search, save-to-folder. Reads your real Outlook — auto-detects Legacy (AppleScript) vs New Outlook (MIME/HxStore extraction).
 
 </td>
 </tr>
@@ -407,7 +421,7 @@ bash adapters/codex/install.sh
 /code-verification
 ```
 
-> Before claiming "done," Coco runs verification: build, lint, imports, references, tests, behavior. Auto-blocks "looks good!" output without proof.
+> Before claiming "done," Coco runs verification: build, lint, imports, references, tests, behavior. Auto-blocks "looks good!" output without proof. `/team` pipelines add a **Test Evidence Protocol** — every test/lint/coverage claim needs a captured command + output (skip ≠ pass) or it's stripped and the PR blocked.
 
 </td>
 </tr>
@@ -597,9 +611,9 @@ find ~/.claude ~/.cursor -type l \
 <tr><td><strong>Version</strong></td><td>0.1.0</td></tr>
 <tr><td><strong>License</strong></td><td><a href="https://opensource.org/license/mit">MIT</a></td></tr>
 <tr><td><strong>Skills</strong></td><td>59 (+68 in GSD bundle, +6 in Brain bundle)</td></tr>
-<tr><td><strong>Slash commands</strong></td><td>34 across 6 namespaces</td></tr>
+<tr><td><strong>Slash commands</strong></td><td>35 across 6 namespaces</td></tr>
 <tr><td><strong>Agents</strong></td><td>10 core + 24 GSD subagents (in bundle) = 34 specialized roles</td></tr>
-<tr><td><strong>System bundles</strong></td><td>3 (GSD, Brain, Team) — opt-in</td></tr>
+<tr><td><strong>System bundles</strong></td><td>4 (GSD, Brain, Team, Superintelligence) — opt-in</td></tr>
 <tr><td><strong>Cross-IDE rules</strong></td><td>15</td></tr>
 <tr><td><strong>Stable adapters</strong></td><td>Claude Code, Cursor, Codex, Generic AGENTS.md</td></tr>
 <tr><td><strong>Install time</strong></td><td>≤ 90 seconds</td></tr>
