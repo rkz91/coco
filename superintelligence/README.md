@@ -1,5 +1,7 @@
 # Super Intelligence Teams
 
+> **Note:** Personas reference real public figures. Profiles are synthesized from public sources, with cited evidence — but roles and facts can change or go out of date, and quoted phrasing may be paraphrased. Treat them as illustrative expert lenses, not official statements. Not affiliated with or endorsed by the named individuals. See [`DISCLAIMER.md`](DISCLAIMER.md).
+
 Reusable rosters of **real-world thought-leader personas** that act as parallel review-and-decision panels inside the CoCo Platform. Each team is a set of named experts with documented, **citable** public stances; you summon a custom 16–32 person panel for a prompt and every line of output is attributed to a specific person — never "the panel said."
 
 The teams are a **decision-making partner**, not just a review surface. They are invoked through `/SI-*` slash commands installed at `~/.claude/commands/`.

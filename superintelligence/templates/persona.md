@@ -161,7 +161,7 @@ After the frontmatter, the file MUST include these sections in order. Convene te
 # {Real Name} — narrative profile
 
 ## How they think
-3–5 paragraphs synthesizing the YAML into a readable persona. First-person quotes welcome where directly cited. Anchor to canonical_works and recent_signal_12mo.
+3–5 paragraphs synthesizing the YAML into a readable persona. Paraphrase in plain prose — use verbatim quotation marks only for text from a verified primary source; otherwise no quotes, and never invent wording. Anchor to canonical_works and recent_signal_12mo.
 
 ## What they would push back on
 Bulleted list. What this persona would NOT accept in a proposal. Tie each item to a public stance or blind-spot inverse.
@@ -181,12 +181,19 @@ For personas who participated in the Marvin Memory v2 panel synthesis (2026-05-2
 
 ## Constraints
 
-- Every public_stance MUST have an `evidence_url`. No uncited claims.
-- `sources` MUST have at least 8 URLs.
-- `recent_signal_12mo` MUST have at least 3 entries dated within the last 12 months.
-- Identifier slugs use lower-case-kebab-case of the real name (e.g., `andrej-karpathy`, `joseph-gonzalez`, `daniel-chalef`).
+### Verification gate (READ FIRST — these personas describe real, identifiable people)
+
+- **Verify or omit. Never fabricate to fill a field.** Every quote, stance, affiliation, role, date, and figure must trace to a real source that (a) resolves and (b) actually supports the claim. If you cannot verify it, leave it out — an empty field is correct; an invented one is a defect that can defame a real person.
+- **No invented `evidence_url`s.** A citation counts only if you fetched it and it supports the exact claim. A URL that 404s, or that does not state the claim, fails the gate — drop the claim. "Has a URL" is not "is true."
+- **No verbatim quotes unless sourced.** Use quotation marks only for text copied from a cited primary source you verified. Otherwise paraphrase in plain prose with no quotation marks. Never invent wording and attribute it to a person.
+- **No unverified claims — but recent, dated facts are fine when cited.** A new role, a funding round, an IPO, a recent talk is welcome WHEN a resolving source supports it. What is banned is asserting such things without verification, or projecting future/speculative events as fact. If you cannot cite it, omit it; when unsure of a current role, describe the durable archetype rather than guess a dated specific.
+- **Quotas are ceilings, not floors.** Where a field below says `>=N`, read it as "up to N, only as many as you can verify." Fewer well-sourced entries beat N fabricated ones. Quality over quota.
+
+### Mechanical
+
+- Identifier slugs use lower-case-kebab-case of the real name (e.g., `andrej-karpathy`, `joseph-gonzalez`).
 - If identification fails for an UNCONFIRMED slug, do NOT write a persona file — surface top-3 candidates with evidence in the user-facing chat instead.
-- Raw research excerpts MUST be saved under `superintelligenceTeam/research/<slug>/` as plain Markdown files so future re-syntheses do not re-crawl.
+- Raw research excerpts MUST be saved under `<team>/research/<slug>/` as plain Markdown so future re-syntheses do not re-crawl — and so every claim is auditable against its excerpt.
 - File encoding: UTF-8, LF newlines, no trailing whitespace.
 
 ## Why this schema
