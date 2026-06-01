@@ -109,6 +109,7 @@ A task qualifies for fast path when ALL of these are true:
 2. If eligible, skip L1 research and reduce L2-L4 to minimum agents
 3. Report: "Fast path: 2 agents instead of 8. Full pipeline available with --full flag."
 4. User can force full pipeline: `/team scrape --full https://example.com`
+5. **Evidence is not optional on fast path:** fast-path `fix` and `test` runs still produce `EVIDENCE.md` per the Test Evidence Protocol (`team:evidence.md`). Collapsing the layers does not remove the test-evidence gate.
 
 ---
 
@@ -261,6 +262,12 @@ Spawn all L2 agents:
 
   Apply the quality notes and past learnings BEFORE producing your output.
   These corrections were identified by specialist reviewers in previous runs.
+
+  TEST EVIDENCE (develop / fix / test / ship — code-producing actions):
+  Any claim that tests pass, lint is clean, or coverage is N% MUST follow the
+  Test Evidence Protocol (team:evidence.md): run the CI-authoritative gate with
+  integration dependencies provisioned, treat skips as UNVERIFIED (never a pass),
+  and capture command + exit code + summary to EVIDENCE.md. Evidence or it didn't happen.
 
   FILE OWNERSHIP:
   YOUR FILES: {list of files this agent owns}
@@ -431,13 +438,12 @@ Layer 2 agents will use it. If a simpler approach is better, they'll use that in
 
 ## Regression Tests
 
-After Layer 2 completes (before Layer 3), auto-detect and run regression tests:
-- `pyproject.toml` → `uv run pytest tests/ -x`
-- `package.json` with `test` script → `npm test`
-- `Makefile` with `test` target → `make test`
-- `Cargo.toml` → `cargo test`
+After Layer 2 completes (before Layer 3), run the authoritative gate per the Test Evidence Protocol (`team:evidence.md`) — not a self-chosen local command:
+- Determine the real gate from CI config first (`.github/workflows/*.yml`, `Makefile`, e.g. `make check`), using the CI-pinned tool versions. Only if no CI gate exists, fall back to auto-detect: `pyproject.toml` → `uv run pytest`; `package.json` test script → `npm test`; `Makefile` test target → `make test`; `Cargo.toml` → `cargo test`.
+- Provision integration dependencies (e.g. Postgres + DSN) so gated tests actually execute. Treat any skip as `UNVERIFIED`, never a pass.
+- Capture command + exit code + parsed summary + coverage to `EVIDENCE.md`.
 
-If tests fail → include failure details in REVIEW-PACKAGE.md for Layer 3 to assess.
+For code-producing actions (develop, fix, test, ship): any failing test or `UNVERIFIED` surface **BLOCKS** — loop back to Build/Fix (max 3 rounds), do not open a PR or report COMPLETE. For other actions: include the captured results in REVIEW-PACKAGE.md for Layer 3 to assess.
 
 ---
 

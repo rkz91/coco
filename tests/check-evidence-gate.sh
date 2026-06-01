@@ -46,6 +46,20 @@ require "$T/develop.md" "EVIDENCE\.md"                          "evidence captur
 require "$T/verify.md" "Independent Re-Execution|independent re-exec" "independent re-exec"
 require "$T/verify.md" "must NOT read the builder|not read the builder" "independence rule"
 
+# Fix pipeline must capture evidence, not claim "fixed + tested" on faith.
+require "$T/fix.md" "team:evidence|Test Evidence Protocol" "fix protocol ref"
+require "$T/fix.md" "EVIDENCE\.md"                          "fix evidence capture"
+
+# Reanalyse must confirm regressions by re-execution, not narration.
+require "$T/reanalyse.md" "team:evidence|EVIDENCE\.md" "reanalyse re-exec"
+
+# Router regression section must defer to the protocol, not a weaker local gate.
+require "$T/_index.md" "team:evidence|Test Evidence Protocol" "router evidence ref"
+if grep -qE 'uv run pytest tests/ -x' "$T/_index.md" 2>/dev/null; then
+  echo "  STALE in $T/_index.md: router still hardcodes 'uv run pytest tests/ -x' (weaker-than-CI gate)"
+  fail=1
+fi
+
 if [ "$fail" -ne 0 ]; then
   echo "FAIL: /team test-integrity gates are incomplete. See TEAM-SHIP-TESTING-INTEGRITY plan."
   exit 1
