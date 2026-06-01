@@ -14,7 +14,7 @@ Auto-generated. Run `python3 scripts/build-index.py` to refresh.
 
 | Slash | Description |
 |-------|-------------|
-| [`/email`](email/_index.md) | Read, search, and manage Outlook emails via AppleScript. Subcommands: read, unread, search, today, thread, save, summary, reply-draft. Requires Legacy Outlook f |
+| [`/email`](email/_index.md) | Read, search, and manage Outlook emails. Auto-detects Legacy Outlook (AppleScript) vs New Outlook (MIME/HxStore extraction). Subcommands: read, unread, search,  |
 | [`/email:read`](email/read.md) | Show latest emails from a specific person. Usage: /email-read alice |
 | [`/email:reply`](email/reply.md) | Draft a reply to a specific email. Usage: /email-reply Project Phase 2 Contract Data |
 | [`/email:save`](email/save.md) | Save matching emails to a project folder for sync processing. Usage: /email-save alice to emails/ |

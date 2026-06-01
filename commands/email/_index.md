@@ -1,5 +1,5 @@
 ---
-description: "Read, search, and manage Outlook emails via AppleScript. Subcommands: read, unread, search, today, thread, save, summary, reply-draft. Requires Legacy Outlook for Mac."
+description: "Read, search, and manage Outlook emails. Auto-detects Legacy Outlook (AppleScript) vs New Outlook (MIME/HxStore extraction). Subcommands: read, unread, search, today, thread, save, summary, reply-draft."
 allowed-tools:
   - Bash
   - Read
@@ -13,7 +13,20 @@ allowed-tools:
 
 # /email — Outlook Email Commands
 
-You manage Outlook email access via AppleScript (Legacy Outlook for Mac). Parse the user's argument to determine which subcommand to run.
+You manage Outlook email access. Parse the user's argument to determine which subcommand to run.
+
+## Preflight: Detect Outlook variant (REQUIRED — run first)
+
+Outlook for Mac has two incompatible variants. Detect which one is running before doing anything:
+
+```bash
+defaults read com.microsoft.Outlook IsRunningNewOutlook 2>/dev/null || echo 0
+```
+
+- Output `0` or unset → **Legacy Outlook** → use the AppleScript templates below.
+- Output `1` → **New Outlook** → AppleScript is NOT supported (it will silently fail or error). Use **New Outlook (MIME) Mode** below instead. Do NOT attempt AppleScript.
+
+If an AppleScript call errors with "Microsoft Outlook got an error" or the app is unscriptable, treat it as New Outlook and switch to MIME mode rather than retrying.
 
 ## CRITICAL: AppleScript Sender Pattern
 
@@ -155,6 +168,34 @@ end repeat
 ### `folders`
 1. List all mail folders with message counts
 2. Show as table: Folder | Messages | Unread
+
+---
+
+## New Outlook (MIME) Mode
+
+New Outlook stores mail in a proprietary index (`HxStore.hxd`) with no AppleScript or local API. Read instead from the on-disk MIME cache.
+
+**Paths** (under `~/Library/Group Containers/UBF8T346G9.Office/Outlook/Outlook 15 Profiles/Main Profile/`):
+- MIME messages: `Files/S0/4/MimeFiles/`
+- Attachments: `Files/S0/4/Attachments/0/`
+- Index store (binary, last resort): `HxStore.hxd`
+
+**Approach** (covers `read`, `search`, `today`, `this-week`, `thread`, `summary`, `save`):
+```bash
+MIME="$HOME/Library/Group Containers/UBF8T346G9.Office/Outlook/Outlook 15 Profiles/Main Profile/Files/S0/4/MimeFiles"
+# most recent messages first; MIME files are RFC822 — extract headers
+ls -t "$MIME"/* 2>/dev/null | head -200 | while IFS= read -r f; do
+  from=$(grep -a -m1 -i '^From:' "$f"); subj=$(grep -a -m1 -i '^Subject:' "$f"); date=$(grep -a -m1 -i '^Date:' "$f")
+  printf '%s\t%s\t%s\t%s\n' "$date" "$from" "$subj" "$f"
+done
+```
+- Filter the extracted headers by sender (`read <name>`), keyword (`search`), or date (`today`/`this-week`).
+- For body/`summary`: parse the matched file's MIME body. For `save <query> to <folder>`: copy matched MIME files (or extracted text) into the target folder — same downstream effect as the Legacy path.
+
+**Limitations on New Outlook (state honestly — do not guess):**
+- `unread` count and read/unread status are NOT reliably available from the MIME cache — say so rather than fabricating a number.
+- `folders`, mark-as-read, and sending a `reply-draft` need the app API and are unavailable; still draft reply text for copy/paste.
+- The cache only contains messages New Outlook has downloaded locally.
 
 ---
 
