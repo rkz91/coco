@@ -246,12 +246,9 @@ async def _sdk_chat_event_generator(message: str, model: str, system_prompt: str
                 else:
                     _update_session_after_message(session_id)
 
-    if input_tokens or output_tokens:
-        from app.services.agent_sdk_client import record_sdk_cost  # noqa: lazy import (optional dep)
-        record_sdk_cost(
-            model=response_model, input_tokens=input_tokens,
-            output_tokens=output_tokens, source="chat",
-        )
+    # NOTE: cost is recorded inside agent_sdk.stream_chat (via _record_dual,
+    # source="chat"). Do NOT record again here — doing so double-counted every
+    # SDK chat turn (2x cost inflation). stream_chat owns cost recording.
 
     yield {"event": "done", "data": json.dumps({"type": "done", "content": full_response, "session_id": session_id})}
 

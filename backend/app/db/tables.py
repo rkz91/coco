@@ -9,6 +9,7 @@ or columns, update BOTH places.
 """
 
 from sqlalchemy import (
+    CheckConstraint,
     Column,
     Float,
     Integer,
@@ -17,6 +18,13 @@ from sqlalchemy import (
     Text,
     UniqueConstraint,
     text,
+)
+
+# Canonical cost_ledger.source vocabulary. MUST stay in sync with migration
+# 009 (which rebuilds the legacy CHECK on existing platform.db installs).
+COST_LEDGER_SOURCES = (
+    "station", "chat", "think", "kh_pipeline",
+    "agent", "classifier", "brain", "api_token",
 )
 
 metadata = MetaData()
@@ -145,7 +153,11 @@ cost_ledger = Table(
     Column("output_tokens", Integer, nullable=False, server_default="0"),
     Column("cost_usd", Float, nullable=False, server_default="0.0"),
     Column("source", Text, nullable=False, server_default="agent"),
-    Column("created_at", Text, nullable=False),
+    Column("created_at", Text, nullable=False, server_default=text("(datetime('now'))")),
+    CheckConstraint(
+        "source IN ('station','chat','think','kh_pipeline','agent','classifier','brain','api_token')",
+        name="ck_cost_ledger_source",
+    ),
 )
 
 budgets = Table(
@@ -379,7 +391,7 @@ content_classifications = Table(
     "content_classifications",
     metadata,
     Column("id", Text, primary_key=True),
-    Column("hub_content_id", Text, nullable=False),
+    Column("hub_content_id", Text, nullable=False, unique=True),
     Column("project_id", Text),
     Column("classified_project_id", Text),
     Column("suggested_project_id", Text),
@@ -390,6 +402,22 @@ content_classifications = Table(
     Column("status", Text, server_default="pending"),
     Column("classified_at", Text, nullable=False),
     Column("created_at", Text),
+)
+
+classifier_log = Table(
+    "classifier_log",
+    metadata,
+    Column("id", Text, primary_key=True),
+    Column("hub_content_id", Text, nullable=False),
+    Column("project_id", Text),
+    Column("model", Text, nullable=False),
+    Column("confidence", Float, nullable=False, server_default="0.0"),
+    Column("auto_routed", Integer, nullable=False, server_default="0"),
+    Column("latency_ms", Integer, nullable=False, server_default="0"),
+    Column("method", Text, nullable=False, server_default="rule"),
+    Column("reasoning", Text),
+    Column("error", Text),
+    Column("created_at", Text, nullable=False),
 )
 
 project_overrides = Table(

@@ -186,8 +186,15 @@ def process_content(content_id: str, mode: str = "regex") -> list[dict]:
         log.warning("action_pipeline_content_not_found", content_id=content_id)
         return []
 
-    row_dict = dict(row._mapping)
-    content_text = row_dict.get("body") or row_dict.get("summary") or ""
+    # row._mapping is keyed by the real column names (raw_text/processed_text),
+    # not the .c.body/.c.summary key aliases — accept either so extraction
+    # actually receives the content. (Reading .get("body") alone always
+    # returned "" and silently produced zero actions.)
+    m = row._mapping
+    content_text = (
+        m.get("body") or m.get("raw_text")
+        or m.get("summary") or m.get("processed_text") or ""
+    )
     if not content_text.strip():
         return []
 
@@ -220,10 +227,8 @@ def process_content(content_id: str, mode: str = "regex") -> list[dict]:
                 "priority": item.get("priority", "medium"),
                 "source_quote": item.get("source_quote"),
                 "confidence": item.get("confidence", 0.5),
-                "extraction_mode": mode,
                 "status": "staged",
                 "created_at": now,
-                "updated_at": now,
             }
             conn.execute(insert(staged_actions).values(**values))
             staged.append(values)
@@ -322,7 +327,7 @@ def approve_action(action_id: str) -> dict | None:
         conn.execute(
             update(staged_actions)
             .where(staged_actions.c.id == action_id)
-            .values(status="approved", result_id=todo_id, updated_at=now)
+            .values(status="approved", created_todo_id=todo_id)
         )
 
     event_bus.emit("actions.approved", {
@@ -333,7 +338,7 @@ def approve_action(action_id: str) -> dict | None:
     event_bus.emit("todo.created", {"id": todo_id, "title": action["title"]})
 
     action["status"] = "approved"
-    action["result_id"] = todo_id
+    action["created_todo_id"] = todo_id
     return action
 
 
@@ -357,7 +362,7 @@ def reject_action(action_id: str) -> dict | None:
         conn.execute(
             update(staged_actions)
             .where(staged_actions.c.id == action_id)
-            .values(status="rejected", updated_at=now)
+            .values(status="rejected")
         )
 
     event_bus.emit("actions.rejected", {"action_id": action_id, "title": action["title"]})

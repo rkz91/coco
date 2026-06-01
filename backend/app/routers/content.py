@@ -188,8 +188,8 @@ def classify_content(content_id: str, body: ClassifyContentBody):
                         "action": "classify",
                         "classified_at": now(),
                     },
-                    conflict_columns=["id"],
-                    update_columns=["hub_content_id", "project_id", "action"],
+                    conflict_columns=["hub_content_id"],
+                    update_columns=["project_id", "action", "classified_at"],
                 )
             )
 
@@ -220,8 +220,8 @@ def dismiss_content(content_id: str):
                         "action": "dismiss",
                         "classified_at": now(),
                     },
-                    conflict_columns=["id"],
-                    update_columns=["hub_content_id", "action"],
+                    conflict_columns=["hub_content_id"],
+                    update_columns=["action", "classified_at"],
                 )
             )
 

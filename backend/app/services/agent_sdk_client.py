@@ -430,7 +430,10 @@ def record_sdk_cost(
                 )
             )
     except Exception as e:
-        log.warning("record_sdk_cost_failed", error=str(e))
+        # Cost recording is non-fatal to the agent flow, but it must be LOUD:
+        # a swallowed IntegrityError here (e.g. a source value the cost_ledger
+        # CHECK rejected) is exactly how the ledger silently stayed empty.
+        log.error("record_sdk_cost_failed", source=source, model=model, error=str(e))
         return
 
     try:
