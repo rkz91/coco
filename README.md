@@ -29,8 +29,8 @@ AI coding agents are powerful but chaotic. You spawn them, lose track of what th
 
 **Development (full stack, two ports):**
 ```bash
-git clone https://github.com/rijulkalra2000/Project-Coco.git
-cd Project-Coco
+git clone https://github.com/rkz91/coco.git
+cd coco
 ./scripts/setup.sh
 ./scripts/dev.sh
 ```
@@ -129,6 +129,20 @@ The wiki engine lives at `~/.coco/knowledge/` (runtime data) with source code tr
 **Article generation:** `~13K articles`, ≈$0.003 per article on gpt-5.4-nano, 20 parallel workers, deterministic confidence scoring gated by `COCO_CONFIDENCE_FLOOR` (default 0.90).
 
 **Brain-DB schema:** versioned via `~/.claude/skills/brain/scripts/brain/schema.py`. Current `SCHEMA_VERSION = 6`. Idempotent migrations auto-apply on `migrate()` for legacy brains.
+
+## Super Intelligence Teams
+
+Reusable rosters of **real-world thought-leader personas** that act as parallel review-and-decision panels, invoked through `/SI-*` slash commands. Each persona carries documented, citable public stances; an orchestrator scores the roster and assembles a custom 16–32 person panel per prompt, with every line of output attributed to a named person.
+
+| Team | Prefix | Personas | Cells |
+|---|---|---|---|
+| AI | `/SI-AI-*` | 59 | 8 |
+| Engineering | `/SI-Eng-*` | 70 (+9 cross-listed) | 11 |
+| Product & Design | `/SI-PD-*` | 56 (+1 cross-listed) | 8 |
+
+**Orchestrator-first:** action verbs (`-Decide`, `-Tradeoff`, `-Pre-Mortem`, …) score personas by domain-match + cell-coverage + productive-conflict pairing, pick 16–32, and gate on approval before executing. Identity verbs (`-Ask`, `-Huddle`, `-Meeting`, `-Read`) skip the orchestrator for manual control. Finance and Compliance teams are planned.
+
+All persona data, registries, cell docs, and the command generator live under [`superintelligence/`](superintelligence/README.md). The `/SI-*` command files themselves are generated into `~/.claude/commands/` and can be regenerated with `python3 superintelligence/ai/scripts/build_commands.py`.
 
 ## Configuration
 
